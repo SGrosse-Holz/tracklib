@@ -1,2 +1,3 @@
 from .trajectory import Trajectory
-from .dataset import Dataset
+from .taggedlist import TaggedList
+from . import analysis

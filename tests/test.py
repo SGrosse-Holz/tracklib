@@ -12,9 +12,7 @@ import unittest
 from unittest.mock import patch
 
 from context import tracklib
-from tracklib.taggedlist import TaggedList
-from tracklib.trajectory import Trajectory
-from tracklib.dataset import Dataset
+from tracklib import *
 import tracklib.util as util
 
 # Extend unittest.TestCase's capabilities to deal with numpy arrays
@@ -56,6 +54,16 @@ class Test1TaggedList(unittest.TestCase):
         for ind, val in enumerate(self.ls):
             self.assertEqual(val, self.ls._data[ind])
 
+    def test_selection(self):
+        self.ls.makeSelection("a")
+        self.assertSetEqual({*self.ls}, {1, 2})
+
+        self.ls.makeSelection(["a", "b"], logic=all)
+        self.assertSetEqual({*self.ls}, {1})
+
+        self.ls.makeSelection(["a", "b"], logic=any)
+        self.assertSetEqual({*self.ls}, {1, 2, 3})
+
     def test_len(self):
         self.assertEqual(len(self.ls), 3)
 
@@ -77,55 +85,12 @@ class Test1TaggedList(unittest.TestCase):
 
     def test_byTag(self):
         self.assertListEqual(list(self.ls.byTag('a')), [1, 2])
-        self.assertListEqual(list(self.ls.byTag(['a', 'b'])), [1])
+        self.assertListEqual(list(self.ls.byTag(['a', 'b'], logic=all)), [1])
         self.assertListEqual(list(self.ls.byTag(['a', 'b'], logic=any)), [1, 2, 3])
         
     def test_subset(self):
         sub = self.ls.subsetByTag('a')
         self.assertListEqual(sub._data, [1, 2])
-
-# class BaseTrajectoryTest(myTestCase): # Just the base class for trajectory testing
-#     def setUp(self):
-#         self.tempdir = tempfile.TemporaryDirectory()
-#         self.folder = self.tempdir.name
-# 
-#         self.testdata = {'traj' : [1, 2, 3, 4], \
-#                          'tether' : [10, 11, 12, 13]}
-#         self.filename_sim1d = os.path.join(self.folder, 'test.dat')
-#         joblib.dump(self.testdata, self.filename_sim1d)
-# 
-#     def tearDown(self):
-#         self.tempdir.cleanup()
-#         del self.tempdir
-# 
-# class Test0Trajectory(myTestCase):
-#     def test_fromArray(self):
-#         traj = Trajectory.fromArray([1, 2, 3])
-#         self.assertTupleEqual(traj._data.shape, (1, 3, 1))
-# 
-#         traj = Trajectory.fromArray(np.array([[1, 2, 3], [4, 5, 6]]).T)
-#         self.assertTupleEqual(traj._data.shape, (1, 3, 2))
-# 
-#         with self.assertRaises(ValueError):
-#             traj = Trajectory.fromArray([[[[0]]]])
-# 
-# class Test1Trajectory(myTestCase):
-#     def setUp(self):
-#         self.traj = Trajectory.fromArray
-# 
-#     def test_len(self):
-#         self.assertEqual(len(self.traj), 4)
-#     def test_N(self):
-#         self.assertEqual(self.traj.N, 1)
-#     def test_T(self):
-#         self.assertEqual(self.traj.T, 4)
-#     def test_d(self):
-#         self.assertEqual(self.traj.d, 1)
-# 
-#     def test_msd(self):
-#         (msd, N) = self.traj.msd(giveN=True)
-#         self.assert_array_equal(msd, np.array([0, 1, 4, 9]))
-#         self.assert_array_equal(N, np.array([4, 3, 2, 1]))
 
 class Test0Trajectory(myTestCase):
     def test_fromArray(self):
@@ -226,20 +191,20 @@ class TestUtil(myTestCase):
     def test_sampleMSD(self):
         msd = np.sqrt(np.arange(10))
         trajs = util.sampleMSD(msd, n=2)
-        self.assertTupleEqual(trajs.shape, (9, 2))
+        self.assertTupleEqual(trajs.shape, (10, 2))
         acf = np.zeros((10,))
         acf[0] = 1
         trajs = util.sampleMSD(acf, n=2, isCorr=True)
         self.assertTupleEqual(trajs.shape, (10, 2))
 
-class TestDataset(myTestCase):
+class TestAnalysis(myTestCase):
     def setUp(self):
         tags = ["foo", ["foo", "bar"], ["bar"], {"foobar", "bar"}, "foo"]
         self.ntraj = len(tags)
         self.N = 1
         self.T = 10
         self.d = 2
-        msd = np.sqrt(np.arange(self.T+1))
+        msd = np.sqrt(np.arange(self.T))
         trajs = util.sampleMSD(msd, n=self.N*self.d*len(tags), subtractMean=False)
 
         def gen():
@@ -247,7 +212,7 @@ class TestDataset(myTestCase):
                 mytracelist = [trajs[:, ((i*self.N + n)*self.d):((i*self.N + n+1)*self.d)] \
                                for n in range(self.N)]
                 yield (Trajectory.fromArray(mytracelist), mytags)
-        self.ds = Dataset.generate(gen())
+        self.ds = TaggedList.generate(gen())
 
     def test_setup(self):
         self.assertEqual(len(self.ds), 5)
@@ -257,27 +222,39 @@ class TestDataset(myTestCase):
             self.assertEqual(traj.d, self.d)
 
     def test_msd(self):
-        msd = self.ds.msd()
+        msd = analysis.MSD(self.ds)
         self.assertTupleEqual(msd.shape, (self.T,))
-        (_, N) = self.ds.msd(giveN=True)
+        (_, N) = analysis.MSD(self.ds, giveN=True)
         self.assertTupleEqual(N.shape, (self.T,))
         
     def test_hist_lengths(self):
-        h = self.ds.hist_lengths()
+        h = analysis.hist_lengths(self.ds)
         self.assert_array_equal(h[0], np.array(self.ntraj))
 
     def test_plot_msds(self):
-        lines = self.ds.plot_msds()
+        lines = analysis.plot_msds(self.ds)
         self.assertEqual(len(lines), self.ntraj+1)
 
-        lines = self.ds.plot_msds(tags={'foo'}, label='ensemble')
+        self.ds.makeSelection({'foo'})
+        lines = analysis.plot_msds(self.ds, label='ensemble')
         self.assertEqual(len(lines), 4)
 
     def test_plot_trajectories(self):
-        lines = self.ds.plot_trajectories()
+        lines = analysis.plot_trajectories(self.ds)
         self.assertEqual(len(lines), self.ntraj)
-        lines = self.ds.plot_trajectories("foo")
+        self.ds.makeSelection("foo")
+        lines = analysis.plot_trajectories(self.ds)
         self.assertEqual(len(lines), 3)
+
+    def test_MSDcontrol(self):
+        # Note: the MSD of generated trajectories (such as our sample) can lead
+        # to exceptions bc it is noisy. Therefore, use a definitely clean one
+        msd = np.sqrt(np.arange(len(self.ds._data[0])))
+        control = analysis.MSDcontrol(self.ds, msd)
+        self.assertEqual(len(control), len(self.ds))
+        self.ds.makeSelection("foo")
+        control = analysis.MSDcontrol(self.ds, msd)
+        self.assertEqual(len(control), 3)
 
 if __name__ == '__main__':
     unittest.main()

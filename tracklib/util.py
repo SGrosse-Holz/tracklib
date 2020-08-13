@@ -81,11 +81,14 @@ def sampleMSD(msd, n=1, isCorr=False, subtractMean=True):
 
     Output
     ------
-    traj : (N-1, n) array (or (N, n) if isCorr == True)
+    traj : (N, n) array
         The generated trajectories
 
     Notes
     -----
+    To produce a trajectory of length N from an MSD of length N, we assume the
+    very last data point of the autocorrelation function to be identical to the
+    second to last.
     Strictly speaking, only the ensemble of displacements is well-defined,
     because this is the one we assume steady state for. For the actual
     trajectories, we can add an arbitrary offset, and the reasonable thing to
@@ -102,6 +105,7 @@ def sampleMSD(msd, n=1, isCorr=False, subtractMean=True):
         msd[0] = 0
         msd = np.insert(msd, 0, msd[1])
         corr = 0.5 * (msd[2:] + msd[:-2] - 2*msd[1:-1])
+        corr = np.append(corr, corr[-1])
     else:
         corr = msd
 

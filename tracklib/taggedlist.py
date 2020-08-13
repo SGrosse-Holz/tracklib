@@ -6,6 +6,14 @@ class TaggedList:
     This class also works as an iterator, in itself (running through all
     trajectories) or by using byTag() to loop over subsets.
 
+    The behavior of __iter__() can be adjusted with makeSelection() : this
+    allows for pre-selecting a certain set of tags, such that methods that
+    subsequently use constructs like `for datum in list:` only work on the
+    selected data. This is especially useful when subclassing this class,
+    because we don't have to re-implement the selection logic.
+    Note that if we need the tags associated with the data as well, we still
+    have to explicitly call byTag(), but we can use the selection values.
+
     Notes
     -----
     We chose to not implement the full sequence interface for multiple reasons:
@@ -19,16 +27,23 @@ class TaggedList:
         self._data = []
         self._tags = []
 
-    def __iter__(self, giveTags=False):
+        self.makeSelection()
+
+    def __iter__(self):
         """
         Iterate over all data. Note that this is really just a short cut,
-        equivalent to byTag('_all'). Therefore there is no option for yielding
-        the tags as well.
+        equivalent to byTag(<selection>). Therefore there is no option for
+        yielding the tags as well.
         """
-        return self.byTag('_all')
+        return self.byTag(self._selection_tags, logic=self._selection_logic)
 
     def __len__(self):
         return len(self._data)
+
+    def makeSelection(self, tags='_all', logic=any):
+        tags = self.makeTagsSet(tags)
+        self._selection_tags = tags
+        self._selection_logic = logic
 
     @staticmethod
     def makeTagsSet(tags):
@@ -60,6 +75,31 @@ class TaggedList:
             raise ValueError("Did not understand type of 'tags' ({})".format(str(type(tags))))
 
         return tags
+
+    def getTagsAndLogicFromKwargs(self, yourkwargs):
+        """
+        Can be used if some function wants to process selection for itself.
+        This returns (tags, logic) if they are given, otherwise
+        (self._selection_tags, self._selection_logic). If the kwargs are
+        present, they are extracted exactly as they are, so you might want to
+        run self.makeTagsSet() (or similar) on them. Also, they are really
+        extracted from kwargs.
+        """
+        try:
+            logic = yourkwargs['logic']
+            del yourkwargs['logic']
+        except KeyError:
+            if 'tags' in yourkwargs.keys():
+                logic = any
+            else:
+                logic = self._selection_logic
+        try:
+            tags = yourkwargs['tags']
+            del yourkwargs['tags']
+        except KeyError:
+            tags = self._selection_tags
+
+        return (tags, logic)
 
     def append(self, datum, tags=[]):
         """
@@ -98,13 +138,16 @@ class TaggedList:
             obj.append(datum, tags)
         return obj
 
-    def byTag(self, tags, logic=all, giveTags=False):
+    def byTag(self, tags=None, logic=None, giveTags=False):
         """
         Returns a generator for all trajectories having certain tags. The
         behavior for multiple tags can be controlled with the logic argument,
         whose two most useful values are the built-in functions all or any. The
         default is logic=all, i.e. we are interested in the data tagged with
         all the tags given.
+
+        If called without specifying tags, this will respect the selection made
+        with makeSelection()
 
         Input
         -----
@@ -115,11 +158,17 @@ class TaggedList:
             returning True or False, i.e. this implements the logic of how to
             deal with multiple tags. The most useful values are the built-ins
             all and any, but customization is possible.
-            default: all
+            default: any
         giveTags : boolean
             whether to yield datum or (datum, tags) for each element.
             default: False
         """
+        kwargs = {'tags' : tags, 'logic' : logic}
+        if tags is None:
+            del kwargs['tags']
+        if logic is None:
+            del kwargs['logic']
+        (tags, logic) = self.getTagsAndLogicFromKwargs(kwargs)
         tags = self.makeTagsSet(tags)
 
         for datum, datumtags in zip(self._data, self._tags):
@@ -137,3 +186,29 @@ class TaggedList:
         """
         kwargs['giveTags'] = True
         return type(self).generate(self.byTag(*args, **kwargs))
+
+    def isHomogeneous(self, dtype=None, allowSubclass=False):
+        """
+        Check whether the data type of all the data is the same and equal to
+        dtype if given. To also allow subclasses of dtype, set
+        allowSubclass=True.
+        """
+        try:
+            for datum in self:
+                try:
+                    if allowSubclass:
+                        assert isinstance(datum, commontype)
+                    else:
+                        assert type(datum) == commontype
+                except NameError:
+                    if dtype is None:
+                        commontype = type(datum)
+                    else:
+                        commontype = dtype
+                        if allowSubclass:
+                            assert isinstance(datum, commontype)
+                        else:
+                            assert type(datum) == commontype
+        except AssertionError:
+            return False
+        return True
