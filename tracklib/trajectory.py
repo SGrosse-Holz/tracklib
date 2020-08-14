@@ -1,6 +1,8 @@
 import os,sys
-from abc import ABC, abstractmethod
 import importlib
+
+from abc import ABC, abstractmethod
+import collections.abc
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -8,7 +10,7 @@ import joblib
 
 from . import util
 
-class Trajectory(ABC):
+class Trajectory(ABC, collections.abc.Sequence):
     """
     A class to represent multi-particle trajectories. The key attribute is
     Trajectory._data, which is a (N, T, d) array, where N is the number of
@@ -22,6 +24,9 @@ class Trajectory(ABC):
     Note: the different possible types of trajectories (1 or 2 particles, 1, 2
     or 3 dimensions) are implemented as subclasses, thus facilitating
     customization
+
+    Note: this class implements the Sequence interface, i.e. it can be used
+    much like a list. Element access returns (N, d) arrays as data points.
     """
     def __init__(self, label=None):
         self.label = label
@@ -33,6 +38,9 @@ class Trajectory(ABC):
 
     def __len__(self):
         return self._data.shape[1]
+
+    def __getitem__(self, key):
+        return self._data[:, key, :]
 
     @property
     def N(self):
@@ -66,6 +74,14 @@ class Trajectory(ABC):
 
         obj._data = array
         return obj
+
+    def copyMeta(self, target):
+        """
+        Copy all the meta information (like label, dx, dt) to another object.
+        """
+        for key in self.__dict__.keys():
+            if key is not '_data':
+                setattr(target, key, self.__dict__[key])
 
     @abstractmethod
     def _eff1Ndata(self):
@@ -104,6 +120,20 @@ class Trajectory(ABC):
         else:
             return self._msdN[0]
 
+    def absTrajectory(self):
+        """
+        Give a new trajectory representing the magnitude of the current one,
+        i.e. absolute value for 1d, 2-norm for 2d and 3d. Note that for
+        multiple particles, this will take the magnitude of the individual
+        particles' trajectories. To get the relative distance, use
+        Trajectory_2N.relativeTrajectory().absTrajectory()
+        """
+        obj = Trajectory.fromArray(np.sqrt(np.sum(self._data**2, axis=2, keepdims=True)))
+        self.copyMeta(obj)
+        return obj
+
+    def relativeTrajectory(self):
+        raise NotImplementedError("relativeTrajectory() does not apply to {}".format(type(self).__name__))
 
 # Specialize depending on particle number or dimension, which changes behavior
 # of some functions that can be overridden here
@@ -135,18 +165,10 @@ class Trajectory_2N(Trajectory):
     def _eff1Ndata(self):
         return self._data[0] - self._data[1]
 
-    def relativeDistance(self):
-        return np.sqrt(np.sum( (self._data[0] - self._data[1])**2 , axis=1))*self.dx
-
-    def plot_vstime(self, ax=None, **kwargs):
-        if ax is None:
-            ax = plt.gca()
-
-        if 'label' not in kwargs.keys():
-            kwargs['label'] = self._get_dimension_labels()
-
-        tplot = np.arange(self.T)*self.dt
-        return ax.plot(tplot, (self._data[0]-self._data[1])*self.dx, **kwargs)
+    def relativeTrajectory(self):
+        obj = Trajectory.fromArray(self._eff1Ndata())
+        self.copyMeta(obj)
+        return obj
 
     def _raw_plot_spatial(self, ax, dims, connect=True, **kwargs):
         """ internal method for spatial plotting """

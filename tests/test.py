@@ -54,6 +54,15 @@ class Test1TaggedList(unittest.TestCase):
         for ind, val in enumerate(self.ls):
             self.assertEqual(val, self.ls._data[ind])
 
+    def test_homogeneous(self):
+        self.assertTrue(self.ls.isHomogeneous())
+        lsinh = TaggedList.generate(zip([1, 2., 3], [["a", "b"], "a", ["b", "c"]]))
+        self.assertFalse(lsinh.isHomogeneous())
+        st = type('st', (int,), {})
+        lsinh = TaggedList.generate(zip([1, st(5), 3], [["a", "b"], "a", ["b", "c"]]))
+        self.assertTrue(lsinh.isHomogeneous(int, allowSubclass=True))
+        self.assertFalse(lsinh.isHomogeneous(int, allowSubclass=False))
+
     def test_selection(self):
         self.ls.makeSelection("a")
         self.assertSetEqual({*self.ls}, {1, 2})
@@ -84,9 +93,11 @@ class Test1TaggedList(unittest.TestCase):
         self.assertSetEqual(self.ls.tagset(omit_all=False), {'_all', 'a', 'b', 'c'})
 
     def test_byTag(self):
-        self.assertListEqual(list(self.ls.byTag('a')), [1, 2])
-        self.assertListEqual(list(self.ls.byTag(['a', 'b'], logic=all)), [1])
-        self.assertListEqual(list(self.ls.byTag(['a', 'b'], logic=any)), [1, 2, 3])
+        self.ls.makeSelection('c')
+        self.assertSetEqual({*self.ls.byTag()}, {3})
+        self.assertSetEqual({*self.ls.byTag('a')}, {1, 2})
+        self.assertSetEqual({*self.ls.byTag(['a', 'b'], logic=all)}, {1})
+        self.assertSetEqual({*self.ls.byTag(['a', 'b'], logic=any)}, {1, 2, 3})
         
     def test_subset(self):
         sub = self.ls.subsetByTag('a')
@@ -144,6 +155,9 @@ class Test1Trajectory(myTestCase):
             self.assertEqual(traj.T, self.T)
             self.assertEqual(traj.d, d)
 
+            self.assertTupleEqual(traj[3:5].shape, (N, 2, d))
+            self.assert_array_equal(traj[2], np.zeros((N, d)))
+
             lines = traj.plot_vstime()
             self.assertEqual(len(lines), d)
 
@@ -164,8 +178,15 @@ class Test1Trajectory(myTestCase):
             self.assertTupleEqual(Nmsd.shape, (self.T,))
 
             if N == 2:
-                rel = traj.relativeDistance()
-                self.assertTupleEqual(rel.shape, (self.T,))
+                rel = traj.relativeTrajectory()
+                self.assertTupleEqual(rel._data.shape, (1, self.T, d))
+                mag = rel.absTrajectory()
+                self.assertTupleEqual(mag._data.shape, (1, self.T, 1))
+            elif N == 1:
+                mag = traj.absTrajectory()
+                self.assertTupleEqual(mag._data.shape, (1, self.T, 1))
+                with self.assertRaises(NotImplementedError):
+                    rel = traj.relativeTrajectory()
 
 class TestUtil(myTestCase):
     def test_msd(self):
@@ -255,6 +276,48 @@ class TestAnalysis(myTestCase):
         self.ds.makeSelection("foo")
         control = analysis.MSDcontrol(self.ds, msd)
         self.assertEqual(len(control), 3)
+        with self.assertRaises(RuntimeError):
+            control = analysis.MSDcontrol(self.ds, -msd)
+
+    def test_KLD_PC(self):
+        KLD = analysis.KLD_PC(self.ds, n=2, k=5)
+        
+class TestAnalysisKLDestimator(myTestCase):
+    def setUp(self):
+        tags = ["foo", ["foo", "bar"], ["bar"], {"foobar", "bar"}, "foo"]
+        self.ntraj = len(tags)
+        self.N = 2
+        self.T = 100
+        self.d = 2
+        msd = np.sqrt(np.arange(self.T))
+        trajs = util.sampleMSD(msd, n=self.N*self.d*len(tags), subtractMean=False)
+
+        def gen():
+            for i, mytags in enumerate(tags):
+                mytracelist = [trajs[:, ((i*self.N + n)*self.d):((i*self.N + n+1)*self.d)] \
+                               for n in range(self.N)]
+                yield (Trajectory.fromArray(mytracelist), mytags)
+        self.ds = TaggedList.generate(gen())
+        self.est = analysis.KLDestimator(self.ds)
+        self.est.setup(bootstraprepeats=2, processes=2, n=[2, 5], k=2, dt=1)
+
+    def test_useRelative(self):
+        self.est.useRelative()
+        self.assertTupleEqual(self.est.ds._data[0]._data.shape, (1, self.T, self.d))
+
+    def test_useDistance(self):
+        self.est.useDistance()
+        self.assertTupleEqual(self.est.ds._data[0]._data.shape, (1, self.T, 1))
+
+    def test_run(self):
+        res = self.est.run()
+        self.assertEqual(len(res), 4)
+
+    @patch("tracklib.analysis.multiprocessing.Pool")
+    def test_noparallel(self, mockmap):
+        self.est.setup(processes=1)
+        res = self.est.run()
+        mockmap.assert_not_called()
 
 if __name__ == '__main__':
     unittest.main()

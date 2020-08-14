@@ -35,7 +35,13 @@ class TaggedList:
         equivalent to byTag(<selection>). Therefore there is no option for
         yielding the tags as well.
         """
-        return self.byTag(self._selection_tags, logic=self._selection_logic)
+        return self.byTag()
+
+    def __call__(self, *args, **kwargs):
+        """
+        Synonymous to self.byTag(...)
+        """
+        return self.byTag(*args, **kwargs)
 
     def __len__(self):
         return len(self._data)
@@ -212,3 +218,15 @@ class TaggedList:
         except AssertionError:
             return False
         return True
+
+    def apply(self, fun):
+        """
+        Apply fun to all data.
+
+        Input
+        -----
+        fun : callable of signature datum = fun(datum)
+        """
+        for i, (datum, tags) in enumerate(zip(self._data, self._tags)):
+            if self._selection_logic(t in tags for t in self._selection_tags):
+                self._data[i] = fun(datum)

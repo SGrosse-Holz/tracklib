@@ -1,13 +1,19 @@
 import os, sys
 from copy import deepcopy
 
+import random
 import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.neighbors import KDTree
+import scipy.fftpack
 
 from . import util
 from .trajectory import Trajectory
 from .taggedlist import TaggedList
+
+import mkl
+mkl.numthreads = 1
+import multiprocessing
 
 def MSD(dataset, giveN=False, memo=True):
     """
@@ -175,33 +181,167 @@ def MSDcontrol(dataset, msd=None):
 
     return type(dataset).generate(gen())
 
-# def KLDestimation(dataset, n=10, k=20, randomseed=None):
-#     """
-#     Apply the KLD estimator presented by (Perez-Cruz, 2008). We reduce the
-#     bias of the estimator by randomly choosing half the snippets for
-#     estimation of the densities and then sample at the other half.
-# 
-#     Input
-#     -----
-#     n : integer
-#         snippet length ( = window size)
-#         default: 10
-#     k : integer
-#         order of nearest neighbor for the estimator
-#         default: 20
-#     randomseed : integer
-#         seed for the random splitting of the trajectories
-#         default: None
-# 
-#     Output
-#     ------
-#     Dest : estimated KLD
-#     """
-#     # Check that the trajectory format is homogeneous
-#     if not dataset.isHomogeneous():
-#         raise ValueError("Cannot calculate KLD on an inhomogenous dataset")
-# 
-#     # Generate snippets
-#     snips = []
-#     for traj in dataset:
-#         newsnips = [
+def KLD_PC(dataset, n=10, k=20, dt=1):
+    """
+    Apply the KLD estimator presented by (Perez-Cruz, 2008). We reduce the
+    bias of the estimator by randomly choosing half the snippets for
+    estimation of the densities and then sample at the other half.
+
+    Input
+    -----
+    n : integer
+        snippet length ( = window size)
+        default: 10
+    k : integer
+        order of nearest neighbor for the estimator
+        default: 20
+    dt : integer
+        number of frames between two data points in a snippet.
+        default: 1
+
+    Output
+    ------
+    Dest : estimated KLD
+
+    Notes
+    -----
+    This function flattens snippets, i.e. if the trajectory has 2 loci and 3
+    dimensions, the KLD estimation will be run in 6n-dimensional space. Since
+    this might not be the desired behavior, the user might have to do some
+    pre-processing.
+    For more advanced use, refer to class KLDestimator.
+    """
+    # Check that the trajectory format is homogeneous
+    if not dataset.isHomogeneous():
+        raise ValueError("Cannot calculate KLD on an inhomogenous dataset")
+
+    # Generate snippets
+    snips = []
+    for traj in dataset:
+        newsnips = [traj[start:(start+(n*dt)):dt].flatten() for start in range(len(traj)-(n*dt)+1)]
+        snips += [snip for snip in newsnips if not np.any(np.isnan(snip))]
+    snips = np.array(snips)
+
+    # DCT seems to speed up neighbor search. Analytically it is irrelevant, as
+    # long as normalized.
+    snips = scipy.fftpack.dct(snips, axis=1, norm='ortho')
+
+    # Split in two halves for estimation/sampling
+    ind = random.sample(range(len(snips)), len(snips))
+    halfN = np.ceil(len(snips)/2).astype(int)
+
+    estimation_snips = snips[ind[:halfN]]
+    sample_snips = snips[ind[halfN:]]
+
+    # Build neighbor trees and run estimation
+    # Note that time reversal in DCT space means multiplying all odd modes by -1
+    tree_fw = KDTree(estimation_snips)
+    tree_bw = KDTree(estimation_snips*[(-1)**i for i in range(estimation_snips.shape[1])])
+
+    rk = tree_fw.query(sample_snips, k)[0][:, -1]
+    sk = tree_bw.query(sample_snips, k)[0][:, -1]
+    return n * np.mean(np.log(sk/rk))
+
+class KLDestimator:
+    """
+    A wrapper class for KLD estimation. Facilitates pre-processing,
+    bootstrapping and plotting.
+    """
+    def __init__(self, dataset, copy=True):
+        if copy:
+            self.ds = deepcopy(dataset)
+        else:
+            self.ds = dataset
+
+        self.bootstraprepeats = 20
+        self.processes = 16
+        self.KLDkwargs = {'n' : 10, 'k' : 20, 'dt' : 1}
+
+    def setup(self, **kwargs):
+        """
+        Set up the environment/parameters for running the estimation.
+
+        Input
+        -----
+        bootstraprepeats : integer
+            how often to repeat each run with a different partition of the data
+            set.
+            default: 20
+        processes : integer
+            how many processes to use.
+            default: 16
+        other keyword arguments :
+            the parameters for KLD_PC. Anything given as a list will be
+            sweeped.
+
+        Notes
+        -----
+        The default values for everything are set in __init__(), so you can
+        call this method also to change specific values while keeping
+        everything else the same.
+        """
+        for key in ['bootstraprepeats', 'processes']:
+            try:
+                setattr(self, key, kwargs[key])
+                del kwargs[key]
+            except KeyError:
+                pass
+
+        for key in kwargs.keys():
+            if isinstance(kwargs[key], list):
+                self.KLDkwargs[key] = kwargs[key]
+            else:
+                self.KLDkwargs[key] = [kwargs[key]]
+
+    def useRelative(self):
+        """
+        Make the estimator run on the relative displacement (d-dim) of two loci.
+        """
+        self.ds.apply(lambda traj : traj.relativeTrajectory())
+
+    def useDistance(self):
+        """
+        Make the estimator run on the (scalar) relative distance between two loci.
+        """
+        self.ds.apply(lambda traj : traj.relativeTrajectory().absTrajectory())
+
+    @staticmethod
+    def _parfun(args):
+        """
+        args should be a composite dict:
+         - it should have an entry 'randomseed'
+         - the rest will be passed to KLD_PC as keyword arguments
+        """
+        random.seed(args['randomseed'])
+        del args['randomseed']
+        self = args['self']
+        del args['self']
+        return KLD_PC(self.ds, **args)
+
+    def run(self):
+        """
+        Run the estimation. Remember to setup()
+
+        Output
+        ------
+        A list of tuples (n, k, dt, KLD) for each of the runs.
+
+        Notes
+        -----
+        As of now, the data is copied to every child process. Maybe this could
+        be improved
+        """
+        # Assemble args
+        argslist = [{'self' : self, 'n' : n, 'k' : k, 'dt' : dt, 'randomseed' : random.getrandbits(64)} \
+                    for n in self.KLDkwargs['n'] \
+                    for k in self.KLDkwargs['k'] \
+                    for dt in self.KLDkwargs['dt'] \
+                    for _ in range(self.bootstraprepeats)]
+
+        if self.processes == 1:
+            Draw = map(KLDestimator._parfun, argslist)
+        else:
+            with multiprocessing.Pool(self.processes) as mypool:
+                Draw = mypool.map(KLDestimator._parfun, argslist)
+
+        return [(args['n'], args['k'], args['dt'], D) for args, D in zip(argslist, Draw)]
