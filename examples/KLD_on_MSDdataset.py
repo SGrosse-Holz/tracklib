@@ -18,7 +18,7 @@ import tracklib as tl
 
 def generate_dataset(msd):
     Ts = np.minimum(np.random.geometric(1/100, size=(500,)), len(msd))
-    ds = tl.tools.MSDdataset(msd, N=2, Ts=Ts, d=3, subtractMean=False)
+    ds = tl.tools.MSDdataset(msd, N=2, Ts=Ts, d=3, subtractMean=True)
     
     # Add a random offset to each trajectory
     # In fact this is pretty unnecessary, except that then plotting the
@@ -31,7 +31,7 @@ def generate_dataset(msd):
 
 def KLD_for_ns(dataset, ns, processes=16):
     est = tl.analysis.KLDestimator(dataset)
-    est.useDistance()
+    est.preprocess(lambda traj : traj.relativeTrajectory().absTrajectory())
     est.setup(KLDmethod=tl.analysis.KLD_PC, \
               n=ns, k=20, dt=1, \
               bootstraprepeats=20, processes=processes)
@@ -43,7 +43,7 @@ def plot_KLD_results(results):
     violins = [results['KLD'][results['n'] == n] for n in ns]
 
     plt.violinplot(violins)
-    plt.gca().set_xticks(np.arange(len(ns)+1))
+    plt.gca().set_xticks(np.arange(len(ns))+1)
     plt.gca().set_xticklabels([str(n) for n in ns])
     plt.title('KLD vs. window size')
     plt.xlabel('n (window size)')

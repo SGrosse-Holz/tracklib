@@ -129,9 +129,13 @@ class Trajectory(ABC, collections.abc.Sequence):
         multiple particles, this will take the magnitude of the individual
         particles' trajectories. To get the relative distance, use
         Trajectory_2N.relativeTrajectory().absTrajectory()
+        
+        Note that absTrajectories always have even parity, because they cannot
+        have negative values.
         """
         obj = Trajectory.fromArray(np.sqrt(np.sum(self._data**2, axis=2, keepdims=True)))
         self.copyMeta(obj)
+        obj.parity = 'even'
         return obj
 
     def relativeTrajectory(self):

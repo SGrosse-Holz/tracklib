@@ -226,7 +226,7 @@ def KLD_PC(dataset, n=10, k=20, dt=1):
     # Build neighbor trees and run estimation
     # Note that time reversal in DCT space means multiplying all odd modes by -1
     tree_fw = KDTree(estimation_snips)
-    if parity is 'even':
+    if parity == 'even':
         tree_bw = KDTree(estimation_snips*[(-1)**i for i in range(estimation_snips.shape[1])])
     else:
         tree_bw = KDTree(estimation_snips*[(-1)**(i+1) for i in range(estimation_snips.shape[1])])
