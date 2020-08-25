@@ -1,5 +1,6 @@
 import os, sys
 from copy import deepcopy
+import itertools
 
 import random
 import numpy as np
@@ -105,13 +106,16 @@ def plot_trajectories(dataset, **kwargs):
     tags = dataset.makeTagsList(tags)
 
     # Input processing 2 : actually react to inputs
-    flags = {'_all in tags' : False, 'single tag' : False}
+    flags = {'_all in tags' : False, 'single tag' : False, 'single tag is _all' : False}
     if '_all' in tags:
-        tags = list(dataset.tagset() - {'_all'})
         flags['_all in tags'] = True
+        tags = list(dataset.tagset() - {'_all'})
+        if len(tags) == 0:
+            tags = ['_all']
     if len(tags) == 1:
-        colordict = {tags[0] : None}
         flags['single tag'] = True
+        flags['single tag is _all'] = tags[0] == '_all'
+        colordict = {tags[0] : None}
     else:
         try:
             if isinstance(kwargs['color'], list):
@@ -147,7 +151,10 @@ def plot_trajectories(dataset, **kwargs):
         plt.legend()
 
     if flags['single tag']:
-        plt.title('Trajectories for tag "{}"'.format(tags[0]))
+        if flags['single tag is _all']:
+            plt.title('Trajectories')
+        else:
+            plt.title('Trajectories for tag "{}"'.format(tags[0]))
     elif flags['_all in tags']:
         plt.title("Trajectories by tag")
     else:
@@ -155,31 +162,6 @@ def plot_trajectories(dataset, **kwargs):
 
     # Done
     return lines
-
-def MSDcontrol(dataset, msd=None):
-    """
-    Generate a sister data set where each trajectory is sampled from a
-    stationary Gaussian process with MSD equal to the ensemble mean of the
-    given data set or the explicitly given MSD. Note generation from
-    experimental data (i.e. the ensemble mean) does not always work, because
-    that is noisy. Thus the option to provide a cleaned version.
-    """
-    if msd is None:
-        msd = MSD(dataset)
-
-    def gen():
-        for (traj, mytags) in dataset.byTag(tags=dataset._selection_tags, \
-                                            logic=dataset._selection_logic, \
-                                            giveTags=True):
-            newtraj = deepcopy(traj)
-            try:
-                traces = util.sampleMSD(msd, n=newtraj.N*newtraj.d)
-            except np.linalg.LinAlgError:
-                raise RuntimeError("Could not generate trajectories from provided (or ensemble) MSD. Try to use something cleaner.")
-            newtraj._data = [traces[:, (i*newtraj.d):((i+1)*newtraj.d)] for i in range(newtraj.N)]
-            yield (newtraj, deepcopy(mytags))
-
-    return type(dataset).generate(gen())
 
 def KLD_PC(dataset, n=10, k=20, dt=1):
     """
@@ -189,6 +171,8 @@ def KLD_PC(dataset, n=10, k=20, dt=1):
 
     Input
     -----
+    dataset : TaggedList of Trajectory
+        the data to run the KLD estimation on
     n : integer
         snippet length ( = window size)
         default: 10
@@ -214,6 +198,11 @@ def KLD_PC(dataset, n=10, k=20, dt=1):
     # Check that the trajectory format is homogeneous
     if not dataset.isHomogeneous():
         raise ValueError("Cannot calculate KLD on an inhomogenous dataset")
+    paritySet = {traj.parity for traj in dataset}
+    if len(paritySet) > 1:
+        raise ValueError("Cannot calculate KLD on dataset with non-uniform parity")
+    parity = paritySet.pop()
+    assert parity in {'even', 'odd'}
 
     # Generate snippets
     snips = []
@@ -223,7 +212,8 @@ def KLD_PC(dataset, n=10, k=20, dt=1):
     snips = np.array(snips)
 
     # DCT seems to speed up neighbor search. Analytically it is irrelevant, as
-    # long as normalized.
+    # long as normalized and we account for the switching parity of the
+    # components (see below)
     snips = scipy.fftpack.dct(snips, axis=1, norm='ortho')
 
     # Split in two halves for estimation/sampling
@@ -236,7 +226,10 @@ def KLD_PC(dataset, n=10, k=20, dt=1):
     # Build neighbor trees and run estimation
     # Note that time reversal in DCT space means multiplying all odd modes by -1
     tree_fw = KDTree(estimation_snips)
-    tree_bw = KDTree(estimation_snips*[(-1)**i for i in range(estimation_snips.shape[1])])
+    if parity is 'even':
+        tree_bw = KDTree(estimation_snips*[(-1)**i for i in range(estimation_snips.shape[1])])
+    else:
+        tree_bw = KDTree(estimation_snips*[(-1)**(i+1) for i in range(estimation_snips.shape[1])])
 
     rk = tree_fw.query(sample_snips, k)[0][:, -1]
     sk = tree_bw.query(sample_snips, k)[0][:, -1]
@@ -255,6 +248,8 @@ class KLDestimator:
 
         self.bootstraprepeats = 20
         self.processes = 16
+        self.KLDmethod = KLD_PC
+
         self.KLDkwargs = {'n' : 10, 'k' : 20, 'dt' : 1}
 
     def setup(self, **kwargs):
@@ -270,6 +265,10 @@ class KLDestimator:
         processes : integer
             how many processes to use.
             default: 16
+        parity : 'even' or 'odd'
+            whether the trajectories in the dataset are even or odd under time
+            reversal
+            default: 'even'
         other keyword arguments :
             the parameters for KLD_PC. Anything given as a list will be
             sweeped.
@@ -280,7 +279,7 @@ class KLDestimator:
         call this method also to change specific values while keeping
         everything else the same.
         """
-        for key in ['bootstraprepeats', 'processes']:
+        for key in ['bootstraprepeats', 'processes', 'KLDmethod', 'parity']:
             try:
                 setattr(self, key, kwargs[key])
                 del kwargs[key]
@@ -293,30 +292,45 @@ class KLDestimator:
             else:
                 self.KLDkwargs[key] = [kwargs[key]]
 
-    def useRelative(self):
+    def preprocess(self, preproc):
         """
-        Make the estimator run on the relative displacement (d-dim) of two loci.
-        """
-        self.ds.apply(lambda traj : traj.relativeTrajectory())
+        Run some preprocessing on the data set. 
 
-    def useDistance(self):
+        Input
+        -----
+        preproc : callable, taking a trajectory and returning a trajectory
+            the function to use for preprocessing. Will be applied to every
+            trajectory individually via TaggedList.apply().
+            Examples:
+                lambda traj : traj.relativeTrajectory().absTrajectory() # would give absolute distance for two-locus trajectory
+                lambda traj : traj.relativeTrajectory().diffTrajectory().absTrajectory() # would give absolute displacements
+            default: identity (i.e. lambda traj : traj)
+
+        Notes
+        -----
+        If writing your own preproc function (i.e. not using the ones from
+        Trajectory) remember to update the parity property of all trajectories.
+
+        As of now, this function literally only calls self.ds.apply(preproc).
+        It serves more as a reminder that preprocessing might be necessary.
         """
-        Make the estimator run on the (scalar) relative distance between two loci.
-        """
-        self.ds.apply(lambda traj : traj.relativeTrajectory().absTrajectory())
+        self.ds.apply(preproc)
 
     @staticmethod
     def _parfun(args):
         """
         args should be a composite dict:
-         - it should have an entry 'randomseed'
-         - the rest will be passed to KLD_PC as keyword arguments
+         - an entry 'randomseed'
+         - an entry 'self' containing a reference to the caller
+         - finally, 'kwargs' will be passed to the KLD calculation
+
+        Note: the reference to the caller is necessary, because it will be
+        copied to each worker. This is not optimal and might require some
+        refinement
         """
         random.seed(args['randomseed'])
-        del args['randomseed']
         self = args['self']
-        del args['self']
-        return KLD_PC(self.ds, **args)
+        return self.KLDmethod(self.ds, **(args['kwargs']))
 
     def run(self):
         """
@@ -324,24 +338,30 @@ class KLDestimator:
 
         Output
         ------
-        A list of tuples (n, k, dt, KLD) for each of the runs.
+        A dict of argument lists and a corresponding np.ndarray for the
+        computed KLDs.
 
         Notes
         -----
         As of now, the data is copied to every child process. Maybe this could
         be improved
+        For reproducible results, set random.seed() before calling this function
         """
-        # Assemble args
-        argslist = [{'self' : self, 'n' : n, 'k' : k, 'dt' : dt, 'randomseed' : random.getrandbits(64)} \
-                    for n in self.KLDkwargs['n'] \
-                    for k in self.KLDkwargs['k'] \
-                    for dt in self.KLDkwargs['dt'] \
+        # Assemble argument list
+        kwkeys = self.KLDkwargs.keys() # Fixed key sequence for looping
+        argslist = [{'self' : self, 'randomseed' : random.getrandbits(64), \
+                     'kwargs' : {key : mykwvals[i] for i, key in enumerate(kwkeys)}} \
+                    for mykwvals in itertools.product(*[self.KLDkwargs[key] for key in kwkeys]) \
                     for _ in range(self.bootstraprepeats)]
 
+        # Run
         if self.processes == 1:
             Draw = map(KLDestimator._parfun, argslist)
         else:
             with multiprocessing.Pool(self.processes) as mypool:
                 Draw = mypool.map(KLDestimator._parfun, argslist)
 
-        return [(args['n'], args['k'], args['dt'], D) for args, D in zip(argslist, Draw)]
+        # Assemble return dict
+        ret = {key : [args['kwargs'][key] for args in argslist] for key in self.KLDkwargs.keys()}
+        ret['KLD'] = np.array(Draw)
+        return ret

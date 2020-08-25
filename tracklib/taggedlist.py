@@ -137,7 +137,7 @@ class TaggedList:
     def generate(cls, iterator):
         """
         Generate a new TaggedList from an iterator/generator yielding (datum,
-        tags) pairs.
+        tags) pairs. If you do not want to attach specific tags, set tags=[].
         """
         obj = cls()
         for (datum, tags) in iterator:

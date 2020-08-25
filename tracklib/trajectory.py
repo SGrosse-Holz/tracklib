@@ -35,6 +35,7 @@ class Trajectory(ABC, collections.abc.Sequence):
         # Units
         self.dt = 1
         self.dx = 1
+        self.parity = 'even'
 
     def __len__(self):
         return self._data.shape[1]
@@ -53,7 +54,7 @@ class Trajectory(ABC, collections.abc.Sequence):
         return self._data.shape[2]
 
     @classmethod
-    def fromArray(cls, array, label=None):
+    def fromArray(cls, array, label=None, parity='even'):
         """
         Create Trajectory from numpy array. array should have shape (N, T, d),
         (T, d), or (T,), N = 1 or 2, d = 1, 2, 3.
@@ -73,6 +74,7 @@ class Trajectory(ABC, collections.abc.Sequence):
             raise ValueError("Could not instantiate trajectory with (N, T, d) = {}".format(str(array.shape)))
 
         obj._data = array
+        obj.parity = parity
         return obj
 
     def copyMeta(self, target):
@@ -134,6 +136,21 @@ class Trajectory(ABC, collections.abc.Sequence):
 
     def relativeTrajectory(self):
         raise NotImplementedError("relativeTrajectory() does not apply to {}".format(type(self).__name__))
+
+    def diffTrajectory(self, dt=1):
+        """
+        Given a new trajectory of displacements of the current one
+        Note that this switches parity.
+        """
+        obj = Trajectory.fromArray(self._data[:, dt:, :] - self._data[:, :-dt, :])
+        self.copyMeta(obj)
+
+        if obj.parity is 'even':
+            obj.parity = 'odd'
+        else:
+            obj.parity = 'even'
+
+        return obj
 
 # Specialize depending on particle number or dimension, which changes behavior
 # of some functions that can be overridden here
@@ -199,11 +216,12 @@ class Trajectory_2N(Trajectory):
         lines = ax.plot(self._data[0, :, dims[0]]*self.dx, \
                         self._data[0, :, dims[1]]*self.dx, \
                         **kwargs)
+        kwargs['color'] = lines[0].get_color()
+
         if makeLegend:
             ax.plot(0, 0, label=label, **kwargs)
 
         # Plot second particle
-        kwargs['color'] = lines[0].get_color()
         kwargs['linestyle'] = linestyles[1]
         lines.append(ax.plot(self._data[1, :, dims[0]]*self.dx, \
                              self._data[1, :, dims[1]]*self.dx, \

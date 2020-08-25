@@ -11,9 +11,7 @@ import numpy as np
 import unittest
 from unittest.mock import patch
 
-from context import tracklib
-from tracklib import *
-import tracklib.util as util
+from context import tracklib as tl
 
 # Extend unittest.TestCase's capabilities to deal with numpy arrays
 class myTestCase(unittest.TestCase):
@@ -33,33 +31,35 @@ class myTestCase(unittest.TestCase):
 
 class Test0TaggedList(unittest.TestCase):
     def test_init(self):
-        ls = TaggedList()
+        ls = tl.TaggedList()
         
     def test_append(self):
-        ls = TaggedList()
+        ls = tl.TaggedList()
         ls.append(1)
         ls.append(2, 'a')
         ls.append(3, ['b', '_all'])
         
     def test_generate(self):
-        ls = TaggedList.generate(zip([1, 2, 3], [["a", "b"], "a", ["b", "c"]]))
+        ls = tl.TaggedList.generate(zip([1, 2, 3], [["a", "b"], "a", ["b", "c"]]))
         self.assertListEqual(ls._data, [1, 2, 3])
         self.assertListEqual(ls._tags, [{"a", "b", "_all"}, {"a", "_all"}, {"b", "c", "_all"}])
         
 class Test1TaggedList(unittest.TestCase):
     def setUp(self):
-        self.ls = TaggedList.generate(zip([1, 2, 3], [["a", "b"], "a", ["b", "c"]]))
+        self.ls = tl.TaggedList.generate(zip([1, 2, 3], [["a", "b"], "a", ["b", "c"]]))
         
     def test_iteration(self):
         for ind, val in enumerate(self.ls):
             self.assertEqual(val, self.ls._data[ind])
+        for ind, val in enumerate(self.ls()):
+            self.assertEqual(val, self.ls._data[ind])
 
     def test_homogeneous(self):
         self.assertTrue(self.ls.isHomogeneous())
-        lsinh = TaggedList.generate(zip([1, 2., 3], [["a", "b"], "a", ["b", "c"]]))
+        lsinh = tl.TaggedList.generate(zip([1, 2., 3], [["a", "b"], "a", ["b", "c"]]))
         self.assertFalse(lsinh.isHomogeneous())
         st = type('st', (int,), {})
-        lsinh = TaggedList.generate(zip([1, st(5), 3], [["a", "b"], "a", ["b", "c"]]))
+        lsinh = tl.TaggedList.generate(zip([1, st(5), 3], [["a", "b"], "a", ["b", "c"]]))
         self.assertTrue(lsinh.isHomogeneous(int, allowSubclass=True))
         self.assertFalse(lsinh.isHomogeneous(int, allowSubclass=False))
 
@@ -77,16 +77,16 @@ class Test1TaggedList(unittest.TestCase):
         self.assertEqual(len(self.ls), 3)
 
     def test_makeTagsSet(self):
-        self.assertSetEqual(TaggedList.makeTagsSet("foo"), {"foo"})
-        self.assertSetEqual(TaggedList.makeTagsSet(["foo"]), {"foo"})
+        self.assertSetEqual(tl.TaggedList.makeTagsSet("foo"), {"foo"})
+        self.assertSetEqual(tl.TaggedList.makeTagsSet(["foo"]), {"foo"})
         with self.assertRaises(ValueError):
-            TaggedList.makeTagsSet(1)
+            tl.TaggedList.makeTagsSet(1)
 
     def test_makeTagsList(self):
-        self.assertListEqual(TaggedList.makeTagsList("foo"), ["foo"])
-        self.assertListEqual(TaggedList.makeTagsList({"foo"}), ["foo"])
+        self.assertListEqual(tl.TaggedList.makeTagsList("foo"), ["foo"])
+        self.assertListEqual(tl.TaggedList.makeTagsList({"foo"}), ["foo"])
         with self.assertRaises(ValueError):
-            TaggedList.makeTagsList(1)
+            tl.TaggedList.makeTagsList(1)
 
     def test_tagset(self):
         self.assertSetEqual(self.ls.tagset(), {'a', 'b', 'c'})
@@ -105,36 +105,36 @@ class Test1TaggedList(unittest.TestCase):
 
 class Test0Trajectory(myTestCase):
     def test_fromArray(self):
-        traj = Trajectory.fromArray(np.zeros((10,)))
+        traj = tl.Trajectory.fromArray(np.zeros((10,)))
         self.assertTupleEqual(traj._data.shape, (1, 10, 1))
         self.assertIs(traj.label, None)
 
-        traj = Trajectory.fromArray(np.zeros((10, 2)))
+        traj = tl.Trajectory.fromArray(np.zeros((10, 2)))
         self.assertTupleEqual(traj._data.shape, (1, 10, 2))
 
-        traj = Trajectory.fromArray(np.zeros((1, 10, 3)))
+        traj = tl.Trajectory.fromArray(np.zeros((1, 10, 3)))
         self.assertTupleEqual(traj._data.shape, (1, 10, 3))
 
-        traj = Trajectory.fromArray(np.zeros((2, 10, 1)))
+        traj = tl.Trajectory.fromArray(np.zeros((2, 10, 1)))
         self.assertTupleEqual(traj._data.shape, (2, 10, 1))
 
-        traj = Trajectory.fromArray(np.zeros((2, 10, 2)))
+        traj = tl.Trajectory.fromArray(np.zeros((2, 10, 2)))
         self.assertTupleEqual(traj._data.shape, (2, 10, 2))
 
-        traj = Trajectory.fromArray(np.zeros((2, 10, 3)))
+        traj = tl.Trajectory.fromArray(np.zeros((2, 10, 3)))
         self.assertTupleEqual(traj._data.shape, (2, 10, 3))
 
         with self.assertRaises(ValueError):
-            traj = Trajectory.fromArray(np.zeros((10, 4)))
+            traj = tl.Trajectory.fromArray(np.zeros((10, 4)))
         with self.assertRaises(ValueError):
-            traj = Trajectory.fromArray(np.zeros((3, 10, 1)))
+            traj = tl.Trajectory.fromArray(np.zeros((3, 10, 1)))
         with self.assertRaises(ValueError):
-            traj = Trajectory.fromArray(np.zeros((1, 1, 1, 1)))
+            traj = tl.Trajectory.fromArray(np.zeros((1, 1, 1, 1)))
         with self.assertRaises(ValueError):
-            traj = Trajectory.fromArray(np.zeros((1, 10, 3)))
+            traj = tl.Trajectory.fromArray(np.zeros((1, 10, 3)))
             traj.plot_spatial(dims=(0, 3))
         with self.assertRaises(ValueError):
-            traj = Trajectory.fromArray(np.zeros((2, 10, 3)))
+            traj = tl.Trajectory.fromArray(np.zeros((2, 10, 3)))
             traj.plot_spatial(dims=(0, 3))
 
 class Test1Trajectory(myTestCase):
@@ -142,7 +142,7 @@ class Test1Trajectory(myTestCase):
         self.T = 10
         self.Ns = [1, 1, 1, 2, 2, 2]
         self.ds = [1, 2, 3, 1, 2, 3]
-        self.trajs = [Trajectory.fromArray(np.zeros((N, self.T, d))) for N, d in zip(self.Ns, self.ds)]
+        self.trajs = [tl.Trajectory.fromArray(np.zeros((N, self.T, d))) for N, d in zip(self.Ns, self.ds)]
 
     def test_interface(self):
         """
@@ -192,30 +192,30 @@ class TestUtil(myTestCase):
     def test_msd(self):
         # Testing 1d trajectories
         traj = [1, 2, 3, 4]
-        self.assert_array_equal(util.msd(traj), np.array([0, 1, 4, 9]))
+        self.assert_array_equal(tl.util.msd(traj), np.array([0, 1, 4, 9]))
 
-        (msd, N) = util.msd(traj, giveN=True)
+        (msd, N) = tl.util.msd(traj, giveN=True)
         self.assert_array_equal(N, np.array([4, 3, 2, 1]))
 
-        (msd, N) = util.msd(np.array([1, 2, np.nan, 4]), giveN=True)
+        (msd, N) = tl.util.msd(np.array([1, 2, np.nan, 4]), giveN=True)
         self.assert_array_equal(msd, np.array([0, 1, 4, 9]))
         self.assert_array_equal(N, np.array([3, 1, 1, 1]))
 
         with self.assertRaises(ValueError):
-            util.msd([[1, 2, 3, 4]])
+            tl.util.msd([[1, 2, 3, 4]])
 
         # Correct handling of multiple trajectories
         traj = np.array([[[1, 2, 3]], [[4, 5, 6]], [[7, 8, 9]]]).swapaxes(0, 2)
-        msd = util.msd(traj)
+        msd = tl.util.msd(traj)
         self.assert_array_equal(msd, np.array([[0, 1, 4], [0, 1, 4], [0, 1, 4]]).swapaxes(0, 1))
 
     def test_sampleMSD(self):
         msd = np.sqrt(np.arange(10))
-        trajs = util.sampleMSD(msd, n=2)
+        trajs = tl.util.sampleMSD(msd, n=2)
         self.assertTupleEqual(trajs.shape, (10, 2))
         acf = np.zeros((10,))
         acf[0] = 1
-        trajs = util.sampleMSD(acf, n=2, isCorr=True)
+        trajs = tl.util.sampleMSD(acf, n=2, isCorr=True)
         self.assertTupleEqual(trajs.shape, (10, 2))
 
 class TestAnalysis(myTestCase):
@@ -226,14 +226,14 @@ class TestAnalysis(myTestCase):
         self.T = 10
         self.d = 2
         msd = np.sqrt(np.arange(self.T))
-        trajs = util.sampleMSD(msd, n=self.N*self.d*len(tags), subtractMean=False)
+        trajs = tl.util.sampleMSD(msd, n=self.N*self.d*len(tags), subtractMean=False)
 
         def gen():
             for i, mytags in enumerate(tags):
                 mytracelist = [trajs[:, ((i*self.N + n)*self.d):((i*self.N + n+1)*self.d)] \
                                for n in range(self.N)]
-                yield (Trajectory.fromArray(mytracelist), mytags)
-        self.ds = TaggedList.generate(gen())
+                yield (tl.Trajectory.fromArray(mytracelist), mytags)
+        self.ds = tl.TaggedList.generate(gen())
 
     def test_setup(self):
         self.assertEqual(len(self.ds), 5)
@@ -243,44 +243,32 @@ class TestAnalysis(myTestCase):
             self.assertEqual(traj.d, self.d)
 
     def test_msd(self):
-        msd = analysis.MSD(self.ds)
+        msd = tl.analysis.MSD(self.ds)
         self.assertTupleEqual(msd.shape, (self.T,))
-        (_, N) = analysis.MSD(self.ds, giveN=True)
+        (_, N) = tl.analysis.MSD(self.ds, giveN=True)
         self.assertTupleEqual(N.shape, (self.T,))
         
     def test_hist_lengths(self):
-        h = analysis.hist_lengths(self.ds)
+        h = tl.analysis.hist_lengths(self.ds)
         self.assert_array_equal(h[0], np.array(self.ntraj))
 
     def test_plot_msds(self):
-        lines = analysis.plot_msds(self.ds)
+        lines = tl.analysis.plot_msds(self.ds)
         self.assertEqual(len(lines), self.ntraj+1)
 
         self.ds.makeSelection({'foo'})
-        lines = analysis.plot_msds(self.ds, label='ensemble')
+        lines = tl.analysis.plot_msds(self.ds, label='ensemble')
         self.assertEqual(len(lines), 4)
 
     def test_plot_trajectories(self):
-        lines = analysis.plot_trajectories(self.ds)
+        lines = tl.analysis.plot_trajectories(self.ds)
         self.assertEqual(len(lines), self.ntraj)
         self.ds.makeSelection("foo")
-        lines = analysis.plot_trajectories(self.ds)
+        lines = tl.analysis.plot_trajectories(self.ds)
         self.assertEqual(len(lines), 3)
 
-    def test_MSDcontrol(self):
-        # Note: the MSD of generated trajectories (such as our sample) can lead
-        # to exceptions bc it is noisy. Therefore, use a definitely clean one
-        msd = np.sqrt(np.arange(len(self.ds._data[0])))
-        control = analysis.MSDcontrol(self.ds, msd)
-        self.assertEqual(len(control), len(self.ds))
-        self.ds.makeSelection("foo")
-        control = analysis.MSDcontrol(self.ds, msd)
-        self.assertEqual(len(control), 3)
-        with self.assertRaises(RuntimeError):
-            control = analysis.MSDcontrol(self.ds, -msd)
-
     def test_KLD_PC(self):
-        KLD = analysis.KLD_PC(self.ds, n=2, k=5)
+        KLD = tl.analysis.KLD_PC(self.ds, n=2, k=5)
         
 class TestAnalysisKLDestimator(myTestCase):
     def setUp(self):
@@ -290,34 +278,93 @@ class TestAnalysisKLDestimator(myTestCase):
         self.T = 100
         self.d = 2
         msd = np.sqrt(np.arange(self.T))
-        trajs = util.sampleMSD(msd, n=self.N*self.d*len(tags), subtractMean=False)
+        trajs = tl.util.sampleMSD(msd, n=self.N*self.d*len(tags), subtractMean=False)
 
         def gen():
             for i, mytags in enumerate(tags):
                 mytracelist = [trajs[:, ((i*self.N + n)*self.d):((i*self.N + n+1)*self.d)] \
                                for n in range(self.N)]
-                yield (Trajectory.fromArray(mytracelist), mytags)
-        self.ds = TaggedList.generate(gen())
-        self.est = analysis.KLDestimator(self.ds)
+                yield (tl.Trajectory.fromArray(mytracelist), mytags)
+        self.ds = tl.TaggedList.generate(gen())
+        self.est = tl.analysis.KLDestimator(self.ds)
         self.est.setup(bootstraprepeats=2, processes=2, n=[2, 5], k=2, dt=1)
 
-    def test_useRelative(self):
-        self.est.useRelative()
+    def test_preprocess(self):
+        self.est.preprocess(lambda traj : traj.relativeTrajectory())
         self.assertTupleEqual(self.est.ds._data[0]._data.shape, (1, self.T, self.d))
-
-    def test_useDistance(self):
-        self.est.useDistance()
-        self.assertTupleEqual(self.est.ds._data[0]._data.shape, (1, self.T, 1))
 
     def test_run(self):
         res = self.est.run()
-        self.assertEqual(len(res), 4)
+        self.assertEqual(len(res['KLD']), 4)
 
-    @patch("tracklib.analysis.multiprocessing.Pool")
+    @patch("multiprocessing.Pool")
     def test_noparallel(self, mockmap):
         self.est.setup(processes=1)
         res = self.est.run()
         mockmap.assert_not_called()
 
+class TestTools(myTestCase):
+    def setUp(self):
+        tags = ["foo", ["foo", "bar"], ["bar"], {"foobar", "bar"}, "foo"]
+        self.ntraj = len(tags)
+        self.N = 1
+        self.T = 10
+        self.d = 2
+        msd = np.sqrt(np.arange(self.T))
+        trajs = tl.util.sampleMSD(msd, n=self.N*self.d*len(tags), subtractMean=False)
+
+        def gen():
+            for i, mytags in enumerate(tags):
+                mytracelist = [trajs[:, ((i*self.N + n)*self.d):((i*self.N + n+1)*self.d)] \
+                               for n in range(self.N)]
+                yield (tl.Trajectory.fromArray(mytracelist), mytags)
+        self.ds = tl.TaggedList.generate(gen())
+
+    def test_MSDdataset(self):
+        msd = np.sqrt(np.arange(10))
+        ds = tl.tools.MSDdataset(msd)
+
+        with self.assertRaises(ValueError):
+            ds = tl.tools.MSDdataset(msd, Ts=[5, 6, 15])
+
+    def test_MSDcontrol(self):
+        # Note: the MSD of generated trajectories (such as our sample) can lead
+        # to exceptions bc it is noisy. Therefore, use a definitely clean one
+        msd = np.sqrt(np.arange(len(self.ds._data[0])))
+        control = tl.tools.MSDcontrol(self.ds, msd)
+        self.assertEqual(len(control), len(self.ds))
+        self.ds.makeSelection("foo")
+        control = tl.tools.MSDcontrol(self.ds, msd)
+        self.assertEqual(len(control), 3)
+        with self.assertRaises(RuntimeError):
+            control = tl.tools.MSDcontrol(self.ds, -msd)
+
+# Check that all the examples are still running, possibly mocking
+# time-intensive stuff
+sys.path.insert(0, os.path.abspath('../examples'))
+# import KLD_on_MSDdataset
+class TestExamples(myTestCase):
+    def mockKLDrun(KLDest, *args, **kwargs):
+        return np.zeros((len(KLDest.ds), 4))
+    def mockMSD(traj, giveN=False, **kwargs):
+        if giveN:
+            return (np.ones((len(traj),)), np.ones((len(traj),)))
+        else:
+            return np.ones((len(traj),))
+    def mocksampleMSD(msd, n=1, **kwargs):
+        return np.zeros((len(msd), n))
+    def mockplot(*args, **kwargs):
+        return []
+
+### The main (remaining) time cost in this test is the actual plotting of
+### hundreds of traces. For some reason it turns out to be incredibly hard to
+### properly mock this, so I will just leave it for now.
+#     @patch("tracklib.util.msd", new=mockMSD)
+#     @patch("tracklib.util.sampleMSD", new=mocksampleMSD)
+#     @patch("tracklib.analysis.KLDestimator.run", new=mockKLDrun)
+#     @patch("KLD_on_MSDdataset.tl.Trajectory.plot_spatial", new=mockplot)
+#     def test_KLDonMSD(self):
+#         KLD_on_MSDdataset.run_full()
+
 if __name__ == '__main__':
-    unittest.main()
+    unittest.main(module=__file__[:-3])
