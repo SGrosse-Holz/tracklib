@@ -2,19 +2,18 @@ from copy import deepcopy
 
 class TaggedList:
     """
-    A list with a series of tags for each object. The idea is to use this as a
+    A list with a set of tags for each object. The idea is to use this as a
     many-to-many dict.
 
-    This class also works as an iterator, in itself (running through all
-    trajectories) or by using byTag() to loop over subsets.
+    This class can be used as an iterator in constructs such as
+        for datum in list: ...
+    The behavior of this iterator can be adjusted in multiple ways: by
+    previously selecting only a subset of the list using makeSelection() or by
+    explicitly giving these selection arguments to byTag() or (equivalently)
+    the call syntax (i.e. for datum in list(...): ...).
 
-    The behavior of __iter__() can be adjusted with makeSelection() : this
-    allows for pre-selecting a certain set of tags, such that methods that
-    subsequently use constructs like `for datum in list:` only work on the
-    selected data. This is especially useful when subclassing this class,
-    because we don't have to re-implement the selection logic.
-    Note that if we need the tags associated with the data as well, we still
-    have to explicitly call byTag(), but we can use the selection values.
+    Because it is the most explicit, the actual functionality is implemented in
+    byTag(), while the other methods are just aliases for this.
 
     Notes
     -----
@@ -23,9 +22,12 @@ class TaggedList:
        nature of the data is (presumably) not important, except for matching
        (datum, tags) pairs
      - not implementing the interface allows us to overload the item access
-       operator [] in a more useful way
+       operator [] in a more useful way (TODO)
     """
     def __init__(self):
+        """
+        Create a new, empty list
+        """
         self._data = []
         self._tags = []
 
@@ -33,9 +35,8 @@ class TaggedList:
 
     def __iter__(self):
         """
-        Iterate over all data. Note that this is really just a short cut,
-        equivalent to byTag(<selection>). Therefore there is no option for
-        yielding the tags as well.
+        Iterate over all data in current selection. Simply a shortcut for
+        self.byTag().
         """
         return self.byTag()
 
@@ -50,9 +51,28 @@ class TaggedList:
         Give number of data in current selection
         """
         return sum([self._selection_logic(t in tags for t in self._selection_tags) for tags in self._tags])
-        # return len(self._data)
 
     def makeSelection(self, tags='_all', logic=any):
+        """
+        Mark a subset of the current list as 'active selection'. For most
+        purposes, the list will behave as if it contained only these data.
+
+        Input
+        -----
+        tags : str, list of str, or set of str
+            the tags to select
+            default: '_all', which is an internal tag attached to all data
+        logic : callable (mostly any or all)
+            the logic for handling multiple tags. Set this to (the built-in)
+            all to select the data being tagged with all the given tags, or to
+            any to select the data having any of the given tags
+            default: any
+
+        Notes
+        -----
+        Call this without arguments to reset the selection to the whole
+        dataset.
+        """
         tags = self.makeTagsSet(tags)
         self._selection_tags = tags
         self._selection_logic = logic
@@ -62,6 +82,14 @@ class TaggedList:
         """
         An input processing function making sure that the frequently used
         'tags' argument is a set of strings. Mostly for internal use.
+
+        Input
+        -----
+        tags : str, list of str, or set of str
+
+        Output
+        ------
+        set of str
         """
         if isinstance(tags, str):
             tags = {tags}
@@ -77,7 +105,15 @@ class TaggedList:
         """
         Similar to makeTagsSet(), but keep the order. This is used for plotting
         functions, where the proper alignment of tags and other specifications
-        is important.
+        is important. Mostly for internal use.
+
+        Input
+        -----
+        tags : str, list of str, or set of str
+
+        Output
+        ------
+        list of str
         """
         if isinstance(tags, str):
             tags = [tags]
@@ -95,7 +131,7 @@ class TaggedList:
         (self._selection_tags, self._selection_logic). If the kwargs are
         present, they are extracted exactly as they are, so you might want to
         run self.makeTagsSet() (or similar) on them. Also, they are really
-        extracted from kwargs.
+        extracted from kwargs. Mostly for internal use.
         """
         try:
             logic = yourkwargs['logic']
@@ -113,11 +149,19 @@ class TaggedList:
 
         return (tags, logic)
 
-    def append(self, datum, tags=[]):
+    def append(self, datum, tags=set()):
         """
-        Append the given datum with the given tags. tags can be a single
-        string, a list, a set, or omitted (i.e. empty). The generic tag "_all"
-        will be attached to all data.
+        Append the given datum with the given tags.
+
+        Input
+        -----
+        datum : the datum to append
+        tags : str, list of str, or set of str
+            the tags to attach to this new datum
+
+        Notes
+        -----
+        The generic tag '_all' will be added to all data.
         """
         tags = self.makeTagsSet(tags)
 
@@ -131,8 +175,12 @@ class TaggedList:
         """
         Add the contents of the TaggedList 'other' to the caller.
 
-        With the 'additionalTags' argument, we have the option to provide some
-        additional tags that will be attached to all the newly added data.
+        Input
+        -----
+        other : TaggedList
+            the list whose data to add
+        additionalTags : str, list of str, or set of str
+            additional tag(s) to add to all of the new data.
         """
         if not issubclass(type(other), TaggedList):
             raise TypeError("Can only merge a TaggedList")
@@ -159,13 +207,25 @@ class TaggedList:
 
     def tagset(self, omit_all=True):
         """
-        Return a set of all available tags. By default, we omit the generic
-        "_all" tag, i.e. return only the user-assigned tags. Set omit_all=False
-        to return all tags.
+        Return the set of all tags in the current selection.
+
+        Input
+        -----
+        omit_all : bool
+            whether to omit the generic '_all' tag from the output
+            default: True
+
+        Output
+        ------
+        Set of all tags in the current selection
         """
-        tagset = set.union(*[set(), *self._tags]) # This is safe if self._tags is empty
+        #tagset = set.union(*[set(), *self._tags]) # This is safe if self._tags is empty
+        tagset = set()
+        for _, tags in self(giveTags=True):
+            tagset |= tags
+
         if omit_all:
-            return tagset - set(["_all"])
+            return tagset - {"_all"}
         else:
             return tagset
 
@@ -182,18 +242,13 @@ class TaggedList:
 
     def byTag(self, tags=None, logic=None, giveTags=False):
         """
-        Returns a generator for all trajectories having certain tags. The
-        behavior for multiple tags can be controlled with the logic argument,
-        whose two most useful values are the built-in functions all or any. The
-        default is logic=all, i.e. we are interested in the data tagged with
-        all the tags given.
-
-        If called without specifying tags, this will respect the selection made
-        with makeSelection()
+        Returns a generator for all trajectories within the current selection,
+        or in the selection specified by the tags and logic arguments. Note
+        that in the latter case, the current selection is not overwritten.
 
         Input
         -----
-        tags : list/set of tags or single tag
+        tags : str, list of str, or set of str
             the tags we are interested in
         logic : callable
             this should be a function taking an iterable of boolean values and
@@ -231,9 +286,19 @@ class TaggedList:
 
     def isHomogeneous(self, dtype=None, allowSubclass=False):
         """
-        Check whether the data type of all the data is the same and equal to
-        dtype if given. To also allow subclasses of dtype, set
-        allowSubclass=True.
+        Check whether all the data are of the same type.
+
+        Input
+        -----
+        dtype : type
+            if given, check that all data are of this type
+        allowSubclass : bool
+            whether to accept subclasses of the common type
+            default: False
+
+        Output
+        ------
+        True if the types are homogeneous, False otherwise
         """
         try:
             for datum in self:
@@ -294,8 +359,18 @@ class TaggedList:
         Same as apply(), except that a new list with the processed data is
         returned, while the original one remains unchanged.
 
-        Note: this returns a new list of only the data within the current
-        selection (after processing).
+        Input
+        -----
+        fun : callable of signature datum = fun(datum)
+
+        Output
+        ------
+        A new list containing the processed data
+
+        Notes
+        -----
+        The new list will contain only the processed data, i.e. data that are
+        not in the current selection will not be copied.
         """
         def gen(origin):
             for datum, tags in origin(giveTags=True):

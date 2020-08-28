@@ -10,7 +10,7 @@ from . import util
 
 def MSDdataset(msd, N=2, Ts=100*[None], d=3, **kwargs):
     """
-    A utility function for generating a dataset of MSD sampled trajectories.
+    Generate a dataset of MSD sampled trajectories.
 
     Input
     -----

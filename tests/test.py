@@ -209,15 +209,15 @@ class Test1Trajectory(myTestCase):
             self.assertTupleEqual(Nmsd.shape, (self.T,))
 
             if N == 2:
-                rel = traj.relativeTrajectory()
+                rel = traj.relative()
                 self.assertTupleEqual(rel._data.shape, (1, self.T, d))
-                mag = rel.absTrajectory()
+                mag = rel.abs()
                 self.assertTupleEqual(mag._data.shape, (1, self.T, 1))
             elif N == 1:
-                mag = traj.absTrajectory()
+                mag = traj.abs()
                 self.assertTupleEqual(mag._data.shape, (1, self.T, 1))
                 with self.assertRaises(NotImplementedError):
-                    rel = traj.relativeTrajectory()
+                    rel = traj.relative()
 
 class TestUtil(myTestCase):
     def test_msd(self):
@@ -316,13 +316,13 @@ class TestAnalysisKLDestimator(myTestCase):
                 mytracelist = [trajs[:, ((i*self.N + n)*self.d):((i*self.N + n+1)*self.d)] \
                                for n in range(self.N)]
                 yield (tl.Trajectory.fromArray(mytracelist), mytags)
-        self.ds = tl.TaggedList.generate(gen())
-        self.est = tl.analysis.KLDestimator(self.ds)
+        self.dataset = tl.TaggedList.generate(gen())
+        self.est = tl.analysis.KLDestimator(self.dataset)
         self.est.setup(bootstraprepeats=2, processes=2, n=[2, 5], k=2, dt=1)
 
     def test_preprocess(self):
-        self.est.preprocess(lambda traj : traj.relativeTrajectory())
-        self.assertTupleEqual(self.est.ds._data[0]._data.shape, (1, self.T, self.d))
+        self.est.preprocess(lambda traj : traj.relative())
+        self.assertTupleEqual(self.est.dataset._data[0]._data.shape, (1, self.T, self.d))
 
     def test_run(self):
         res = self.est.run()

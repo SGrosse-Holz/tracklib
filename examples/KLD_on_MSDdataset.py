@@ -31,7 +31,7 @@ def generate_dataset(msd):
 
 def KLD_for_ns(dataset, ns, processes=16):
     est = tl.analysis.KLDestimator(dataset)
-    est.preprocess(lambda traj : traj.relativeTrajectory().absTrajectory())
+    est.preprocess(lambda traj : traj.relative().abs())
     est.setup(KLDmethod=tl.analysis.KLD_PC, \
               n=ns, k=20, dt=1, \
               bootstraprepeats=20, processes=processes)

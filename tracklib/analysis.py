@@ -18,45 +18,71 @@ import multiprocessing
 
 def MSD(dataset, giveN=False, memo=True):
     """
-    Similar to Trajectory.msd: a memoized method to calculate the ensemble
-    MSD. Use memo=False to circumvent memoization.
+    Calculate ensemble MSD for the given dataset
 
-    Respects selection (see TaggedList)
+    Input
+    -----
+    dataset : TaggedList (possibly with some selection set)
+        a list of Trajectory for which to calculate an ensemble MSD
+    giveN : bool
+        whether to return the sample size for each MSD data point
+    memo : bool
+        whether to use the memoization of Trajectory.msd()
+        default: True
 
-    Implementation note: is the memoization here really necessary? The costly
-    part is calculating MSDs from trajectories and that is memoized in the
-    Trajectory class. Memoization here is a bit weird, because it ties the
-    method to a specific (last) dataset.
-    """
-    msdKnown = hasattr(MSD, 'msdN')
-    try:
-        tagsHaveChanged = dataset._selection_tags != MSD.lasttagset
-    except AttributeError:
-        tagsHaveChanged = True
-
-    if not msdKnown or tagsHaveChanged or not memo:
-        msdNs = [traj.msd(giveN=True, memo=memo) for traj in dataset]
-
-        maxlen = max(len(msdN[0]) for msdN in msdNs)
-        emsd = msdNs[0][0]
-        npad = [(0, maxlen-len(emsd))] + [(0, 0) for _ in emsd.shape[2:]]
-        emsd = np.pad(emsd, npad, constant_values=0)
-        eN = np.pad(msdNs[0][1], npad, constant_values=0)
-        emsd *= eN
-
-        for msd, N in msdNs[1:]:
-            emsd[:len(msd)] += msd*N
-            eN[:len(N)] += N
-        emsd /= eN
-        MSD.msdN = (emsd, eN)
-
-    MSD.lasttagset = dataset._selection_tags
+    Output
+    ------
     if giveN:
-        return MSD.msdN
+        a tuple (msd, N) of (T,) arrays containing MSD and sample size
+        respectively
+    if not giveN:
+        only msd, i.e. a (T,) array.
+
+    Notes
+    -----
+    Corresponding to python's 0-based indexing, msd[0] = 0, such that
+    msd[dt] is the MSD at a time lag of dt frames.
+    """
+    msdNs = [traj.msd(giveN=True, memo=memo) for traj in dataset]
+
+    maxlen = max(len(msdN[0]) for msdN in msdNs)
+    emsd = msdNs[0][0]
+    npad = [(0, maxlen-len(emsd))] + [(0, 0) for _ in emsd.shape[2:]]
+    emsd = np.pad(emsd, npad, constant_values=0)
+    eN = np.pad(msdNs[0][1], npad, constant_values=0)
+    emsd *= eN
+
+    for msd, N in msdNs[1:]:
+        emsd[:len(msd)] += msd*N
+        eN[:len(N)] += N
+    emsd /= eN
+
+    if giveN:
+        return (emsd, eN)
     else:
-        return MSD.msdN[0]
+        return emsd
 
 def hist_lengths(dataset, **kwargs):
+    """
+    Plot a histogram of trajectory lengths for the given dataset
+
+    Input
+    -----
+    dataset : TaggedList (possibly with some selection set)
+        the dataset to use
+    All other keyword arguments will be forwarded to plt.hist().
+
+    Output
+    ------
+    The return value of plt.hist(), i.e. a tuple (n, bins, patches)
+
+    Notes
+    -----
+    This should be thought of only as a quickshot way to take a look at the
+    data. For more elaborate plotting, obtain the trajectory lengths as
+        lengths = [len(traj) for traj in dataset]
+    and produce a plot to your liking.
+    """
     lengths = [len(traj) for traj in dataset]
     
     if 'bins' not in kwargs.keys():
@@ -69,6 +95,25 @@ def hist_lengths(dataset, **kwargs):
     return h
 
 def plot_msds(dataset, **kwargs):
+    """
+    Plot individual and ensemble MSDs of the given dataset
+
+    Input
+    -----
+    dataset : TaggedList (possibly with some selection set)
+        the dataset to use
+    All further keyword arguments are forwarded to plt.loglog for plotting of
+    the individual trajectory MSDs
+
+    Output
+    ------
+    Aggregate of the plt.plot outputs, i.e. a list of lines
+
+    Notes
+    -----
+    Only intended as a quick overview plot, for more customization write your
+    own plotting routine using analysis.MSD(dataset) and Trajectory.msd().
+    """
     ensembleLabel = 'ensemble mean'
     if 'label' in kwargs.keys():
         ensembleLabel = kwargs['label']
@@ -96,14 +141,36 @@ def plot_msds(dataset, **kwargs):
 
 def plot_trajectories(dataset, **kwargs):
     """
-    Notes:
-     - trajectories will be colored by one of the tags they're associated
-       with.
-     - here we have to handle selection manually, because the order might
-       be relevant. Consequently, this function listens to the kwargs tags
-       and logic. If neither are provided, the selection will be used. If
-       only tags is provided, logic=any will be used.
+    Plot the trajectories in the given dataset. The preset selection can be
+    overridden manually to ensure proper coloring (see Notes).
 
+    Input
+    -----
+    dataset : TaggedList (possibly with some selection set)
+        the set of trajectories to plot
+    tags : tags for selection (following the syntax from TaggedList)
+    logic : logic for selection (following the syntax from TaggedList)
+    color : can be a list of colors, corresponding to the list of tags.
+    All further keyword arguments will be forwarded to plt.plot()
+
+    Output
+    ------
+    A list of lines, as returned by plt.plot()
+
+    Notes
+    -----
+    Each tag will be associated with one color, and trajectories will be
+    colored by one of the tags they're associated with.  There is no way to
+    determine which one.
+
+    To enable targeted coloring of tags, this function can override the
+    selection in the dataset. To that end, give 'tags' as a list and give the
+    corresponding list of colors as argument 'color'.
+
+    Similarly to the other analysis.plot_* and analysis.hist_* functions, this
+    is mostly intended for use in a quick overview. It does provide some more
+    functionality though, in the hope that the user will not see a necessity to
+    start plotting trajectories themselves.
     """
     # Input processing 1 : augment the selection process
     (tags, logic) = dataset.getTagsAndLogicFromKwargs(kwargs)
@@ -180,19 +247,33 @@ def hist_distances(dataset, **kwargs):
     absolute distance between the loci, for single locus trajectories it is
     simply the absolute value of the trajectory.
 
-    Note:
-    If you need the array of distances, use
-        dists = np.concatenate([traj._data[0, :, 0] for traj in dataset.process(<preproc>)])
+    Input
+    -----
+    dataset : TaggedList (possibly with some selection set)
+        the trajectories to use
+    All keyword arguments will be forwarded to plt.hist()
+
+    Output
+    ------
+    The output of plt.hist(), i.e. a tuple (n, bins, patches).
+
+    Notes
+    -----
+    This is intended for gaining a quick overview. For more elaborate tasks,
+    obtain the distances as
+        dists = np.concatenate([traj[:].flatten() for traj in dataset.process(<preproc>)])
     where <preproc> is the preprocessing function appropriate for your dataset.
+    For a two-locus trajectory, this would presumably be
+        preproc = lambda traj : traj.relative().abs()
     """
     if dataset.getHom('N') == 2:
-        dsprocessed = dataset.process(lambda traj : traj.relativeTrajectory().absTrajectory())
+        preproc = lambda traj : traj.relative().abs()
     elif dataset.getHom('N') == 1:
-        dsprocessed = dataset.process(lambda traj : traj.absTrajectory())
+        preproc = lambda traj : traj.abs()
     else:
         raise RuntimeError("Dataset has neither homogeneously N = 1 nor N = 2")
 
-    data = np.concatenate([traj._data[0, :, 0] for traj in dsprocessed])
+    data = np.concatenate([traj[:].flatten() for traj in dataset.process(preproc)])
 
     if 'bins' not in kwargs.keys():
         kwargs['bins'] = 'auto'
@@ -274,18 +355,56 @@ def KLD_PC(dataset, n=10, k=20, dt=1):
 class KLDestimator:
     """
     A wrapper class for KLD estimation. Facilitates pre-processing,
-    bootstrapping and plotting.
+    bootstrapping and (eventually) use of different estimators.
+
+    Notes
+    -----
+    There are two ways of applying pre-processing to the data:
+     - either do the preprocessing upon initialization:
+        est = KLDestimator(dataset.process(<preproc>), copy=False)
+     - or preprocess in an individual step, using the preprocess function.
+    As shown in the example, if preprocessing upon initialization, one can set
+    the 'copy' argument to False to avoid unnecessary copying.
+    
+    For repeated evaluation on different parts of the same dataset: make sure
+    to reset the selection in the dataset with a call to
+    dataset.makeSelection() before initialization/preprocessing, such that all
+    data will undergo preprocessing. Then you can subsequently call
+    KLDestimator.dataset.makeSelection() to select parts of your dataset for
+    estimation.
     """
     def __init__(self, dataset, copy=True):
+        """
+        Set up a new KLD estimation
+
+        Input
+        -----
+        dataset : TaggedList
+            the dataset to run the estimation on
+        copy : bool
+            whether to copy the dataset upon initialization. This might not be
+            necessary if handing over a freshly preprocessed dataset (see
+            Notes on the class level).
+            default: True
+
+        Notes
+        -----
+        This also sets default values for the estimation parameters. The user
+        should adapt these by using the setup() function. For reference, the
+        defaults are:
+            bootstraprepeats = 20
+            processes = 16
+            KLDmethod = KLD_PC
+            KLDkwargs = {'n' : 10, 'k' : 20, 'dt' : 1}
+        """
         if copy:
-            self.ds = deepcopy(dataset)
+            self.dataset = deepcopy(dataset)
         else:
-            self.ds = dataset
+            self.dataset = dataset
 
         self.bootstraprepeats = 20
         self.processes = 16
         self.KLDmethod = KLD_PC
-
         self.KLDkwargs = {'n' : 10, 'k' : 20, 'dt' : 1}
 
     def setup(self, **kwargs):
@@ -304,13 +423,9 @@ class KLDestimator:
         processes : integer
             how many processes to use.
             default: 16
-        parity : 'even' or 'odd'
-            whether the trajectories in the dataset are even or odd under time
-            reversal
-            default: 'even'
         other keyword arguments :
-            the parameters for KLD_PC. Anything given as a list will be
-            sweeped.
+            the parameters for the estimation method. Anything given as a list
+            will be sweeped.
 
         Notes
         -----
@@ -318,7 +433,7 @@ class KLDestimator:
         call this method also to change specific values while keeping
         everything else the same.
         """
-        for key in ['bootstraprepeats', 'processes', 'KLDmethod', 'parity']:
+        for key in ['bootstraprepeats', 'processes', 'KLDmethod']:
             try:
                 setattr(self, key, kwargs[key])
                 del kwargs[key]
@@ -341,27 +456,28 @@ class KLDestimator:
             the function to use for preprocessing. Will be applied to every
             trajectory individually via TaggedList.apply().
             Examples:
-                lambda traj : traj.relativeTrajectory().absTrajectory() # would give absolute distance for two-locus trajectory
-                lambda traj : traj.relativeTrajectory().diffTrajectory().absTrajectory() # would give absolute displacements
-            default: identity (i.e. lambda traj : traj)
+                lambda traj : traj.relative().abs() # would give absolute distance for two-locus trajectory
+                lambda traj : traj.relative().diff().abs() # would give absolute displacements
 
         Notes
         -----
         If writing your own preproc function (i.e. not using the ones from
         Trajectory) remember to update the parity property of all trajectories.
 
-        As of now, this function literally only calls self.ds.apply(preproc).
+        As of now, this function literally only calls self.dataset.apply(preproc).
         It serves more as a reminder that preprocessing might be necessary.
         """
-        self.ds.apply(preproc)
+        self.dataset.apply(preproc)
 
     @staticmethod
     def _parfun(args):
         """
-        args should be a composite dict:
-         - an entry 'randomseed'
-         - an entry 'self' containing a reference to the caller
-         - finally, 'kwargs' will be passed to the KLD calculation
+        For internal use in parallelization
+
+        args should be a dict with the following entries:
+         - 'randomseed' : seed for random number generation
+         - 'self' : a reference to the caller
+         - 'kwargs' : the arguments for the KLD calculation
 
         Note: the reference to the caller is necessary, because it will be
         copied to each worker. This is not optimal and might require some
@@ -369,11 +485,11 @@ class KLDestimator:
         """
         random.seed(args['randomseed'])
         self = args['self']
-        return self.KLDmethod(self.ds, **(args['kwargs']))
+        return self.KLDmethod(self.dataset, **(args['kwargs']))
 
     def run(self):
         """
-        Run the estimation. Remember to setup()
+        Run the estimation. Remember to setup() and possibly preprocess().
 
         Output
         ------
@@ -382,9 +498,12 @@ class KLDestimator:
 
         Notes
         -----
+        For reproducible results, set random.seed() before calling this function
+
+        Implementation Notes
+        --------------------
         As of now, the data is copied to every child process. Maybe this could
         be improved
-        For reproducible results, set random.seed() before calling this function
         """
         # Assemble argument list
         kwkeys = self.KLDkwargs.keys() # Fixed key sequence for looping
