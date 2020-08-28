@@ -60,7 +60,7 @@ class Trajectory(ABC, collections.abc.Sequence):
         (T, d), or (T,), N = 1 or 2, d = 1, 2, 3.
         Note that we return instances of the child classes Trajectory_xNxd.
         """
-        array = np.array(array)
+        array = np.array(array) # Note that this also copies the array
         if len(array.shape) > 3:
             raise ValueError("Array of shape {} cannot be interpreted as trajectory".format(str(array.shape)))
         elif len(array.shape) == 2:
@@ -80,9 +80,12 @@ class Trajectory(ABC, collections.abc.Sequence):
     def copyMeta(self, target):
         """
         Copy all the meta information (like label, dx, dt) to another object.
+        This will omit attributes prefixed with an underscore. These include
+        _data, which is not considered meta data, and _msdN, which is used for
+        msd memoization.
         """
         for key in self.__dict__.keys():
-            if key is not '_data':
+            if not key.startswith('_'):
                 setattr(target, key, self.__dict__[key])
 
     @abstractmethod
@@ -100,8 +103,8 @@ class Trajectory(ABC, collections.abc.Sequence):
         if 'label' not in kwargs.keys():
             kwargs['label'] = self._get_dimension_labels()
 
-        tplot = np.arange(self.T)*self.dt
-        return ax.plot(tplot, self._eff1Ndata()*self.dx, **kwargs)
+        tplot = np.arange(self.T)
+        return ax.plot(tplot, self._eff1Ndata(), **kwargs)
 
     @abstractmethod
     def plot_spatial(self, ax=None, dims=(0, 1), **kwargs):
@@ -115,7 +118,6 @@ class Trajectory(ABC, collections.abc.Sequence):
         """
         if not hasattr(self, '_msdN') or not memo:
             self._msdN = util.msd(self._eff1Ndata(), giveN=True)
-            self._msdN = (self._msdN[0]*self.dx**2, self._msdN[1])
 
         if giveN:
             return self._msdN
@@ -161,6 +163,7 @@ class Trajectory(ABC, collections.abc.Sequence):
 class N12Error(ValueError):
     pass
 
+# Particle number specializations
 class Trajectory_1N(Trajectory):
     def _eff1Ndata(self):
         return self._data[0]
@@ -177,10 +180,9 @@ class Trajectory_1N(Trajectory):
         if 'connect' in kwargs.keys():
             raise N12Error("Cannot connect one-particle trajectory")
 
-        return ax.plot(self._data[0, :, dims[0]]*self.dx, \
-                       self._data[0, :, dims[1]]*self.dx, \
+        return ax.plot(self._data[0, :, dims[0]], \
+                       self._data[0, :, dims[1]], \
                        **kwargs)
-
 
 class Trajectory_2N(Trajectory):
     def _eff1Ndata(self):
@@ -217,8 +219,8 @@ class Trajectory_2N(Trajectory):
         # Plot first particle
         # This is the one setting the tone, so also create the legend entry
         kwargs['linestyle'] = linestyles[0]
-        lines = ax.plot(self._data[0, :, dims[0]]*self.dx, \
-                        self._data[0, :, dims[1]]*self.dx, \
+        lines = ax.plot(self._data[0, :, dims[0]], \
+                        self._data[0, :, dims[1]], \
                         **kwargs)
         kwargs['color'] = lines[0].get_color()
 
@@ -227,12 +229,13 @@ class Trajectory_2N(Trajectory):
 
         # Plot second particle
         kwargs['linestyle'] = linestyles[1]
-        lines.append(ax.plot(self._data[1, :, dims[0]]*self.dx, \
-                             self._data[1, :, dims[1]]*self.dx, \
+        lines.append(ax.plot(self._data[1, :, dims[0]], \
+                             self._data[1, :, dims[1]], \
                              **kwargs))
 
         return lines
 
+# Dimensionality specializations
 class Trajectory_1d(Trajectory):
     def _get_dimension_labels(self):
         return self.label
@@ -294,17 +297,3 @@ class Trajectory_2N2d(Trajectory_2N, Trajectory_2d):
 
 class Trajectory_2N3d(Trajectory_2N, Trajectory_3d):
     pass
-
-
-
-
-
-
-
-
-
-
-
-
-
-

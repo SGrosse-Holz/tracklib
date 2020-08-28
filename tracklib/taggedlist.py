@@ -1,3 +1,5 @@
+from copy import deepcopy
+
 class TaggedList:
     """
     A list with a series of tags for each object. The idea is to use this as a
@@ -44,7 +46,11 @@ class TaggedList:
         return self.byTag(*args, **kwargs)
 
     def __len__(self):
-        return len(self._data)
+        """
+        Give number of data in current selection
+        """
+        return sum([self._selection_logic(t in tags for t in self._selection_tags) for tags in self._tags])
+        # return len(self._data)
 
     def makeSelection(self, tags='_all', logic=any):
         tags = self.makeTagsSet(tags)
@@ -58,7 +64,7 @@ class TaggedList:
         'tags' argument is a set of strings. Mostly for internal use.
         """
         if isinstance(tags, str):
-            tags = set([tags])
+            tags = {tags}
         elif isinstance(tags, list):
             tags = set(tags)
         elif not isinstance(tags, set):
@@ -120,6 +126,36 @@ class TaggedList:
 
         self._data.append(datum)
         self._tags.append(tags)
+
+    def mergein(self, other, additionalTags=set()):
+        """
+        Add the contents of the TaggedList 'other' to the caller.
+
+        With the 'additionalTags' argument, we have the option to provide some
+        additional tags that will be attached to all the newly added data.
+        """
+        if not issubclass(type(other), TaggedList):
+            raise TypeError("Can only merge a TaggedList")
+
+        additionalTags = TaggedList.makeTagsSet(additionalTags)
+        newTags = [tags | additionalTags for tags in other._tags]
+
+        self._data += other._data
+        self._tags += newTags
+
+    def addTags(self, tags):
+        """
+        Add new tag(s) to all data in the current selection
+
+        Input
+        -----
+        tags : str, list of str, or set of str
+            the tag(s) to add
+        """
+        tags = TaggedList.makeTagsSet(tags)
+
+        for _, curtags in self(giveTags=True):
+            curtags |= tags
 
     def tagset(self, omit_all=True):
         """
@@ -219,6 +255,21 @@ class TaggedList:
             return False
         return True
 
+    def getHom(self, attr):
+        """
+        Check that the attribute attr is the same for all data and return its
+        value if so.
+        """
+        try:
+            for datum in self:
+                try:
+                    assert getattr(datum, attr) == attrvalue
+                except NameError:
+                    attrvalue = getattr(datum, attr)
+        except AssertionError:
+            raise RuntimeError("Attribute '{}' has non-homogeneous values".format(attr))
+        return attrvalue
+
     def apply(self, fun):
         """
         Apply fun to all data.
@@ -226,7 +277,29 @@ class TaggedList:
         Input
         -----
         fun : callable of signature datum = fun(datum)
+
+        Notes
+        -----
+        This function works in-place. If you need the original data to remain
+        unchanged, use process().
         """
+        # Have to explicitly run through the data array, because the entries
+        # might be reassigned.
         for i, (datum, tags) in enumerate(zip(self._data, self._tags)):
             if self._selection_logic(t in tags for t in self._selection_tags):
                 self._data[i] = fun(datum)
+
+    def process(self, fun):
+        """
+        Same as apply(), except that a new list with the processed data is
+        returned, while the original one remains unchanged.
+
+        Note: this returns a new list of only the data within the current
+        selection (after processing).
+        """
+        def gen(origin):
+            for datum, tags in origin(giveTags=True):
+                newdat = deepcopy(datum)
+                yield (fun(newdat), tags)
+
+        return TaggedList.generate(gen(self))

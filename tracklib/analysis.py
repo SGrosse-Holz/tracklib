@@ -22,6 +22,11 @@ def MSD(dataset, giveN=False, memo=True):
     MSD. Use memo=False to circumvent memoization.
 
     Respects selection (see TaggedList)
+
+    Implementation note: is the memoization here really necessary? The costly
+    part is calculating MSDs from trajectories and that is memoized in the
+    Trajectory class. Memoization here is a bit weird, because it ties the
+    method to a specific (last) dataset.
     """
     msdKnown = hasattr(MSD, 'msdN')
     try:
@@ -61,7 +66,6 @@ def hist_lengths(dataset, **kwargs):
     h = plt.hist(lengths, **kwargs)
     plt.title("Histogram of trajectory lengths")
     plt.xlabel("Length in frames")
-    plt.ylabel("Count")
     return h
 
 def plot_msds(dataset, **kwargs):
@@ -74,10 +78,10 @@ def plot_msds(dataset, **kwargs):
     lines = []
     for traj in dataset:
         msd = traj.msd()
-        tmsd = np.arange(len(msd))*traj.dt
+        tmsd = np.arange(len(msd))
         lines.append(plt.loglog(tmsd, msd, **kwargs))
     msd = MSD(dataset)
-    tmsd = np.arange(len(msd))*dataset._data[0].dt # NOTE: we're assuming that all trajectories have the same dt!
+    tmsd = np.arange(len(msd))
     lines.append(plt.loglog(tmsd, msd, color='k', linewidth=2, label='ensemble mean'))
     plt.legend()
 
@@ -85,7 +89,7 @@ def plot_msds(dataset, **kwargs):
         plt.title('MSDs')
     else:
         plt.title('MSDs for tags {}'.format(str(dataset._selection_tags)))
-    plt.xlabel("time") # TODO: How do we get a unit description here?
+    plt.xlabel("time in frames")
     plt.ylabel("MSD")
     
     return lines
@@ -136,6 +140,13 @@ def plot_trajectories(dataset, **kwargs):
         kwargs['color'] = colordict[mytag]
         lines.append(traj.plot_spatial(**kwargs))
 
+    # Delete all non-plotting kwargs
+    for key in {'dims'}:
+        try:
+            del kwargs[key]
+        except KeyError:
+            pass
+
     # Need some faking for the legend
     x0 = sum(plt.xlim())/2
     y0 = sum(plt.ylim())/2
@@ -163,6 +174,34 @@ def plot_trajectories(dataset, **kwargs):
     # Done
     return lines
 
+def hist_distances(dataset, **kwargs):
+    """
+    Draw a histogram of distances. For two-locus trajectories, this is the
+    absolute distance between the loci, for single locus trajectories it is
+    simply the absolute value of the trajectory.
+
+    Note:
+    If you need the array of distances, use
+        dists = np.concatenate([traj._data[0, :, 0] for traj in dataset.process(<preproc>)])
+    where <preproc> is the preprocessing function appropriate for your dataset.
+    """
+    if dataset.getHom('N') == 2:
+        dsprocessed = dataset.process(lambda traj : traj.relativeTrajectory().absTrajectory())
+    elif dataset.getHom('N') == 1:
+        dsprocessed = dataset.process(lambda traj : traj.absTrajectory())
+    else:
+        raise RuntimeError("Dataset has neither homogeneously N = 1 nor N = 2")
+
+    data = np.concatenate([traj._data[0, :, 0] for traj in dsprocessed])
+
+    if 'bins' not in kwargs.keys():
+        kwargs['bins'] = 'auto'
+
+    plt.figure()
+    h = plt.hist(data, **kwargs)
+    plt.title('Distance histogram')
+    return h
+
 def KLD_PC(dataset, n=10, k=20, dt=1):
     """
     Apply the KLD estimator presented by (Perez-Cruz, 2008). We reduce the
@@ -185,7 +224,7 @@ def KLD_PC(dataset, n=10, k=20, dt=1):
 
     Output
     ------
-    Dest : estimated KLD
+    Dest : estimated KLD in nats
 
     Notes
     -----
@@ -198,10 +237,7 @@ def KLD_PC(dataset, n=10, k=20, dt=1):
     # Check that the trajectory format is homogeneous
     if not dataset.isHomogeneous():
         raise ValueError("Cannot calculate KLD on an inhomogenous dataset")
-    paritySet = {traj.parity for traj in dataset}
-    if len(paritySet) > 1:
-        raise ValueError("Cannot calculate KLD on dataset with non-uniform parity")
-    parity = paritySet.pop()
+    parity = dataset.getHom('parity')
     assert parity in {'even', 'odd'}
 
     # Generate snippets
@@ -258,6 +294,9 @@ class KLDestimator:
 
         Input
         -----
+        KLDmethod : callable
+            the method to use for KLD estimation.
+            default: KLD_PC
         bootstraprepeats : integer
             how often to repeat each run with a different partition of the data
             set.

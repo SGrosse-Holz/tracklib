@@ -58,25 +58,54 @@ def MSDdataset(msd, N=2, Ts=100*[None], d=3, **kwargs):
 
     return TaggedList.generate(gen())
 
-def MSDcontrol(dataset, msd=None):
+def MSDcontrol(dataset, msd=None, setMean='copy'):
     """
     Generate a sister data set where each trajectory is sampled from a
     stationary Gaussian process with MSD equal to the ensemble mean of the
     given data set or the explicitly given MSD. Note generation from
     experimental data (i.e. the ensemble mean) does not always work, because
     that is noisy. Thus the option to provide a cleaned version.
+
+    The mean of each trajectory will be set to coincide with the mean of the
+    sister trajectory it is generated from.
+
+    Input
+    -----
+    dataset : TaggedList of Trajectory
+        the dataset to generate a control for
+    msd : (T,) np.ndarray
+        the MSD to use for sampling. Note that this will be divided by
+        (#loci)x(#dimensions) before sampling scalar traces, matching the usual
+        notion of MSD of (e.g.) multidimensional trajectories.
+
+    Output
+    ------
+    A TaggedList that's an MSD generated sister data set to the input
+
+    Implementation Note
+    -------------------
+    Should this be merged/unified with MSDdataset?
     """
     if msd is None:
-        msd = MSD(dataset)
+        msd = analysis.MSD(dataset)
+
+    msd /= dataset.getHom('N')*dataset.getHom('d')
 
     def gen():
         for (traj, mytags) in dataset(giveTags=True):
-            newtraj = deepcopy(traj)
             try:
-                traces = util.sampleMSD(msd, n=newtraj.N*newtraj.d)
+                traces = util.sampleMSD(msd[:len(traj)], n=traj.N*traj.d)
             except np.linalg.LinAlgError:
                 raise RuntimeError("Could not generate trajectories from provided (or ensemble) MSD. Try to use something cleaner.")
-            newtraj._data = [traces[:, (i*newtraj.d):((i+1)*newtraj.d)] for i in range(newtraj.N)]
+            newdata = np.array([traces[:, (i*traj.d):((i+1)*traj.d)] for i in range(traj.N)])
+            newdata += np.mean(traj[:], axis=1, keepdims=True)
+
+            newtraj = Trajectory.fromArray(newdata)
+            traj.copyMeta(newtraj)
+
+            if len(traj) != len(newtraj):
+                print("traj : {}, newtraj : {} entries".format(len(traj), len(newtraj)))
+
             yield (newtraj, deepcopy(mytags))
 
     return TaggedList.generate(gen())

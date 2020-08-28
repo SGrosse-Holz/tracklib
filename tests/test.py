@@ -38,7 +38,7 @@ class Test0TaggedList(unittest.TestCase):
         ls.append(1)
         ls.append(2, 'a')
         ls.append(3, ['b', '_all'])
-        
+
     def test_generate(self):
         ls = tl.TaggedList.generate(zip([1, 2, 3], [["a", "b"], "a", ["b", "c"]]))
         self.assertListEqual(ls._data, [1, 2, 3])
@@ -54,6 +54,15 @@ class Test1TaggedList(unittest.TestCase):
         for ind, val in enumerate(self.ls()):
             self.assertEqual(val, self.ls._data[ind])
 
+    def test_mergein(self):
+        newls = tl.TaggedList.generate(zip([4, 5, 6], [["d"], [], "e"]))
+        self.ls.mergein(newls, additionalTags='new')
+        self.assertListEqual(self.ls._data, [1, 2, 3, 4, 5, 6])
+        self.assertSetEqual(self.ls.tagset(), {'a', 'b', 'c', 'd', 'e', 'new'})
+        
+        self.ls.makeSelection('new')
+        self.assertSetEqual(set(self.ls), {4, 5, 6})
+
     def test_homogeneous(self):
         self.assertTrue(self.ls.isHomogeneous())
         lsinh = tl.TaggedList.generate(zip([1, 2., 3], [["a", "b"], "a", ["b", "c"]]))
@@ -62,6 +71,13 @@ class Test1TaggedList(unittest.TestCase):
         lsinh = tl.TaggedList.generate(zip([1, st(5), 3], [["a", "b"], "a", ["b", "c"]]))
         self.assertTrue(lsinh.isHomogeneous(int, allowSubclass=True))
         self.assertFalse(lsinh.isHomogeneous(int, allowSubclass=False))
+
+    def test_getHom(self):
+        imag = self.ls.getHom('imag')
+        self.assertEqual(imag, 0)
+        with self.assertRaises(RuntimeError):
+            self.ls._data[0] = 1j
+            imag = self.ls.getHom('imag')
 
     def test_selection(self):
         self.ls.makeSelection("a")
@@ -102,6 +118,21 @@ class Test1TaggedList(unittest.TestCase):
     def test_subset(self):
         sub = self.ls.subsetByTag('a')
         self.assertListEqual(sub._data, [1, 2])
+
+    def test_apply(self):
+        def fun(i):
+            return i+1
+        self.ls.apply(fun)
+        self.assertListEqual(self.ls._data, [2, 3, 4])
+
+    def test_process(self):
+        # need a TaggedList of mutable objects
+        mutls = tl.TaggedList.generate(zip(['hello', 'World', '!'], [["a", "b"], "a", ["b", "c"]]))
+        mutls.makeSelection("a")
+        newls = mutls.process(lambda word : word+'_moo')
+
+        self.assertListEqual(mutls._data, ['hello', 'World', '!'])
+        self.assertListEqual(newls._data, ['hello_moo', 'World_moo'])
 
 class Test0Trajectory(myTestCase):
     def test_fromArray(self):

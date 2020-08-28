@@ -56,6 +56,7 @@ def run_full():
     KLDres = KLD_for_ns(ds, [5, 10, 20, 40, 80])
 
     tl.analysis.hist_lengths(ds)
+    tl.analysis.hist_distances(ds)
     tl.analysis.plot_trajectories(ds)
 
     tl.analysis.plot_msds(ds)
