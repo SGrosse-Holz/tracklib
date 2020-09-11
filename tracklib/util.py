@@ -1,7 +1,11 @@
+# Utility functions that are independent of the actual library, such as MSD
+# calculation, sampling from MSDs, specific MSDs
 import os,sys
+import collections.abc
 
 import numpy as np
 from scipy.linalg import cholesky, toeplitz
+import scipy.special
 
 def msd(traj, giveN=False, warnd=True):
     """
@@ -55,9 +59,9 @@ def msd(traj, giveN=False, warnd=True):
 def sampleMSD(msd, n=1, isCorr=False, subtractMean=True):
     """
     Sample trajectories from a Gaussian process with zero-mean stationary
-    increments with given autocorrelation function. Usually the more intuitive
-    quantity is the MSD, so by default we expect the MSD μ(k) to be given. They are
-    related by
+    increments with given autocorrelation function γ(k). Usually the more
+    intuitive quantity is the MSD of the process, so by default we expect the
+    MSD μ(k) to be given. They are related by
     ```
         γ(k) = 1/2 * ( μ(|k+1|) + μ(|k-1|) - 2*μ(|k|) ) .
     ```
@@ -117,3 +121,24 @@ def sampleMSD(msd, n=1, isCorr=False, subtractMean=True):
         trajs = trajs - np.mean(trajs, axis=0)
 
     return trajs
+
+def twoLociRelativeACF(ts, A=1, B=1, d=1):
+    """
+    A = σ^2 / √κ     (general prefactor)
+    B = Δs^2 / 4κ    (tether length)
+    """
+    # Scipy's implementation of En can only deal with integer n
+    def E32(z):
+        return 2*np.exp(-z) - 2*np.sqrt(np.pi*z)*scipy.special.erfc(np.sqrt(z))
+
+    if not isinstance(ts, collections.abc.Iterable):
+        ts = [ts]
+
+    return np.array([ d*A*( np.sqrt(B) - np.sqrt(t/np.pi)*( 1 - 0.5*E32(B/t) ) ) if t != 0 else d*A*np.sqrt(B) for t in ts])
+
+def twoLociRelativeMSD(ts, *args, **kwargs):
+    """
+    A = σ^2 / √κ     (general prefactor)
+    B = Δs^2 / 4κ       (tether length)
+    """
+    return 2*(twoLociRelativeACF(0, *args, **kwargs) - twoLociRelativeACF(ts, *args, **kwargs))

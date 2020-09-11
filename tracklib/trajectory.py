@@ -1,5 +1,6 @@
 import os,sys
 import importlib
+from copy import deepcopy
 
 from abc import ABC, abstractmethod
 import collections.abc
@@ -18,6 +19,10 @@ class Trajectory(ABC, collections.abc.Sequence):
     Note that most functions for now might assume N = 1 or N = 2. The latter is
     the development focus of this project.
 
+    Besides the actual data, this class also stores a dictionary containing
+    user-specified meta-data. Some entries in this dict (like parity and label)
+    are used within the class. IMPLEMENTATION: Is this a good idea?
+
     Note: this implementation should be able to deal with missing data, i.e.
     np.nan's
 
@@ -28,17 +33,19 @@ class Trajectory(ABC, collections.abc.Sequence):
     Note: this class implements the Sequence interface, i.e. it can be used
     much like a list. Element access returns (N, d) arrays as data points.
     """
-    def __init__(self, label=None):
+    def __init__(self, **kwargs):
         """
         Set up an empty trajectory
+
+        Any keyword arguments are saved in the dict self.meta
         """
-        self.label = label
         self._data = None
 
-        # Units
-        self.dt = 1
-        self.dx = 1
-        self.parity = 'even'
+        if not 'parity' in kwargs.keys():
+            kwargs['parity'] = 'even'
+        else:
+            assert kwargs['parity'] in {'even', 'odd'}
+        self.meta = kwargs
 
     def __len__(self):
         """
@@ -90,7 +97,7 @@ class Trajectory(ABC, collections.abc.Sequence):
         return self._data.shape[2]
 
     @classmethod
-    def fromArray(cls, array, label=None, parity='even'):
+    def fromArray(cls, array, **kwargs):
         """
         Create a new Trajectory from an array.
 
@@ -99,11 +106,7 @@ class Trajectory(ABC, collections.abc.Sequence):
         array : (N, T, d) array-like
             the data for the new trajectory. Note that for now, we expect N in
             {1, 2} and d in {1, 2, 3}.
-        label : str, optional
-            an optional label to attach to the trajectory
-        parity : 'even' or 'odd'
-            parity of the trajectory under time reversal
-            default: 'even'
+        Additional keyword arguments are saved in the dict self.meta
 
         Output
         ------
@@ -123,16 +126,17 @@ class Trajectory(ABC, collections.abc.Sequence):
             array = np.expand_dims(array, (0, 2))
 
         try:
-            obj = getattr(importlib.import_module(cls.__module__), "Trajectory_{:d}N{:d}d".format(array.shape[0], array.shape[2]))(label)
+            obj = getattr(importlib.import_module(cls.__module__), "Trajectory_{:d}N{:d}d".format(array.shape[0], array.shape[2]))(**kwargs)
         except AttributeError:
             raise ValueError("Could not instantiate trajectory with (N, T, d) = {}".format(str(array.shape)))
 
         obj._data = array
-        obj.parity = parity
         return obj
 
     def copyMeta(self, target):
         """
+        Legacy function; use deepcopy(self.meta)
+
         Copy all the meta information (like label, dx, dt) to another object.
         This will omit attributes prefixed with an underscore. These include
         _data, which is not considered meta data, and _msdN, which is used for
@@ -143,6 +147,7 @@ class Trajectory(ABC, collections.abc.Sequence):
         target : Trajectory
             the Trajectory object to copy the meta data to
         """
+        raise NotImplementedError("This will be removed from implementation")
         for key in self.__dict__.keys():
             if not key.startswith('_'):
                 setattr(target, key, self.__dict__[key])
@@ -267,10 +272,7 @@ class Trajectory(ABC, collections.abc.Sequence):
         Absolute value trajectories always have even parity, because they
         cannot have negative values.
         """
-        obj = Trajectory.fromArray(np.sqrt(np.sum(self._data**2, axis=2, keepdims=True)))
-        self.copyMeta(obj)
-        obj.parity = 'even'
-        return obj
+        return Trajectory.fromArray(np.sqrt(np.sum(self._data**2, axis=2, keepdims=True)), **deepcopy(self.meta))
 
     def relative(self):
         """
@@ -300,13 +302,12 @@ class Trajectory(ABC, collections.abc.Sequence):
         Parity of the displacement trajectory is always opposite to the
         original.
         """
-        obj = Trajectory.fromArray(self._data[:, dt:, :] - self._data[:, :-dt, :])
-        self.copyMeta(obj)
+        obj = Trajectory.fromArray(self._data[:, dt:, :] - self._data[:, :-dt, :], **deepcopy(self.meta))
 
-        if obj.parity is 'even':
-            obj.parity = 'odd'
+        if obj.meta['parity'] == 'even':
+            obj.meta['parity'] = 'odd'
         else:
-            obj.parity = 'even'
+            obj.meta['parity'] = 'even'
 
         return obj
 
@@ -347,9 +348,7 @@ class Trajectory_2N(Trajectory):
         return self._data[0] - self._data[1]
 
     def relative(self):
-        obj = Trajectory.fromArray(self._eff1Ndata())
-        self.copyMeta(obj)
-        return obj
+        return Trajectory.fromArray(self._eff1Ndata(), **deepcopy(self.meta))
 
     def _raw_plot_spatial(self, ax, dims, connect=True, **kwargs):
         """ internal method for spatial plotting """
@@ -399,7 +398,10 @@ class Trajectory_1d(Trajectory):
     Behavior specific to 1d trajectories
     """
     def _get_dimension_labels(self):
-        return self.label
+        if 'label' in self.meta.keys():
+            return self.meta['label']
+        else:
+            return None
 
     def plot_spatial(self, *args, **kwargs):
         raise NotImplementedError("Cannot plot spatial trajectory for 1d trajectory. Use plot_vstime()")
@@ -409,18 +411,18 @@ class Trajectory_2d(Trajectory):
     Behavior specific to 2d trajectories
     """
     def _get_dimension_labels(self):
-        if self.label is None:
-            return None
+        if 'label' in self.meta.keys():
+            return [self.meta['label'] + " (x)", \
+                    self.meta['label'] + " (y)"]
         else:
-            return [self.label + " (x)", \
-                    self.label + " (y)"]
+            return None
 
     def plot_spatial(self, ax=None, **kwargs):
         if ax is None:
             ax = plt.gca()
 
-        if 'label' not in kwargs.keys():
-            kwargs['label'] = self.label
+        if 'label' not in kwargs.keys() and 'label' in self.meta.keys():
+            kwargs['label'] = self.meta['label']
 
         return self._raw_plot_spatial(ax, (0, 1), **kwargs)
 
@@ -429,19 +431,19 @@ class Trajectory_3d(Trajectory):
     Behavior specific to 3d trajectories
     """
     def _get_dimension_labels(self):
-        if self.label is None:
-            return None
+        if 'label' in self.meta.keys():
+            return [self.meta['label'] + " (x)", \
+                    self.meta['label'] + " (y)", \
+                    self.meta['label'] + " (z)"]
         else:
-            return [self.label + " (x)", \
-                    self.label + " (y)", \
-                    self.label + " (z)"]
+            return None
 
     def plot_spatial(self, ax=None, dims=(0, 1), **kwargs):
         if ax is None:
             ax = plt.gca()
 
-        if 'label' not in kwargs.keys():
-            kwargs['label'] = self.label
+        if 'label' not in kwargs.keys() and 'label' in self.meta.keys():
+            kwargs['label'] = self.meta['label']
 
         return self._raw_plot_spatial(ax, dims, **kwargs)
 

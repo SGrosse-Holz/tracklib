@@ -318,7 +318,10 @@ def KLD_PC(dataset, n=10, k=20, dt=1):
     # Check that the trajectory format is homogeneous
     if not dataset.isHomogeneous():
         raise ValueError("Cannot calculate KLD on an inhomogenous dataset")
-    parity = dataset.getHom('parity')
+    parityset = {traj.meta['parity'] for traj in dataset}
+    if len(parityset) > 1:
+        raise ValueError("Trajectories have differing parity")
+    parity = parityset.pop()
     assert parity in {'even', 'odd'}
 
     # Generate snippets

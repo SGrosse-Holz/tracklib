@@ -138,7 +138,6 @@ class Test0Trajectory(myTestCase):
     def test_fromArray(self):
         traj = tl.Trajectory.fromArray(np.zeros((10,)))
         self.assertTupleEqual(traj._data.shape, (1, 10, 1))
-        self.assertIs(traj.label, None)
 
         traj = tl.Trajectory.fromArray(np.zeros((10, 2)))
         self.assertTupleEqual(traj._data.shape, (1, 10, 2))

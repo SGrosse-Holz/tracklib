@@ -1,3 +1,6 @@
+# Tools that make use of the library, such as a function to generate an
+# MSDsampled dataset
+
 import os,sys
 from copy import deepcopy
 
@@ -100,8 +103,7 @@ def MSDcontrol(dataset, msd=None, setMean='copy'):
             newdata = np.array([traces[:, (i*traj.d):((i+1)*traj.d)] for i in range(traj.N)])
             newdata += np.mean(traj[:], axis=1, keepdims=True)
 
-            newtraj = Trajectory.fromArray(newdata)
-            traj.copyMeta(newtraj)
+            newtraj = Trajectory.fromArray(newdata, **deepcopy(traj.meta))
 
             if len(traj) != len(newtraj):
                 print("traj : {}, newtraj : {} entries".format(len(traj), len(newtraj)))
