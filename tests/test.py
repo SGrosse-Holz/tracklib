@@ -89,6 +89,14 @@ class Test1TaggedList(unittest.TestCase):
         self.ls.makeSelection(tags=["a", "b"], logic=any)
         self.assertSetEqual({*self.ls}, {1, 2, 3})
 
+        def sel(datum, tags):
+            return datum >= 2
+        self.ls.makeSelection(selector=sel)
+        self.assertSetEqual({*self.ls}, {2, 3})
+
+        self.ls.refineSelection(tags='c')
+        self.assertSetEqual({*self.ls}, {3})
+
     def test_len(self):
         self.assertEqual(len(self.ls), 3)
 

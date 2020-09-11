@@ -115,7 +115,7 @@ class TaggedList:
 
         # Define selector function according to given arguments
         if 'selector' in kwargs.keys():
-            selector = kwargs.selector
+            selector = kwargs['selector']
         elif 'tags' in kwargs.keys():
             kwargs['tags'] = TaggedList.makeTagsSet(kwargs['tags'])
             if not 'logic' in kwargs.keys():
@@ -254,50 +254,6 @@ class TaggedList:
 
         obj.makeSelection()
         return obj
-
-#     def byTag(self, tags=None, logic=None, giveTags=False):
-#         """
-#         Returns a generator for all trajectories within the current selection,
-#         or in the selection specified by the tags and logic arguments. Note
-#         that in the latter case, the current selection is not overwritten.
-# 
-#         Input
-#         -----
-#         tags : str, list of str, or set of str
-#             the tags we are interested in
-#         logic : callable
-#             this should be a function taking an iterable of boolean values and
-#             returning True or False, i.e. this implements the logic of how to
-#             deal with multiple tags. The most useful values are the built-ins
-#             all and any, but customization is possible.
-#             default: any
-#         giveTags : boolean
-#             whether to yield datum or (datum, tags) for each element.
-#             default: False
-#         """
-#         kwargs = {'tags' : tags, 'logic' : logic}
-#         if tags is None:
-#             del kwargs['tags']
-#         if logic is None:
-#             del kwargs['logic']
-#         (tags, logic) = self.getTagsAndLogicFromKwargs(kwargs)
-#         tags = self.makeTagsSet(tags)
-# 
-#         for datum, datumtags in zip(self._data, self._tags):
-#             if logic(t in datumtags for t in tags):
-#                 if giveTags:
-#                     yield (datum, datumtags)
-#                 else:
-#                     yield datum
-
-#     def subsetByTag(self, *args, **kwargs):
-#         """
-#         A small wrapper for generate(byTag()), i.e. create a subset with
-#         specific tags. All arguments are forwarded to self.byTag(), so see that
-#         docstring for more information.
-#         """
-#         kwargs['giveTags'] = True
-#         return type(self).generate(self.byTag(*args, **kwargs))
 
     def isHomogeneous(self, dtype=None, allowSubclass=False):
         """
