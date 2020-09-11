@@ -60,7 +60,7 @@ class Test1TaggedList(unittest.TestCase):
         self.assertListEqual(self.ls._data, [1, 2, 3, 4, 5, 6])
         self.assertSetEqual(self.ls.tagset(), {'a', 'b', 'c', 'd', 'e', 'new'})
         
-        self.ls.makeSelection('new')
+        self.ls.makeSelection(tags='new')
         self.assertSetEqual(set(self.ls), {4, 5, 6})
 
     def test_homogeneous(self):
@@ -80,13 +80,13 @@ class Test1TaggedList(unittest.TestCase):
             imag = self.ls.getHom('imag')
 
     def test_selection(self):
-        self.ls.makeSelection("a")
+        self.ls.makeSelection(tags="a")
         self.assertSetEqual({*self.ls}, {1, 2})
 
-        self.ls.makeSelection(["a", "b"], logic=all)
+        self.ls.makeSelection(tags=["a", "b"], logic=all)
         self.assertSetEqual({*self.ls}, {1})
 
-        self.ls.makeSelection(["a", "b"], logic=any)
+        self.ls.makeSelection(tags=["a", "b"], logic=any)
         self.assertSetEqual({*self.ls}, {1, 2, 3})
 
     def test_len(self):
@@ -98,26 +98,9 @@ class Test1TaggedList(unittest.TestCase):
         with self.assertRaises(ValueError):
             tl.TaggedList.makeTagsSet(1)
 
-    def test_makeTagsList(self):
-        self.assertListEqual(tl.TaggedList.makeTagsList("foo"), ["foo"])
-        self.assertListEqual(tl.TaggedList.makeTagsList({"foo"}), ["foo"])
-        with self.assertRaises(ValueError):
-            tl.TaggedList.makeTagsList(1)
-
     def test_tagset(self):
         self.assertSetEqual(self.ls.tagset(), {'a', 'b', 'c'})
         self.assertSetEqual(self.ls.tagset(omit_all=False), {'_all', 'a', 'b', 'c'})
-
-    def test_byTag(self):
-        self.ls.makeSelection('c')
-        self.assertSetEqual({*self.ls.byTag()}, {3})
-        self.assertSetEqual({*self.ls.byTag('a')}, {1, 2})
-        self.assertSetEqual({*self.ls.byTag(['a', 'b'], logic=all)}, {1})
-        self.assertSetEqual({*self.ls.byTag(['a', 'b'], logic=any)}, {1, 2, 3})
-        
-    def test_subset(self):
-        sub = self.ls.subsetByTag('a')
-        self.assertListEqual(sub._data, [1, 2])
 
     def test_apply(self):
         def fun(i):
@@ -128,7 +111,7 @@ class Test1TaggedList(unittest.TestCase):
     def test_process(self):
         # need a TaggedList of mutable objects
         mutls = tl.TaggedList.generate(zip(['hello', 'World', '!'], [["a", "b"], "a", ["b", "c"]]))
-        mutls.makeSelection("a")
+        mutls.makeSelection(tags="a")
         newls = mutls.process(lambda word : word+'_moo')
 
         self.assertListEqual(mutls._data, ['hello', 'World', '!'])
@@ -286,14 +269,14 @@ class TestAnalysis(myTestCase):
         lines = tl.analysis.plot_msds(self.ds)
         self.assertEqual(len(lines), self.ntraj+1)
 
-        self.ds.makeSelection({'foo'})
+        self.ds.makeSelection(tags={'foo'})
         lines = tl.analysis.plot_msds(self.ds, label='ensemble')
         self.assertEqual(len(lines), 4)
 
     def test_plot_trajectories(self):
         lines = tl.analysis.plot_trajectories(self.ds)
         self.assertEqual(len(lines), self.ntraj)
-        self.ds.makeSelection("foo")
+        self.ds.makeSelection(tags="foo")
         lines = tl.analysis.plot_trajectories(self.ds)
         self.assertEqual(len(lines), 3)
 
@@ -363,7 +346,7 @@ class TestTools(myTestCase):
         msd = np.sqrt(np.arange(len(self.ds._data[0])))
         control = tl.tools.MSDcontrol(self.ds, msd)
         self.assertEqual(len(control), len(self.ds))
-        self.ds.makeSelection("foo")
+        self.ds.makeSelection(tags="foo")
         control = tl.tools.MSDcontrol(self.ds, msd)
         self.assertEqual(len(control), 3)
         with self.assertRaises(RuntimeError):

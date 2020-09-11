@@ -30,52 +30,112 @@ class TaggedList:
         """
         self._data = []
         self._tags = []
-
-        self.makeSelection()
+        self._selected = []
 
     def __iter__(self):
         """
         Iterate over all data in current selection. Simply a shortcut for
-        self.byTag().
+        self(), i.e. the call syntax.
         """
-        return self.byTag()
+        return self()
 
-    def __call__(self, *args, **kwargs):
+    def __call__(self, giveTags=False):
         """
-        Synonymous to self.byTag(...)
+        Iterate through the current selection of the list.
+
+        Input
+        -----
+        giveTags : bool
+            whether to return the tags or only the data
+            default: False
+
+        Output
+        ------
+        A generator, yielding either just the list entries, or (data, tags)
+        pairs, depending on giveTags
         """
-        return self.byTag(*args, **kwargs)
+        for (datum, tags, selected) in zip(self._data, self._tags, self._selected):
+            if selected:
+                if giveTags:
+                    yield (datum, tags)
+                else:
+                    yield datum
 
     def __len__(self):
         """
         Give number of data in current selection
         """
-        return sum([self._selection_logic(t in tags for t in self._selection_tags) for tags in self._tags])
+        return sum(self._selected)
 
-    def makeSelection(self, tags='_all', logic=any):
+    def makeSelection(self, **kwargs):
         """
         Mark a subset of the current list as 'active selection'. For most
         purposes, the list will behave as if it contained only these data.
 
+        There are multiple ways to select data. Which one is used depends on
+        the kwargs given. With increasing preference, these methods are
+         - select by tag: use the kwargs 'tags' and 'logic'
+         - select with a user-specified function: use kwarg 'selector'
+
+        Without any additional input, makeSelection() will select the whole
+        list. This can be used to reset selection.
+
         Input
         -----
+        Here we give more detailed descriptions of the possible kwargs. For
+        when to use which, see above.
         tags : str, list of str, or set of str
-            the tags to select
-            default: '_all', which is an internal tag attached to all data
-        logic : callable (mostly any or all)
+            the tags to select. How these go together will be determined by
+            'logic'.
+        logic : callable (most useful: the built-ins any() and all())
             the logic for handling multiple tags. Set this to (the built-in)
             all to select the data being tagged with all the given tags, or to
-            any to select the data having any of the given tags
+            any to select the data having any of the given tags.
             default: any
+        selector : callable
+            should expect the datum and a set of tags as input and return True
+            if the datum is to be selected, False otherwise.
+
+        Further kwargs
+        refining : bool
+            set to True to apply the current selection scheme only to those
+            data that are already part of the selection. This can be used to
+            successively refine a selection by using different selection
+            methods (e.g. first by tag, then by some other criterion)
+            default: False
 
         Notes
         -----
         Call this without arguments to reset the selection to the whole
         dataset.
         """
-        tags = self.makeTagsSet(tags)
-        self._selection_tags = tags
-        self._selection_logic = logic
+        assert len(self._data) == len(self._tags) == len(self._selected)
+        if not 'refining' in kwargs.keys():
+            kwargs['refining'] = False
+
+        # Define selector function according to given arguments
+        if 'selector' in kwargs.keys():
+            selector = kwargs.selector
+        elif 'tags' in kwargs.keys():
+            kwargs['tags'] = TaggedList.makeTagsSet(kwargs['tags'])
+            if not 'logic' in kwargs.keys():
+                kwargs['logic'] = any
+            def selector(datum, tags):
+                return kwargs['logic']([tag in tags for tag in kwargs['tags']])
+        else:
+            def selector(datum, tags):
+                return True
+
+        for i, (datum, tags, selected) in enumerate(zip(self._data, self._tags, self._selected)):
+            if selected or not kwargs['refining']:
+                self._selected[i] = selector(datum, tags)
+
+    def refineSelection(self, *args, **kwargs):
+        """
+        A wrapper for makeSelection(..., refining=True). See that docstring.
+        """
+        kwargs['refining'] = True
+        self.makeSelection(*args, **kwargs)
 
     @staticmethod
     def makeTagsSet(tags):
@@ -100,55 +160,6 @@ class TaggedList:
 
         return tags
 
-    @staticmethod
-    def makeTagsList(tags):
-        """
-        Similar to makeTagsSet(), but keep the order. This is used for plotting
-        functions, where the proper alignment of tags and other specifications
-        is important. Mostly for internal use.
-
-        Input
-        -----
-        tags : str, list of str, or set of str
-
-        Output
-        ------
-        list of str
-        """
-        if isinstance(tags, str):
-            tags = [tags]
-        elif isinstance(tags, set):
-            tags = list(tags)
-        elif not isinstance(tags, list):
-            raise ValueError("Did not understand type of 'tags' ({})".format(str(type(tags))))
-
-        return tags
-
-    def getTagsAndLogicFromKwargs(self, yourkwargs):
-        """
-        Can be used if some function wants to process selection for itself.
-        This returns (tags, logic) if they are given, otherwise
-        (self._selection_tags, self._selection_logic). If the kwargs are
-        present, they are extracted exactly as they are, so you might want to
-        run self.makeTagsSet() (or similar) on them. Also, they are really
-        extracted from kwargs. Mostly for internal use.
-        """
-        try:
-            logic = yourkwargs['logic']
-            del yourkwargs['logic']
-        except KeyError:
-            if 'tags' in yourkwargs.keys():
-                logic = any
-            else:
-                logic = self._selection_logic
-        try:
-            tags = yourkwargs['tags']
-            del yourkwargs['tags']
-        except KeyError:
-            tags = self._selection_tags
-
-        return (tags, logic)
-
     def append(self, datum, tags=set()):
         """
         Append the given datum with the given tags.
@@ -162,6 +173,7 @@ class TaggedList:
         Notes
         -----
         The generic tag '_all' will be added to all data.
+        The newly added datum will not be part of the current selection.
         """
         tags = self.makeTagsSet(tags)
 
@@ -170,6 +182,7 @@ class TaggedList:
 
         self._data.append(datum)
         self._tags.append(tags)
+        self._selected.append(False)
 
     def mergein(self, other, additionalTags=set()):
         """
@@ -190,6 +203,7 @@ class TaggedList:
 
         self._data += other._data
         self._tags += newTags
+        self._selected += other._selected
 
     def addTags(self, tags):
         """
@@ -219,7 +233,6 @@ class TaggedList:
         ------
         Set of all tags in the current selection
         """
-        #tagset = set.union(*[set(), *self._tags]) # This is safe if self._tags is empty
         tagset = set()
         for _, tags in self(giveTags=True):
             tagset |= tags
@@ -238,51 +251,53 @@ class TaggedList:
         obj = cls()
         for (datum, tags) in iterator:
             obj.append(datum, tags)
+
+        obj.makeSelection()
         return obj
 
-    def byTag(self, tags=None, logic=None, giveTags=False):
-        """
-        Returns a generator for all trajectories within the current selection,
-        or in the selection specified by the tags and logic arguments. Note
-        that in the latter case, the current selection is not overwritten.
+#     def byTag(self, tags=None, logic=None, giveTags=False):
+#         """
+#         Returns a generator for all trajectories within the current selection,
+#         or in the selection specified by the tags and logic arguments. Note
+#         that in the latter case, the current selection is not overwritten.
+# 
+#         Input
+#         -----
+#         tags : str, list of str, or set of str
+#             the tags we are interested in
+#         logic : callable
+#             this should be a function taking an iterable of boolean values and
+#             returning True or False, i.e. this implements the logic of how to
+#             deal with multiple tags. The most useful values are the built-ins
+#             all and any, but customization is possible.
+#             default: any
+#         giveTags : boolean
+#             whether to yield datum or (datum, tags) for each element.
+#             default: False
+#         """
+#         kwargs = {'tags' : tags, 'logic' : logic}
+#         if tags is None:
+#             del kwargs['tags']
+#         if logic is None:
+#             del kwargs['logic']
+#         (tags, logic) = self.getTagsAndLogicFromKwargs(kwargs)
+#         tags = self.makeTagsSet(tags)
+# 
+#         for datum, datumtags in zip(self._data, self._tags):
+#             if logic(t in datumtags for t in tags):
+#                 if giveTags:
+#                     yield (datum, datumtags)
+#                 else:
+#                     yield datum
 
-        Input
-        -----
-        tags : str, list of str, or set of str
-            the tags we are interested in
-        logic : callable
-            this should be a function taking an iterable of boolean values and
-            returning True or False, i.e. this implements the logic of how to
-            deal with multiple tags. The most useful values are the built-ins
-            all and any, but customization is possible.
-            default: any
-        giveTags : boolean
-            whether to yield datum or (datum, tags) for each element.
-            default: False
-        """
-        kwargs = {'tags' : tags, 'logic' : logic}
-        if tags is None:
-            del kwargs['tags']
-        if logic is None:
-            del kwargs['logic']
-        (tags, logic) = self.getTagsAndLogicFromKwargs(kwargs)
-        tags = self.makeTagsSet(tags)
-
-        for datum, datumtags in zip(self._data, self._tags):
-            if logic(t in datumtags for t in tags):
-                if giveTags:
-                    yield (datum, datumtags)
-                else:
-                    yield datum
-
-    def subsetByTag(self, *args, **kwargs):
-        """
-        A small wrapper for generate(byTag()), i.e. create a subset with
-        specific tags. All arguments are forwarded to self.byTag(), so see that
-        docstring for more information.
-        """
-        kwargs['giveTags'] = True
-        return type(self).generate(self.byTag(*args, **kwargs))
+#     def subsetByTag(self, *args, **kwargs):
+#         """
+#         A small wrapper for generate(byTag()), i.e. create a subset with
+#         specific tags. All arguments are forwarded to self.byTag(), so see that
+#         docstring for more information.
+#         """
+#         kwargs['giveTags'] = True
+#         return type(self).generate(self.byTag(*args, **kwargs))
 
     def isHomogeneous(self, dtype=None, allowSubclass=False):
         """
@@ -350,8 +365,8 @@ class TaggedList:
         """
         # Have to explicitly run through the data array, because the entries
         # might be reassigned.
-        for i, (datum, tags) in enumerate(zip(self._data, self._tags)):
-            if self._selection_logic(t in tags for t in self._selection_tags):
+        for i, (datum, selected) in enumerate(zip(self._data, self._selected)):
+            if selected:
                 self._data[i] = fun(datum)
 
     def process(self, fun):

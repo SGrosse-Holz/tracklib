@@ -130,10 +130,7 @@ def plot_msds(dataset, **kwargs):
     lines.append(plt.loglog(tmsd, msd, color='k', linewidth=2, label='ensemble mean'))
     plt.legend()
 
-    if dataset._selection_tags == {'_all'}:
-        plt.title('MSDs')
-    else:
-        plt.title('MSDs for tags {}'.format(str(dataset._selection_tags)))
+    plt.title('MSDs')
     plt.xlabel("time in frames")
     plt.ylabel("MSD")
     
@@ -146,12 +143,15 @@ def plot_trajectories(dataset, **kwargs):
 
     Input
     -----
-    dataset : TaggedList (possibly with some selection set)
+    dataset : TaggedList
         the set of trajectories to plot
-    tags : tags for selection (following the syntax from TaggedList)
-    logic : logic for selection (following the syntax from TaggedList)
-    color : can be a list of colors, corresponding to the list of tags.
-    All further keyword arguments will be forwarded to plt.plot()
+    colordict : dict
+        determines which tag is colored in which color. This should be a dict
+        whose keys are the tags in the dataset, while the entries are anything
+        recognized by the 'color' kwarg of plt.plot. 
+        default: cycle through the default color cycle
+    All further keyword arguments will be forwarded to
+    Trajectory.plot_spatial()
 
     Output
     ------
@@ -163,31 +163,23 @@ def plot_trajectories(dataset, **kwargs):
     colored by one of the tags they're associated with.  There is no way to
     determine which one.
 
-    To enable targeted coloring of tags, this function can override the
-    selection in the dataset. To that end, give 'tags' as a list and give the
-    corresponding list of colors as argument 'color'.
-
     Similarly to the other analysis.plot_* and analysis.hist_* functions, this
     is mostly intended for use in a quick overview. It does provide some more
     functionality though, in the hope that the user will not see a necessity to
     start plotting trajectories themselves.
     """
-    # Input processing 1 : augment the selection process
-    (tags, logic) = dataset.getTagsAndLogicFromKwargs(kwargs)
-    tags = dataset.makeTagsList(tags)
+    flags = {'fallback_used' : False}
 
-    # Input processing 2 : actually react to inputs
-    flags = {'_all in tags' : False, 'single tag' : False, 'single tag is _all' : False}
-    if '_all' in tags:
-        flags['_all in tags'] = True
-        tags = list(dataset.tagset() - {'_all'})
-        if len(tags) == 0:
-            tags = ['_all']
-    if len(tags) == 1:
-        flags['single tag'] = True
-        flags['single tag is _all'] = tags[0] == '_all'
-        colordict = {tags[0] : None}
-    else:
+    try:
+        fallback_color = kwargs['fallback_color']
+        del kwargs['fallback_color']
+    except KeyError:
+        fallback_color = '#aaaaaa'
+
+    # Get coloring
+    try:
+        colordict = kwargs['colordict']
+    except KeyError:
         try:
             if isinstance(kwargs['color'], list):
                 colors = kwargs['color']
@@ -196,15 +188,17 @@ def plot_trajectories(dataset, **kwargs):
         except KeyError:
             colors = plt.rcParams['axes.prop_cycle'].by_key()['color']
 
-        colordict = {tag : colors[i%len(colors)] for i, tag in enumerate(tags)}
-
+        colordict = {tag : colors[i%len(colors)] for i, tag in enumerate(dataset.tagset())}
+    
     # Plotting
     plt.figure()
     lines = []
-    for traj, trajtags in dataset.byTag(tags, logic=logic, giveTags=True):
-        for mytag in trajtags & set(tags):
-            break # Cheat to get some tag for the trajectory (out of the given ones)
-        kwargs['color'] = colordict[mytag]
+    for traj, trajtags in dataset(giveTags=True):
+        try:
+            kwargs['color'] = {colordict[tag] for tag in trajtags}.pop()
+        except KeyError:
+            kwargs['color'] = fallback_color
+            flags['fallback_used'] = True
         lines.append(traj.plot_spatial(**kwargs))
 
     # Delete all non-plotting kwargs
@@ -217,26 +211,27 @@ def plot_trajectories(dataset, **kwargs):
     # Need some faking for the legend
     x0 = sum(plt.xlim())/2
     y0 = sum(plt.ylim())/2
-    for tag in tags:
+    for tag in colordict.keys():
         kwargs['color'] = colordict[tag]
         kwargs['label'] = tag
         if 'linestyle' in kwargs.keys() and isinstance(kwargs['linestyle'], list):
                 kwargs['linestyle'] = kwargs['linestyle'][0]
         plt.plot(x0, y0, **kwargs)
 
-    # Control appearance
-    if not flags['single tag']:
-        plt.legend()
+    if flags['fallback_used']:
+        kwargs['color'] = fallback_color
+        kwargs['label'] = '<other tags>'
+        if 'linestyle' in kwargs.keys() and isinstance(kwargs['linestyle'], list):
+                kwargs['linestyle'] = kwargs['linestyle'][0]
+        plt.plot(x0, y0, **kwargs)
+        
 
-    if flags['single tag']:
-        if flags['single tag is _all']:
-            plt.title('Trajectories')
-        else:
-            plt.title('Trajectories for tag "{}"'.format(tags[0]))
-    elif flags['_all in tags']:
-        plt.title("Trajectories by tag")
+    # Control appearance
+    if len(colordict) > 1 or flags['fallback_used']:
+        plt.legend()
+        plt.title("Trajectories in real space")
     else:
-        plt.title("Trajectories for tags {}".format(str(tags)))
+        plt.title("Trajectories for tag {}".format(colordict.keys()[0]))
 
     # Done
     return lines
