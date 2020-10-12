@@ -67,15 +67,14 @@ class Trajectory(ABC, collections.abc.Sequence):
         
         Output
         ------
-        The corresponding part of the trajectory, as array of shape (N, t, d),
-        where t is the length of the selection.
-
-        Note
-        ----
-        For a Trajectory object traj, traj[:] is equivalent to traj._data. The
-        former is preferred.
+        The corresponding part of the trajectory.
+        
+        Notes
+        -----
+        Output will be passed through np.squeeze, i.e. single-entry dimensions
+        will be removed.
         """
-        return self._data[:, key, :]
+        return np.squeeze(self._data[:, key, :])
 
     @property
     def N(self):
