@@ -11,7 +11,7 @@ from .taggedlist import TaggedList
 from . import analysis
 from . import util
 
-def MSDdataset(msd, N=2, Ts=100*[None], d=3, **kwargs):
+def MSDdataset(msd, N=2, Ts=None, d=3, **kwargs):
     """
     Generate a dataset of MSD sampled trajectories.
 
@@ -19,9 +19,6 @@ def MSDdataset(msd, N=2, Ts=100*[None], d=3, **kwargs):
     -----
     msd : 1d numpy.ndarray
         the MSD to sample from.
-    n : integer
-        number of trajectories to generate
-        default: 100
     N : integer
         number of particles per trajectory
         default: 2
@@ -40,6 +37,9 @@ def MSDdataset(msd, N=2, Ts=100*[None], d=3, **kwargs):
     ------
     A TaggedList of trajectories (with only the trivial tag '_all').
     """
+    if Ts is None:
+        Ts = 100*[None]
+
     Tmax = len(msd)
     for i, T in enumerate(Ts):
         if T is None:

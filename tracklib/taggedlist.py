@@ -7,22 +7,15 @@ class TaggedList:
 
     This class can be used as an iterator in constructs such as
         for datum in list: ...
-    The behavior of this iterator can be adjusted in multiple ways: by
-    previously selecting only a subset of the list using makeSelection() or by
-    explicitly giving these selection arguments to byTag() or (equivalently)
-    the call syntax (i.e. for datum in list(...): ...).
-
-    Because it is the most explicit, the actual functionality is implemented in
-    byTag(), while the other methods are just aliases for this.
+    The subset to be iterated over can be adjusted using makeSelection(). If
+    you also need the tags for each datum, use list(giveTags=True).
 
     Notes
     -----
-    We chose to not implement the full sequence interface for multiple reasons:
-     - this should be thought of more like a dictionary, i.e. the sequential
-       nature of the data is (presumably) not important, except for matching
-       (datum, tags) pairs
-     - not implementing the interface allows us to overload the item access
-       operator [] in a more useful way (TODO)
+    We chose to not implement the full sequence interface, because this should
+    not be a sequential, but an associative container.
+    Element access is possible with the [n] operator, which is a shortcut for:
+    'run through the current selection and return the n-th value'
     """
     def __init__(self):
         """
@@ -66,6 +59,11 @@ class TaggedList:
         Give number of data in current selection
         """
         return sum(self._selected)
+
+    def __getitem__(self, ind):
+        for i, datum in enumerate(self):
+            if i >= ind:
+                return datum
 
     def makeSelection(self, **kwargs):
         """
@@ -349,3 +347,41 @@ class TaggedList:
                 yield (fun(newdat), tags)
 
         return TaggedList.generate(gen(self))
+
+    def copySelection(self):
+        """
+        Generate a new (copied) list from the current selection.
+
+        Output
+        ------
+        The new list
+        """
+        def gen():
+            for traj, tags in self(giveTags=True):
+                yield(deepcopy(traj), deepcopy(tags))
+
+        return TaggedList.generate(gen())
+
+    def map(self, fun):
+        """
+        Apply fun to all data and return a list of the results.
+
+        Input
+        -----
+        fun : callable that takes a datum as argument
+
+        Output
+        ------
+        A list of fun(datum) for all data in the list
+
+        Notes
+        -----
+         - If fun does not provide a return value, the output will be a list of
+           None's. Use _ = ... to ignore this output if necessary.
+         - This can be used to manipulate the data in-place; if fun does not
+           manipulate the datum in place but has signature datum = fun(datum),
+           then use apply() instead.
+         - python's built-in map() also works very well with TaggedLists.
+        """
+        return [fun(traj) for traj in self]
+

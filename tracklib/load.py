@@ -43,5 +43,9 @@ def evalSPT(filename, tags):
             traj[t, :] = mydata[:, :2]
             yield (Trajectory.fromArray(traj), tags)
 
-    data = np.genfromtxt(filename, delimiter='\t')
+    try:
+        data = np.genfromtxt(filename, delimiter='\t')
+    except Exception as err:
+        print("Error loading file '{}'".format(filename))
+        raise err
     return TaggedList.generate(data2gen(data, tags))

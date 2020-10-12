@@ -5,10 +5,12 @@ import itertools
 import random
 import numpy as np
 import matplotlib.pyplot as plt
+
 from sklearn.neighbors import KDTree
 import scipy.fftpack
 import scipy.stats
 import scipy.linalg
+import scipy.optimize
 
 from . import util
 from .trajectory import Trajectory
@@ -55,8 +57,9 @@ def MSD(dataset, giveN=False, memo=True):
     emsd *= eN
 
     for msd, N in msdNs[1:]:
-        emsd[:len(msd)] += msd*N
-        eN[:len(N)] += N
+        ind = N > 0
+        emsd[:len(msd)][ind] += (msd*N)[ind]
+        eN[:len(N)][ind] += N[ind]
     emsd /= eN
 
     if giveN:
@@ -181,6 +184,7 @@ def plot_trajectories(dataset, **kwargs):
     # Get coloring
     try:
         colordict = kwargs['colordict']
+        del kwargs['colordict']
     except KeyError:
         try:
             if isinstance(kwargs['color'], list):
@@ -197,8 +201,8 @@ def plot_trajectories(dataset, **kwargs):
     lines = []
     for traj, trajtags in dataset(giveTags=True):
         try:
-            kwargs['color'] = {colordict[tag] for tag in trajtags}.pop()
-        except KeyError:
+            kwargs['color'] = colordict[(trajtags & colordict.keys()).pop()]
+        except KeyError: # set().pop() raises a KeyError
             kwargs['color'] = fallback_color
             flags['fallback_used'] = True
         lines.append(traj.plot_spatial(**kwargs))
@@ -233,7 +237,7 @@ def plot_trajectories(dataset, **kwargs):
         plt.legend()
         plt.title("Trajectories in real space")
     else:
-        plt.title("Trajectories for tag {}".format(colordict.keys()[0]))
+        plt.title("Trajectories for tag {}".format(list(colordict.keys())[0]))
 
     # Done
     return lines
@@ -603,6 +607,7 @@ def plot_chi2(dataset, dof=None, p=0.05, ax=None, **kwargs):
     scores = []
     for traj in dataset:
         scores += traj.meta['chi2scores'].tolist()
+    scores = np.array(scores)
 
     preferences = {
             'bins' : 'auto',
@@ -613,7 +618,7 @@ def plot_chi2(dataset, dof=None, p=0.05, ax=None, **kwargs):
         if not key in kwargs.keys():
             kwargs[key] = preferences[key]
 
-    ax.hist(scores, **kwargs)
+    ax.hist(scores[~np.isnan(scores)], **kwargs)
 
     if dof is not None:
         xplot = np.linspace(0, np.nanmax(scores), 1000)
@@ -624,3 +629,43 @@ def plot_chi2(dataset, dof=None, p=0.05, ax=None, **kwargs):
             ax.axvline(x=thres, color='magenta')
             thres = scipy.stats.chi2.isf(p, dof)
             ax.axvline(x=thres, color='magenta')
+
+def fit_MSDscaling(traj, n=5):
+    """
+    Fit a powerlaw scaling to the first n data points of the MSD.
+
+    Input
+    -----
+    traj : Trajectory
+        the trajectory whose MSD we are interested in
+    n : integer
+        how many data points of the MSD to use for fitting
+
+    Output
+    ------
+    None. The results of the fit are written to traj.meta['MSDscaling']. This
+    will be a dict with keys 'alpha', 'logG', 'cov' for respectively the
+    exponent, log of the prefactor, covariance matrix from the fit (cov[0, 0]
+    is the variance of alpha, cov[1, 1] that for logG).
+
+    Notes
+    -----
+     - logG is known to be a bad estimator for diffusivities.
+     - "first n points of the MSD" means time lags 1 through n.
+    """
+    nmsd = traj.msd()[1:(n+1)]
+    t = np.arange(len(nmsd))+1
+    ind = ~np.isnan(nmsd)
+    if np.sum(ind) < 2:
+        traj.meta['MSDscaling'] = {
+                'alpha' : np.nan,
+                'logG' : np.nan,
+                'cov' : np.nan*np.ones((1, 1)),
+                }
+    else:
+        popt, pcov = scipy.optimize.curve_fit(lambda x, a, b : x*a + b, np.log(t[ind]), np.log(nmsd[ind]))
+        traj.meta['MSDscaling'] = {
+                'alpha' : popt[0],
+                'logG' : popt[1],
+                'cov' : pcov,
+                }
