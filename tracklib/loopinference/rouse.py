@@ -19,7 +19,7 @@ class Model:
         k_extra : spring constant of the additional bond
         
         Relation to the physical Rouse model:
-            γ*xdot = κ*B*x + ξ,   <ξ(t)xξ(t')> = 2*γ*k_B*T*δ(t-t')
+            γ*xdot = κ*A*x + ξ,   <ξ(t)ξ(t')> = 2*γ*k_B*T*δ(t-t')
         Then:
             k = κ/γ, D = k_B*T/γ
         """
@@ -265,7 +265,7 @@ def _likelihood_direct(trace, looptrace, model, *, noise, w=None, times=None):
 
     (detsign, logdet) = np.linalg.slogdet(traceCov)
     if detsign < 1:
-        raise RuntimeError("Calculated covariance matrix has negative determinant")
+        raise RuntimeError("Calculated covariance matrix has non-positive determinant")
     return -0.5 * trace @ scipy.linalg.inv(traceCov) @ trace - 0.5*(np.log(2*np.pi) + logdet)
 
 likelihood = _likelihood_filter # faster

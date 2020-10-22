@@ -28,11 +28,11 @@ def split_trajectory_at_big_steps(traj, threshold):
     A set of new trajectories
     """
     if traj.N != 1:
-        raise ValueError("Cannot detect mislinkages in trajectories with N > 2")
+        raise ValueError("Cannot detect mislinkages in trajectories with N > 1")
 
     difftraj = traj.diff().abs()
-    step_isBig = np.where(difftraj[:][0, :, 0] <= threshold, 0, 1.)
-    step_isBig[np.where(np.isnan(difftraj[:][0, :, 0]))] = np.nan
+    step_isBig = np.where(difftraj[:] <= threshold, 0, 1.)
+    step_isBig[np.where(np.isnan(difftraj[:]))] = np.nan
     
     step_isBig = np.pad(step_isBig, 1, constant_values=np.nan) # Now step_isBig[i] describes traj[i] - traj[i-1]
     inds_bigsteps = np.where(step_isBig == 1)[0]
@@ -41,7 +41,7 @@ def split_trajectory_at_big_steps(traj, threshold):
     for ind in inds_bigsteps:
         if ((step_isBig[(ind-1):(ind+2)] == 1).tolist() == [False, True, True]
             and step_isBig[ind+2] != 1):
-            traj[:][:, ind, :] = np.nan
+            traj._data[:, ind, :] = np.nan
             step_isBig[ind:(ind+2)] = np.nan # Now the steps don't exist anymore
     
     # If now everything's fine, that's cool

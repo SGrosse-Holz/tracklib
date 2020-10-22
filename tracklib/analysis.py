@@ -573,7 +573,7 @@ def chi2vsMSD(dataset, n=10, msd=None):
             raise ValueError("Don't know what to do with trajectories with N = {}", traj.N)
 
         def chi2score(i):
-            snip = displacements[i:(i+n)][0]
+            snip = displacements[i:(i+n)]
             return np.sum(np.diag( snip.T @ maG @ snip ))
 
         traj.meta['chi2scores'] = np.array([chi2score(i) for i in range(len(traj)-n)])

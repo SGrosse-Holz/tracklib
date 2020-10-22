@@ -56,8 +56,8 @@ def estimate_pLoop(model, trace, *, noise, config={}):
     -----
     model : rouse.Model
         the model to use
-    trace : (T,) np.array
-        the trace to fit to
+    trace : (T,) or (T, d) np.array
+        the trace(s) to fit to
     noise : float
         the localization error on the trace
     config : dict
@@ -68,6 +68,7 @@ def estimate_pLoop(model, trace, *, noise, config={}):
 
     Output
     ------
+    logL : list of the log-likelihoods at each MCMC step
     pLoop : (T,) array with values in (0, 1)
 
     Notes

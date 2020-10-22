@@ -36,6 +36,13 @@ follows:
  - 'MCMC log every' : int
 	print status information every .. frames.
 	default: -1, i.e. no logging
+ - 'MCMC show progress' : bool
+	whether to show a progress bar
+	default: False
+ - 'MCMC stepsize' : float
+	the stepsize to use in the MCMC scheme. Precise meaning depends on the
+	sampler used.
+	default: 0.1
  - 'unknown params' : list of str
 	which parameters of the rouse.Model are unknown (i.e. should be
 	sampled)

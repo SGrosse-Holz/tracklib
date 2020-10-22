@@ -4,7 +4,29 @@ from abc import ABC, abstractmethod
 import numpy as np
 import scipy.stats
 
-from . import util
+def _fill_config(config):
+    """
+    Fill a given config dict with default values where nothing else is provided
+
+    Input
+    -----
+    config : dict
+        some dict, possibly containing configuration fields
+
+    Output
+    ------
+    config : dict
+        a copy of the input, augmented with default values for missing fields
+    """
+    default_config = {
+        'MCMC iterations'    :   100,
+        'MCMC burn-in'       :    50,
+        'MCMC log every'     :    -1,
+        'MCMC best only'     : False,
+        'MCMC show progress' : False,
+#         'MCMC stepsize'      :   0.1,
+        }
+    return default_config.update(config) or default_config
 
 class Sampler(ABC):
     """
@@ -69,12 +91,16 @@ class Sampler(ABC):
             'MCMC best only'
             'MCMC log every'
             'MCMC show progress'
+            # 'MCMC stepsize'
             See README.md for more details
             
         Output
         ------
         logL : (M,) array
             list of log-likelihood at each iteration
+            EDIT: right now, returning full-length logL. We usually just use
+            this to check convergence, so it doesn't make sense to cut off
+            exactly that burn-in period.
         params : (M, ...) array
             list of the sampled parameter sets.
 
@@ -87,7 +113,7 @@ class Sampler(ABC):
         except TypeError:
             Nparams = 1
             
-        config = util._fill_config(config)
+        config = _fill_config(config)
         config['_logging'] = config['MCMC log every'] > 0
         
         # Setup
@@ -138,7 +164,8 @@ class Sampler(ABC):
             return max_logL, best_values
         else:
             s = slice(config['MCMC burn-in'], None)
-            return logL[s], params[s]
+#             return logL[s], params[s]
+            return logL, params[s]
         
 # An example for sampling from a standard normal
 class normMCMC(Sampler):

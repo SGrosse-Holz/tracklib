@@ -49,3 +49,8 @@ def evalSPT(filename, tags):
         print("Error loading file '{}'".format(filename))
         raise err
     return TaggedList.generate(data2gen(data, tags))
+
+# def twoLocusCSV(filename, tags):
+#     def data2gen(data, tags):
+#         for mydata in np.split(data, np.where(np.diff(data[:, 1]) != 0)[0]+1):
+#             t = mydata[:, 2gt

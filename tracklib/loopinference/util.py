@@ -61,14 +61,14 @@ class LoopSequence:
     def fromLooptrace(cls, looptrace):
         isLoop = [looptrace[0]]
         t = []
-        for i, loop in enumerate(looptrace)[1:]:
+        for i, loop in enumerate(looptrace):
             if loop != isLoop[-1]:
                 isLoop.append(loop)
                 t.append(i)
 
         obj = cls(len(looptrace), len(isLoop))
-        obj.isLoop = isLoop
-        obj.t = t
+        obj.isLoop = np.array(isLoop)
+        obj.t = np.array(t)
         return obj
 
     def numLoops(self):

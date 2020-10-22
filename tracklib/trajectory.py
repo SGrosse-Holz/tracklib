@@ -72,9 +72,15 @@ class Trajectory(ABC, collections.abc.Sequence):
         Notes
         -----
         Output will be passed through np.squeeze, i.e. single-entry dimensions
-        will be removed.
+        will be removed. We augment np.squeeze a little bit though, to the
+        effect that scalar return values will be returned as np.array with
+        shape (1,) instead of ().
         """
-        return np.squeeze(self._data[:, key, :])
+        ret = np.squeeze(self._data[:, key, :])
+        if len(ret.shape) > 0:
+            return ret
+        else:
+            return np.array([ret])
 
     @property
     def N(self):
