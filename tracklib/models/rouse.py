@@ -11,7 +11,7 @@ class Model:
     on too much, it will tear everything apart. This can also lead to negative
     covariance matrices.
     """
-    def __init__(self, N, D, k, k_extra):
+    def __init__(self, N, D, k, k_extra, setup=True, extrabond=(0, -1)):
         """
         N : length of the chain
         D : diffusion constant of a free monomer
@@ -27,6 +27,10 @@ class Model:
         self.D = D
         self.k = k
         self.k_extra = k_extra
+
+        if setup:
+            self.setup_propagation()
+        self.bondpos = extrabond
 
     def __eq__(self, other):
         """
@@ -63,10 +67,12 @@ class Model:
         A = self.k * A
         
         if bond:
-            A[ 0,  0] -= self.k_extra
-            A[ 0, -1] += self.k_extra
-            A[-1,  0] += self.k_extra
-            A[-1, -1] -= self.k_extra
+            b0 = self.bondpos[0]
+            b1 = self.bondpos[1]
+            A[b0, b0] -= self.k_extra
+            A[b0, b1] += self.k_extra
+            A[b1, b0] += self.k_extra
+            A[b1, b1] -= self.k_extra
             
         if tethered:
             A[0, 0] -= self.k
@@ -85,24 +91,88 @@ class Model:
             return ettA @ S @ ettA.T
 
         self._propagation_memo = {
-                'model' : Model(self.N, self.D, self.k, self.k_extra),
+                'model' : Model(self.N, self.D, self.k, self.k_extra, setup=False),
                 'dt' : dt,
                 }
         for bond in [True, False]:
             A, S = self.give_matrices(bond)
             Sig = scipy.integrate.quad_vec(lambda tau : integrand(tau, dt, A, S), 0, dt)[0]
             etA = scipy.linalg.expm(dt*A)
-            self._propagation_memo[bond] = {'etA' : etA, 'Sig' : Sig}
+            self._propagation_memo[bond] = {
+                    'etA' : etA,
+                    'Sig' : Sig,
+                    'LSig' : scipy.linalg.cholesky(Sig, lower=True),
+                    }
 
-    def check_propagation_memo_uptodate(self, dt=1):
+    def check_propagation_memo_uptodate(self, dt=None):
         """
         Check whether the internal storage variable _propagation_memo exists
         and is up to date with the current parameters.
         """
         if not hasattr(self, '_propagation_memo'):
             raise RuntimeError("Call setup_propagation before using propagate()")
-        elif not self == self._propagation_memo['model'] or dt != self._propagation_memo['dt']:
+        elif not self == self._propagation_memo['model'] or (dt != self._propagation_memo['dt'] and dt is not None):
             raise RuntimeError("Parameter values changed since last call to setup_propagation()")
+
+    ### Evolution of single conformations ###
+    
+    def conf_ss(self, bond=False, d=3):
+        """
+        Draw a conformation from steady state. To guarantee existence of a
+        steady state, we tether one end of the chain to the origin.
+        """
+        A, S = self.give_matrices(bond)
+        A[0, 0] -= self.k
+        J = -0.5*scipy.linalg.inv(A) @ S
+        L = scipy.linalg.cholesky(J, lower=True)
+        return L @ np.random.normal(size=(self.N, d))
+
+    def evolve(self, conf, bond=False):
+        """
+        Evolve the conformation conf for the timestep given to setup_propagation()
+
+        Input
+        -----
+        conf : (N, ...) np.ndarray
+            the conformation(s) to evolve
+        bond : bool
+            whether to use the bound or unbound model
+
+        Output
+        ------
+        the evolved conformation
+        """
+        self.check_propagation_memo_uptodate()
+        B = self._propagation_memo[bond]['etA']
+        L = self._propagation_memo[bond]['LSig']
+        return B @ conf + L @ np.random.normal(size=conf.shape)
+
+    def conformations_from_looptrace(self, looptrace, d=3):
+        """
+        A generator yielding conformations for a given looptrace. We start from
+        steady state with/without the extra bond according to looptrace[0] and
+        evolve from there. This means that looptrace[i] can be seen as the
+        indicator for whether or not there is a bond present between time
+        points i-1 and i.
+
+        Input
+        -----
+        looptrace : (T,) iterable of bool
+            the looptrace to simulate for
+        d : int
+            the dimensionality of the conformations to generate
+            default: 3
+
+        Output
+        ------
+        A generator yielding T conformations sampled according to looptrace.
+        """
+        conf = self.conf_ss(looptrace[0], d)
+        for bond in looptrace:
+            conf = self.evolve(conf, bond)
+            yield conf
+
+    ### Propagation of ensemble mean + sem covariance ###
     
     def _propagate_ode(self, M0, C0, t, bond):
         """

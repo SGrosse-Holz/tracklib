@@ -19,12 +19,13 @@ def _fill_config(config):
         a copy of the input, augmented with default values for missing fields
     """
     default_config = {
-        'MCMC iterations'    :   100,
-        'MCMC burn-in'       :    50,
-        'MCMC log every'     :    -1,
-        'MCMC best only'     : False,
-        'MCMC show progress' : False,
-#         'MCMC stepsize'      :   0.1,
+        'stepsize'      :   0.1,
+        'iterations'    :   100,
+        'burn-in'       :    50,
+        'log every'     :    -1,
+        'best only'     : False,
+        'show progress' : False,
+        'assume notebook for progress display' : True,
         }
     return default_config.update(config) or default_config
 
@@ -33,7 +34,7 @@ class Sampler(ABC):
     Abstract base class for MCMC sampling
     
     To implement a sampling scheme, subclass this and override
-     - propose_update(current_values) # may use self.stepsize
+     - propose_update(params) # may use self.stepsize
          propose a step in parameter space. Should return the proposed
          parameter values, forward, and backward probabilities.
      - logL(params)
@@ -41,20 +42,17 @@ class Sampler(ABC):
      - (optional) callback_logging(current_values, best_values)
          will be called whenever a logging line is printed. Can be
          used to print additional info, plot stuff, etc.
+
+    The structure of 'params' is completely up to the user, this could be an
+    np.ndarray of some parameter values, a specific class containing some
+    configuration or anything else. All we have to be able to do is propose
+    updates and calculate likelihoods, and these are the user specified
+    functions.
+
+    Note: if config['show progress'] is True
     """
-    default_stepsize = 0.1 # Default value for __init__, can be overridden in subclass
-    
-    def __init__(self, stepsize=None):
-        """
-        stepsize : float
-            a generic stepsize parameter that can subsequently
-            be used in propose_update(). The main use of this is
-            to be able to make it adaptive in the base class.
-        """
-        self.stepsize = stepsize or Sampler.default_stepsize
-    
     @abstractmethod
-    def propose_update(self, current_values):
+    def propose_update(self, params):
         """
         Propose an update
         
@@ -85,14 +83,10 @@ class Sampler(ABC):
         
         Input
         -----
+        initial_values : whatever self.propose_update() / self.logL expect
+            the initial values for the sampling scheme
         config : dict
-            'MCMC iterations'
-            'MCMC burn-in'
-            'MCMC best only'
-            'MCMC log every'
-            'MCMC show progress'
-            # 'MCMC stepsize'
-            See README.md for more details
+            See mcmc._fill_config()
             
         Output
         ------
@@ -104,7 +98,7 @@ class Sampler(ABC):
         params : (M, ...) array
             list of the sampled parameter sets.
 
-        where M = 'MCMC iterations' - 'MCMC burn-in'
+        where M = 'iterations' - 'burn-in'
         """
         # Input processing
         current_values = initial_values
@@ -114,19 +108,23 @@ class Sampler(ABC):
             Nparams = 1
             
         config = _fill_config(config)
-        config['_logging'] = config['MCMC log every'] > 0
+        config['_logging'] = config['log every'] > 0
+        self.stepsize = config['stepsize']
         
         # Setup
         cur_logL = -np.inf
         max_logL = -np.inf
         cnt_accept = 0
-        if not config['MCMC best only']:
-            logL = -np.inf*np.ones((config['MCMC iterations'],))
+        if not config['best only']:
+            logL = -np.inf*np.ones((config['iterations'],))
             params = []
         
-        Mrange = range(config['MCMC iterations'])
-        if config['MCMC show progress']:
-            from tqdm.notebook import tqdm
+        Mrange = range(config['iterations'])
+        if config['show progress']:
+            if config['assume notebook for progress display']:
+                from tqdm.notebook import tqdm
+            else:
+                from tqdm import tqdm
             Mrange = tqdm(Mrange)
             del tqdm
 
@@ -145,7 +143,7 @@ class Sampler(ABC):
             accept_rate = cnt_accept / (i+1)
             
             # Output
-            if not config['MCMC best only']:
+            if not config['best only']:
                 params.append(current_values)
                 logL[i] = cur_logL
             
@@ -155,15 +153,15 @@ class Sampler(ABC):
                 best_values = deepcopy(current_values)
             
             # Logging
-            if config['_logging'] and ( (i+1) % config['MCMC log every'] == 0 or i+1 == config['MCMC iterations'] ):
+            if config['_logging'] and ( (i+1) % config['log every'] == 0 or i+1 == config['iterations'] ):
                 logstring = "iteration {}: acceptance = {:.0f}%, logL = {}".format(i+1, accept_rate*100, cur_logL)
                 print(logstring)
                 self.callback_logging(current_values, best_values)
                 
-        if config['MCMC best only']:
+        if config['best only']:
             return max_logL, best_values
         else:
-            s = slice(config['MCMC burn-in'], None)
+            s = slice(config['burn-in'], None)
 #             return logL[s], params[s]
             return logL, params[s]
         

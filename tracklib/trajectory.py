@@ -277,7 +277,9 @@ class Trajectory(ABC, collections.abc.Sequence):
         Absolute value trajectories always have even parity, because they
         cannot have negative values.
         """
-        return Trajectory.fromArray(np.sqrt(np.sum(self._data**2, axis=2, keepdims=True)), **deepcopy(self.meta))
+        obj = Trajectory.fromArray(np.sqrt(np.sum(self._data**2, axis=2, keepdims=True)), **deepcopy(self.meta))
+        obj.meta['parity'] = 'even'
+        return obj
 
     def relative(self):
         """
