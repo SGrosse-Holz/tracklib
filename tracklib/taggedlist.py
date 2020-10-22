@@ -36,16 +36,18 @@ class TaggedList:
         """
         Iterate through the current selection of the list.
 
-        Input
-        -----
+        Parameters
+        ----------
         giveTags : bool
             whether to return the tags or only the data
             default: False
 
-        Output
+        Yields
         ------
-        A generator, yielding either just the list entries, or (data, tags)
-        pairs, depending on giveTags
+        datum
+            the data in the current selection
+        set of str, optional
+            the tags associated with the datum
         """
         for (datum, tags, selected) in zip(self._data, self._tags, self._selected):
             if selected:
@@ -61,6 +63,9 @@ class TaggedList:
         return sum(self._selected)
 
     def __getitem__(self, ind):
+        """
+        Give n-th item in current selection
+        """
         for i, datum in enumerate(self):
             if i >= ind:
                 return datum
@@ -75,26 +80,22 @@ class TaggedList:
          - select by tag: use the kwargs 'tags' and 'logic'
          - select with a user-specified function: use kwarg 'selector'
 
-        Without any additional input, makeSelection() will select the whole
-        list. This can be used to reset selection.
-
-        Input
-        -----
-        Here we give more detailed descriptions of the possible kwargs. For
-        when to use which, see above.
+        Parameters
+        ----------
         tags : str, list of str, or set of str
             the tags to select. How these go together will be determined by
             'logic'.
-        logic : callable (most useful: the built-ins any() and all())
+        logic : callable
             the logic for handling multiple tags. Set this to (the built-in)
-            all to select the data being tagged with all the given tags, or to
-            any to select the data having any of the given tags.
+            `all` to select the data being tagged with all the given tags, or to
+            `any` to select the data having any of the given tags.
             default: any
         selector : callable
             should expect the datum and a set of tags as input and return True
             if the datum is to be selected, False otherwise.
 
-        Further kwargs
+        Other Parameters
+        ----------------
         refining : bool
             set to True to apply the current selection scheme only to those
             data that are already part of the selection. This can be used to
@@ -141,12 +142,12 @@ class TaggedList:
         An input processing function making sure that the frequently used
         'tags' argument is a set of strings. Mostly for internal use.
 
-        Input
-        -----
+        Parameters
+        ----------
         tags : str, list of str, or set of str
 
-        Output
-        ------
+        Returns
+        -------
         set of str
         """
         if isinstance(tags, str):
@@ -162,8 +163,8 @@ class TaggedList:
         """
         Append the given datum with the given tags.
 
-        Input
-        -----
+        Parameters
+        ----------
         datum : the datum to append
         tags : str, list of str, or set of str
             the tags to attach to this new datum
@@ -186,8 +187,8 @@ class TaggedList:
         """
         Add the contents of the TaggedList 'other' to the caller.
 
-        Input
-        -----
+        Parameters
+        ----------
         other : TaggedList
             the list whose data to add
         additionalTags : str, list of str, or set of str
@@ -207,8 +208,8 @@ class TaggedList:
         """
         Add new tag(s) to all data in the current selection
 
-        Input
-        -----
+        Parameters
+        ----------
         tags : str, list of str, or set of str
             the tag(s) to add
         """
@@ -221,14 +222,14 @@ class TaggedList:
         """
         Return the set of all tags in the current selection.
 
-        Input
-        -----
+        Parameters
+        ----------
         omit_all : bool
             whether to omit the generic '_all' tag from the output
             default: True
 
-        Output
-        ------
+        Returns
+        -------
         Set of all tags in the current selection
         """
         tagset = set()
@@ -257,16 +258,16 @@ class TaggedList:
         """
         Check whether all the data are of the same type.
 
-        Input
-        -----
+        Parameters
+        ----------
         dtype : type
             if given, check that all data are of this type
         allowSubclass : bool
             whether to accept subclasses of the common type
             default: False
 
-        Output
-        ------
+        Returns
+        -------
         True if the types are homogeneous, False otherwise
         """
         try:
@@ -308,8 +309,8 @@ class TaggedList:
         """
         Apply fun to all data.
 
-        Input
-        -----
+        Parameters
+        ----------
         fun : callable of signature datum = fun(datum)
 
         Notes
@@ -328,12 +329,12 @@ class TaggedList:
         Same as apply(), except that a new list with the processed data is
         returned, while the original one remains unchanged.
 
-        Input
-        -----
+        Parameters
+        ----------
         fun : callable of signature datum = fun(datum)
 
-        Output
-        ------
+        Returns
+        -------
         A new list containing the processed data
 
         Notes
@@ -352,8 +353,8 @@ class TaggedList:
         """
         Generate a new (copied) list from the current selection.
 
-        Output
-        ------
+        Returns
+        -------
         The new list
         """
         def gen():
@@ -366,12 +367,12 @@ class TaggedList:
         """
         Apply fun to all data and return a list of the results.
 
-        Input
-        -----
+        Parameters
+        ----------
         fun : callable that takes a datum as argument
 
-        Output
-        ------
+        Returns
+        -------
         A list of fun(datum) for all data in the list
 
         Notes
