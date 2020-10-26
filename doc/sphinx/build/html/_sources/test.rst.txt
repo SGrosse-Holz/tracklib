@@ -1,5 +1,0 @@
-Test
-====
-
-.. automodule:: tracklib
-        :members:

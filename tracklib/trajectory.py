@@ -6,39 +6,35 @@ from abc import ABC, abstractmethod
 import numpy as np
 import matplotlib.pyplot as plt
 
-class Trajectory(ABC)
+class Trajectory(ABC):
     """
     Represents all kinds of trajectories.
 
     This class represents trajectories with 1 or 2 loci in 1, 2, or 3 spatial
-    dimensions. Consequently, the internal np.ndarray has shape (N, T, d).
-    Besides the actual trajectory data, this class also contains a dict for
-    meta data. This can be used by the end-user, is also intended for use
-    within the library though. tracklib.analysis.MSD for example writes the
+    dimensions. Consequently, the internal `np.ndarray` has shape (`N`, `T`,
+    `d`).  Besides the actual trajectory data, this class also contains a dict
+    for meta data. This can be used by the end-user, is also intended for use
+    within the library though. `tracklib.analysis.MSD` for example writes the
     'MSD' and 'MSDmeta' entries of this dict.
     
-    TODO: write a list of all keys used by the library somewhere
+    TODO: write a list of all `meta` keys used by the library somewhere
 
-    For creation of actual Trajectory objects, use Trajectory.fromArray(). This
-    will select and instantiate the appropriate subclass based on the shape of
-    the input array.
-
-    Parameters
-    ----------
-    Any keyword arguments given to the constructor will be written to self.meta
-
-    Operators
-    ---------
-    For a Trajectory traj, the following operations are defined:
-    len(traj)
-        equivalent to traj.T
-    traj[ind]
-        accesss the time (stretch) specified by ind. The N and T dimensions
-        might be squeezed (removed if they have length 1), while the d
-        dimension is guaranteed to be present.
+    For creation of actual Trajectory objects, use `fromArray()`. This will
+    select and instantiate the appropriate subclass based on the shape of the
+    input array. Any keyword arguments given to that function (or the
+    constructor) will simply be written to `self.meta`
 
     Notes
     -----
+    For a Trajectory `traj`, the following operations are defined:
+
+    ``len(traj)``
+        equivalent to ``traj.T``
+    ``traj[ind]``
+        accesss the time (stretch) specified by ind. The `N` and `T` dimensions
+        might be squeezed (removed if they have length 1), while the `d`
+        dimension is guaranteed to be present.
+
     This class implements the Sequence interface, i.e. it can be used
     much like a list.
     """
@@ -54,17 +50,19 @@ class Trajectory(ABC)
         """
         Create a new Trajectory from an array.
 
+        Any keyword arguments are simply written into `self.meta`.
+
         Parameters
         ----------
-        array : (N, T, d) array-like
-            the data for the new trajectory. We expect N in {1, 2}, d in {1, 2,
-            3}. Arrays with less than three dimensions will be interpreted as
-            (T, d) or (T,), respectively.
-        Additional keyword arguments are saved in the dict self.meta
+        array : array-like with shape (N, T, d)
+            the data for the new trajectory. We expect `N` in {1, 2}, `d` in
+            {1, 2, 3}. Arrays with less than three dimensions will be
+            interpreted as (`T`, `d`) or (`T`,), respectively.
 
         Returns
         -------
-        A new Trajectory object with the specified data
+        Trajectory\_?N\_?d
+            a new Trajectory object with the specified data
 
         Notes
         -----
@@ -109,8 +107,8 @@ class Trajectory(ABC)
         """
         Element-access
 
-        The output will be squeezed along the N and T dimensions (i.e. they
-        will be removed if there is only a single entry). The d dimension is
+        The output will be squeezed along the `N` and `T` dimensions (i.e. they
+        will be removed if there is only a single entry). The `d` dimension is
         guaranteed to be present.
 
         Parameters
@@ -164,21 +162,76 @@ class Trajectory(ABC)
 
     def abs(self):
         """
-        Give a new trajectory holding the magnitude (i.e. 2-norm) of the
-        current one.
+        Modifier: 2-norm
+
+        Returns
+        -------
+        Trajectory
 
         Notes
         -----
         For multi-locus trajectories, this will take the norm of each locus
         individually. To get a Trajectory of relative distance, use
-        Trajectory.relative().abs() .
+        ``Trajectory.relative().abs()``.
+
+        See also
+        --------
+        diff, dims, relative
         """
         return Trajectory.fromArray(np.sqrt(np.sum(self._data**2, axis=2, keepdims=True)), **deepcopy(self.meta))
 
+    def diff(self, dt=1):
+        """
+        Modifier: displacements
+
+        Calculate the displacements over `dt` frames.
+
+        Parameters
+        ----------
+        dt : integer
+            the time lag to use for displacement calculation
+            default: 1, i.e. frame to frame displacements
+
+        Returns
+        -------
+        Trajectory
+
+        See also
+        --------
+        abs, dims, relative
+        """
+        return Trajectory.fromArray(self._data[:, dt:, :] - self._data[:, :-dt, :], **deepcopy(self.meta))
+
+    def dims(self, key):
+        """
+        Modifier: select dimensions
+
+        Parameters
+        ----------
+        key : list of int, or slice
+            which dimensions to use
+
+        Returns
+        -------
+        Trajectory
+
+        See also
+        --------
+        abs, diff, relative
+        """
+        return Trajectory.fromArray(self._data[:, :, key], **deepcopy(self.meta))
+
     def relative(self):
         """
-        Give a new trajectory holding the distance vector(s) between multiple
-        loci.
+        Modifier: distance vector between two loci
+
+        Returns
+        -------
+        Trajectory
+
+        See also
+        --------
+        abs, diff, dims
 
         Notes
         -----
@@ -186,30 +239,6 @@ class Trajectory(ABC)
         in subclasses.
         """
         raise NotImplementedError("relative() does not apply to {}".format(type(self).__name__))
-
-    def diff(self, dt=1):
-        """
-        Give a new trajectory holding the steps/displacements/derivative of the
-        current one.
-
-        Parameters
-        ----------
-        dt : integer
-            the time lag to use for displacement calculation
-            default: 1, i.e. frame to frame displacements
-        """
-        return Trajectory.fromArray(self._data[:, dt:, :] - self._data[:, :-dt, :], **deepcopy(self.meta))
-
-    def dims(self, key):
-        """
-        Give a new trajectory with only a subset of the spatial components
-
-        Parameters
-        ----------
-        key : list of int, or slice
-            which dimensions to use
-        """
-        return Trajectory.fromArray(self._data[:, :, key], **deepcopy(self.meta))
 
 #     def yield_dims(self):
 #         """
@@ -224,20 +253,25 @@ class Trajectory(ABC)
         """
         Plot the trajectory / spatial components versus time.
 
-        See the implementations in the Trajectory\_?N subclasses for more
+        See the implementations in the `Trajectory\_?N` subclasses for more
         detail.
+
+        Keyword arguments are forwarded to ``ax.plot()``
 
         Parameters
         ----------
-        ax : axes
-            the axes to plot in. Can be None, in which case we plot to
-            plt.gca()
-        All further keyword arguments will be forwarded to ax.plot()
+        ax : axes, optional
+            the axes to plot in. Can be `None`, in which case we plot to
+            ``plt.gca()``
 
         Returns
         -------
-        list of lines
-            the output of ax.plot().
+        list of matplotlib.lines.Line2D
+            the output of ``ax.plot()``.
+
+        See also
+        --------
+        plot_spatial
         """
         raise NotImplementedError()
 
@@ -248,20 +282,24 @@ class Trajectory(ABC)
 
         For more detail see the implementation in the subclasses.
 
+        Keyword arguments are forwarded to ``ax.plot()``
+
         Parameters
         ----------
-        ax : axes
-            the axes in which to plot. Can be None, in which case we will plot
-            to plt.gca()
-        dims : 2-tuple of int
-            the dimensions to plot. Only relevant for d >= 3.
-            default: (0, 1)
-        All other keyword arguments will be forwarded to ax.plot()
+        ax : axes, optional
+            the axes in which to plot. Can be `None`, in which case we plot to
+            ``plt.gca()``
+        dims : 2-tuple of int, optional
+            the dimensions to plot. Only relevant for ``d >= 3``.
 
         Returns
         -------
-        list of lines
-            the output of ax.plot().
+        list of matplotlib.lines.Line2D
+            the output of ``ax.plot()``.
+
+        See also
+        --------
+        plot_vstime
         """
         raise NotImplementedError()
 

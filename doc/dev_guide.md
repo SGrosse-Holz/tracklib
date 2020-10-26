@@ -120,6 +120,8 @@ it's useful. Note that `mergein()` has slightly more functionality though.
 ### \_\_getitem\_\_()
 
 ### makeSelection(), refineSelection()
+The default value for `logic` is debatable. Depending on how the class is used,
+`any` or `all` can make more sense.
 
 ### saveSelection(), restoreSelection()
 Need the copying to prevent accidentally giving away access to

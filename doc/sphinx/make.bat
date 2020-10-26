@@ -8,7 +8,7 @@ if "%SPHINXBUILD%" == "" (
 	set SPHINXBUILD=sphinx-build
 )
 set SOURCEDIR=source
-set BUILDDIR="/home/simongh/Dropbox (MIT)/htmldump"
+set BUILDDIR=build
 
 if "%1" == "" goto help
 

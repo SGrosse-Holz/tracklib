@@ -1,0 +1,855 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <title>tracklib package &#8212; tracklib 0.1 documentation</title>
+    <link rel="stylesheet" href="_static/nature.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="_static/language_data.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">tracklib 0.1 documentation</a> &#187;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="tracklib-package">
+<h1>tracklib package<a class="headerlink" href="#tracklib-package" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="subpackages">
+<h2>Subpackages<a class="headerlink" href="#subpackages" title="Permalink to this headline">¶</a></h2>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="tracklib.analysis.html">tracklib.analysis package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="tracklib.analysis.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tracklib.analysis.html#module-tracklib.analysis.chi2">tracklib.analysis.chi2 module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tracklib.analysis.html#module-tracklib.analysis.kld">tracklib.analysis.kld module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tracklib.analysis.html#module-tracklib.analysis.kli">tracklib.analysis.kli module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tracklib.analysis.html#module-tracklib.analysis.msd">tracklib.analysis.msd module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tracklib.analysis.html#module-tracklib.analysis.plots">tracklib.analysis.plots module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tracklib.analysis.html#module-tracklib.analysis">Module contents</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="tracklib.models.html">tracklib.models package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="tracklib.models.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tracklib.models.html#module-tracklib.models.rouse">tracklib.models.rouse module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tracklib.models.html#module-tracklib.models.statgauss">tracklib.models.statgauss module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tracklib.models.html#module-tracklib.models">Module contents</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="tracklib.util.html">tracklib.util package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="tracklib.util.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tracklib.util.html#module-tracklib.util.mcmc">tracklib.util.mcmc module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tracklib.util.html#module-tracklib.util.util">tracklib.util.util module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tracklib.util.html#module-tracklib.util">Module contents</a></li>
+</ul>
+</li>
+</ul>
+</div>
+</div>
+<div class="section" id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="module-tracklib.clean">
+<span id="tracklib-clean-module"></span><h2>tracklib.clean module<a class="headerlink" href="#module-tracklib.clean" title="Permalink to this headline">¶</a></h2>
+<dl class="function">
+<dt id="tracklib.clean.split_trajectory_at_big_steps">
+<code class="sig-prename descclassname">tracklib.clean.</code><code class="sig-name descname">split_trajectory_at_big_steps</code><span class="sig-paren">(</span><em class="sig-param">traj</em>, <em class="sig-param">threshold</em><span class="sig-paren">)</span><a class="headerlink" href="#tracklib.clean.split_trajectory_at_big_steps" title="Permalink to this definition">¶</a></dt>
+<dd><p>Check a trajectory for steps bigger than the given threshold.
+If there are any, split the trajectory at these steps.
+Exception: two consecutive big steps such that the overall</p>
+<blockquote>
+<div><p>displacement is smaller than the threshold are single
+misconnections in otherwise fine trajectories. In this
+case we will simply erase the misconnected point.</p>
+</div></blockquote>
+<dl class="simple">
+<dt>traj<span class="classifier">tracklib.Trajectory, N=1</span></dt><dd><p>the trajectory to investigate</p>
+</dd>
+<dt>threshold<span class="classifier">float</span></dt><dd><p>the maximum allowed frame to frame displacement</p>
+</dd>
+</dl>
+<p>A set of new trajectories</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="tracklib.clean.split_dataset_at_big_steps">
+<code class="sig-prename descclassname">tracklib.clean.</code><code class="sig-name descname">split_dataset_at_big_steps</code><span class="sig-paren">(</span><em class="sig-param">data</em>, <em class="sig-param">threshold</em><span class="sig-paren">)</span><a class="headerlink" href="#tracklib.clean.split_dataset_at_big_steps" title="Permalink to this definition">¶</a></dt>
+<dd><p>Apply split_trajectory_at_big_steps() to all trajectories in the dataset
+and return the results in a new dataset.</p>
+<dl class="simple">
+<dt>data<span class="classifier">TaggedSet</span></dt><dd><p>the dataset with possibly too big steps</p>
+</dd>
+<dt>threshold<span class="classifier">float</span></dt><dd><p>the maximum allowed step size</p>
+</dd>
+</dl>
+<p>A new data set with the split trajectories</p>
+</dd></dl>
+
+</div>
+<div class="section" id="module-tracklib.load">
+<span id="tracklib-load-module"></span><h2>tracklib.load module<a class="headerlink" href="#module-tracklib.load" title="Permalink to this headline">¶</a></h2>
+<dl class="function">
+<dt id="tracklib.load.evalSPT">
+<code class="sig-prename descclassname">tracklib.load.</code><code class="sig-name descname">evalSPT</code><span class="sig-paren">(</span><em class="sig-param">filename</em>, <em class="sig-param">tags</em><span class="sig-paren">)</span><a class="headerlink" href="#tracklib.load.evalSPT" title="Permalink to this definition">¶</a></dt>
+<dd><p>Load a file in the format used by evalSPT. See below for precise
+specification.</p>
+<dl class="simple">
+<dt>filename<span class="classifier">string</span></dt><dd><p>the file to be read</p>
+</dd>
+<dt>tags<span class="classifier">str, list of str or set of str</span></dt><dd><p>the tag(s) to be associated with trajectories from this file</p>
+</dd>
+</dl>
+<p>A TaggedSet containing the loaded trajectories</p>
+<p>The file handed to this function should be a text file, delimited by tabs,
+and without header line. The columns are interpreted as [x, y, t, id, …],
+where … indicates that additional columns in the data will be ignored.
+The time is assumed to be given in frames, i.e. should be an integer. The
+id column should identify trajectories, i.e. all the data belonging to one
+trajectory should be consecutive and have the same id. ids do not have to
+start at 1, or be consecutive integers.</p>
+</dd></dl>
+
+</div>
+<div class="section" id="module-tracklib.taggedset">
+<span id="tracklib-taggedset-module"></span><h2>tracklib.taggedset module<a class="headerlink" href="#module-tracklib.taggedset" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="tracklib.taggedset.TaggedSet">
+<em class="property">class </em><code class="sig-prename descclassname">tracklib.taggedset.</code><code class="sig-name descname">TaggedSet</code><span class="sig-paren">(</span><em class="sig-param">iterable=[]</em>, <em class="sig-param">hasTags=True</em><span class="sig-paren">)</span><a class="headerlink" href="#tracklib.taggedset.TaggedSet" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>A set with tags for each object.</p>
+<p>This class can be used as an iterator in constructs such as <code class="docutils literal notranslate"><span class="pre">for</span> <span class="pre">datum</span> <span class="pre">in</span>
+<span class="pre">myset:</span> <span class="pre">...</span></code>. The subset to be iterated over can be adjusted using
+<cite>makeSelection()</cite>. If you also need the tags for each datum, use
+<code class="docutils literal notranslate"><span class="pre">myset(giveTags=True)</span></code>.</p>
+<p>For processing data (in the sense of “applying a function to all of them”)
+it is often useful to simply use the built-in <cite>map()</cite>. If the function in
+question has to overwrite the data, you can use <cite>filter()</cite>. Note that
+in-place modification can be achieved with <cite>map()</cite>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>iterable</strong> (<em>iterable of data</em><em> or </em><em>(</em><em>datum</em><em>, </em><em>tags</em><em>) </em><em>pairs</em><em>, </em><em>optional</em>) – most useful things to use here: an actual list, or a generator.
+Remember to set <cite>hasTags</cite> accordingly.</p></li>
+<li><p><strong>hasTags</strong> (<em>bool</em><em>, </em><em>optional</em>) – whether the iterable in the first argument gives data only or (datum,
+tags) pairs.</p></li>
+</ul>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<p>For a TaggedSet <cite>myset</cite>, the following operations are defined:</p>
+<dl class="simple">
+<dt><code class="docutils literal notranslate"><span class="pre">len(myset)</span></code></dt><dd><p>return number of data in current selection</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">myset(giveTags)</span></code></dt><dd><p>return a generator yielding single data or (datum, tags) pairs,
+depending on the value of <cite>giveTags</cite> (False by default).</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">iter(myset)</span></code></dt><dd><p>shortcut for <code class="docutils literal notranslate"><span class="pre">myset(giveTags=False)</span></code>. This enables the construction
+<code class="docutils literal notranslate"><span class="pre">for</span> <span class="pre">datum</span> <span class="pre">in</span> <span class="pre">myset:</span> <span class="pre">...</span></code></p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">myset[i]</span></code></dt><dd><p>element access within the current selection. You can use indices from
+<code class="docutils literal notranslate"><span class="pre">0</span></code> to <code class="docutils literal notranslate"><span class="pre">len(myset)-1</span></code>.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">myset</span> <span class="pre">&amp;=</span> <span class="pre">otherset</span></code></dt><dd><p>add the data in <cite>otherset</cite> into <cite>myset</cite>. This is a shortcut for
+<code class="docutils literal notranslate"><span class="pre">myset.mergein(otherset)</span></code>.</p>
+</dd>
+</dl>
+<dl class="method">
+<dt id="tracklib.taggedset.TaggedSet.makeTagsSet">
+<em class="property">static </em><code class="sig-name descname">makeTagsSet</code><span class="sig-paren">(</span><em class="sig-param">tags</em><span class="sig-paren">)</span><a class="headerlink" href="#tracklib.taggedset.TaggedSet.makeTagsSet" title="Permalink to this definition">¶</a></dt>
+<dd><p>Input reformatting, mostly internal use.</p>
+<p>Make sure that the frequently used <cite>tags</cite> argument is a set of strings.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>tags</strong> (<em>str</em><em>, </em><em>list of str</em><em>, or </em><em>set of str</em>) – </p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><em>set of str</em></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="tracklib.taggedset.TaggedSet.add">
+<code class="sig-name descname">add</code><span class="sig-paren">(</span><em class="sig-param">datum</em>, <em class="sig-param">tags={}</em><span class="sig-paren">)</span><a class="headerlink" href="#tracklib.taggedset.TaggedSet.add" title="Permalink to this definition">¶</a></dt>
+<dd><p>Append the given datum with the given tags.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>datum</strong> (<em>object</em>) – the datum to append</p></li>
+<li><p><strong>tags</strong> (<em>str</em><em>, </em><em>list of str</em><em>, or </em><em>set of str</em><em>, </em><em>optional</em>) – the tags to attach to this new datum</p></li>
+</ul>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<p>The newly added datum will be part of the current selection.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="tracklib.taggedset.TaggedSet.__call__">
+<code class="sig-name descname">__call__</code><span class="sig-paren">(</span><em class="sig-param">giveTags=False</em><span class="sig-paren">)</span><a class="headerlink" href="#tracklib.taggedset.TaggedSet.__call__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Iterate through the current selection of the list.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>giveTags</strong> (<em>bool</em><em>, </em><em>optional</em>) – whether to yield only data or (datum, tags) pairs.</p>
+</dd>
+<dt class="field-even">Yields</dt>
+<dd class="field-even"><ul class="simple">
+<li><p><em>datum</em> – the data in the current selection</p></li>
+<li><p><em>set of str, optional</em> – the tags associated with the datum</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="tracklib.taggedset.TaggedSet.makeSelection">
+<code class="sig-name descname">makeSelection</code><span class="sig-paren">(</span><em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#tracklib.taggedset.TaggedSet.makeSelection" title="Permalink to this definition">¶</a></dt>
+<dd><p>Mark a subset of the current set as ‘current selection’. For most
+purposes, the set will behave as if it contained only these data.</p>
+<p>There are multiple ways to select data. Which one is used depends on
+the kwargs given. With increasing preference, these methods are</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>select by tag: use the kwargs ‘tags’ and ‘logic’</p></li>
+<li><p>select with a user-specified function: use kwarg ‘selector’</p></li>
+</ul>
+</div></blockquote>
+<p>Call this without arguments to reset the selection to the whole
+dataset.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>tags</strong> (<em>str</em><em>, </em><em>list of str</em><em>, or </em><em>set of str</em>) – the tags to select. How these go together will be determined by
+‘logic’.</p></li>
+<li><p><strong>logic</strong> (<em>callable with signature bool = logic</em><em>(</em><em>&lt;list of bool&gt;</em><em>)</em>) – the logic for handling multiple tags. Set this to (the built-in)
+<cite>all</cite> to select the data being tagged with all the given tags, or to
+<cite>any</cite> (the default) to select the data having any of the given tags.</p></li>
+<li><p><strong>selector</strong> (<em>callable with signature bool = selector</em><em>(</em><em>datum</em><em>, </em><em>tags</em><em>)</em>) – should expect the datum and a set of tags as input and return True
+if the datum is to be selected, False otherwise.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Other Parameters</dt>
+<dd class="field-even"><p><strong>refining</strong> (<em>bool, optional</em>) – set to True to apply the current selection scheme only to those
+data that are already part of the selection. This can be used to
+successively refine a selection by using different selection
+methods (e.g. first by tag, then by some other criterion).</p>
+</dd>
+</dl>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><a class="reference internal" href="#tracklib.taggedset.TaggedSet.refineSelection" title="tracklib.taggedset.TaggedSet.refineSelection"><code class="xref py py-meth docutils literal notranslate"><span class="pre">refineSelection()</span></code></a>, <a class="reference internal" href="#tracklib.taggedset.TaggedSet.saveSelection" title="tracklib.taggedset.TaggedSet.saveSelection"><code class="xref py py-meth docutils literal notranslate"><span class="pre">saveSelection()</span></code></a>, <a class="reference internal" href="#tracklib.taggedset.TaggedSet.restoreSelection" title="tracklib.taggedset.TaggedSet.restoreSelection"><code class="xref py py-meth docutils literal notranslate"><span class="pre">restoreSelection()</span></code></a></p>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="tracklib.taggedset.TaggedSet.refineSelection">
+<code class="sig-name descname">refineSelection</code><span class="sig-paren">(</span><em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#tracklib.taggedset.TaggedSet.refineSelection" title="Permalink to this definition">¶</a></dt>
+<dd><p>A wrapper for <code class="docutils literal notranslate"><span class="pre">makeSelection(...,</span> <span class="pre">refining=True)</span></code>.</p>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><a class="reference internal" href="#tracklib.taggedset.TaggedSet.makeSelection" title="tracklib.taggedset.TaggedSet.makeSelection"><code class="xref py py-meth docutils literal notranslate"><span class="pre">makeSelection()</span></code></a></p>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="tracklib.taggedset.TaggedSet.saveSelection">
+<code class="sig-name descname">saveSelection</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#tracklib.taggedset.TaggedSet.saveSelection" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return a copy of the current selection for reference.</p>
+<p>This is useful when planning to undo subsequent selections without
+having to redo the whole selection from scratch.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p><em>list of bool</em> – the current selection.</p>
+</dd>
+</dl>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><a class="reference internal" href="#tracklib.taggedset.TaggedSet.restoreSelection" title="tracklib.taggedset.TaggedSet.restoreSelection"><code class="xref py py-meth docutils literal notranslate"><span class="pre">restoreSelection()</span></code></a>, <a class="reference internal" href="#tracklib.taggedset.TaggedSet.makeSelection" title="tracklib.taggedset.TaggedSet.makeSelection"><code class="xref py py-meth docutils literal notranslate"><span class="pre">makeSelection()</span></code></a></p>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="tracklib.taggedset.TaggedSet.restoreSelection">
+<code class="sig-name descname">restoreSelection</code><span class="sig-paren">(</span><em class="sig-param">selection</em><span class="sig-paren">)</span><a class="headerlink" href="#tracklib.taggedset.TaggedSet.restoreSelection" title="Permalink to this definition">¶</a></dt>
+<dd><p>Restore a previously saved selection.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>selection</strong> (<em>list of bool</em>) – the selection that was saved using saveSelection(). Will be copied.</p>
+</dd>
+</dl>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><a class="reference internal" href="#tracklib.taggedset.TaggedSet.saveSelection" title="tracklib.taggedset.TaggedSet.saveSelection"><code class="xref py py-meth docutils literal notranslate"><span class="pre">saveSelection()</span></code></a>, <a class="reference internal" href="#tracklib.taggedset.TaggedSet.makeSelection" title="tracklib.taggedset.TaggedSet.makeSelection"><code class="xref py py-meth docutils literal notranslate"><span class="pre">makeSelection()</span></code></a></p>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="tracklib.taggedset.TaggedSet.copySelection">
+<code class="sig-name descname">copySelection</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#tracklib.taggedset.TaggedSet.copySelection" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generate a new (copied) list from the current selection.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p><em>The new list</em></p>
+</dd>
+</dl>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><a class="reference internal" href="#tracklib.taggedset.TaggedSet.makeSelection" title="tracklib.taggedset.TaggedSet.makeSelection"><code class="xref py py-meth docutils literal notranslate"><span class="pre">makeSelection()</span></code></a></p>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="tracklib.taggedset.TaggedSet.mergein">
+<code class="sig-name descname">mergein</code><span class="sig-paren">(</span><em class="sig-param">other</em>, <em class="sig-param">additionalTags={}</em><span class="sig-paren">)</span><a class="headerlink" href="#tracklib.taggedset.TaggedSet.mergein" title="Permalink to this definition">¶</a></dt>
+<dd><p>Add the contents of the TaggedSet ‘other’ to the caller.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>other</strong> (<a class="reference internal" href="#tracklib.taggedset.TaggedSet" title="tracklib.taggedset.TaggedSet"><em>TaggedSet</em></a>) – the list whose data to add</p></li>
+<li><p><strong>additionalTags</strong> (<em>str</em><em>, </em><em>list of str</em><em>, or </em><em>set of str</em><em>, </em><em>optional</em>) – additional tag(s) to add to all of the new data.</p></li>
+</ul>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<p>This can also be invoked as <code class="docutils literal notranslate"><span class="pre">self</span> <span class="pre">&amp;=</span> <span class="pre">other</span></code>. In that case no
+additional tags can be added.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="tracklib.taggedset.TaggedSet.addTags">
+<code class="sig-name descname">addTags</code><span class="sig-paren">(</span><em class="sig-param">tags</em><span class="sig-paren">)</span><a class="headerlink" href="#tracklib.taggedset.TaggedSet.addTags" title="Permalink to this definition">¶</a></dt>
+<dd><p>Add new tag(s) to all data in the current selection</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>tags</strong> (<em>str</em><em>, </em><em>list of str</em><em>, or </em><em>set of str</em>) – the tag(s) to add</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="tracklib.taggedset.TaggedSet.tagset">
+<code class="sig-name descname">tagset</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#tracklib.taggedset.TaggedSet.tagset" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the set of all tags in the current selection.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p><em>set of str</em> – set of all tags in the current selection</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="tracklib.taggedset.TaggedSet.filter">
+<code class="sig-name descname">filter</code><span class="sig-paren">(</span><em class="sig-param">fun</em><span class="sig-paren">)</span><a class="headerlink" href="#tracklib.taggedset.TaggedSet.filter" title="Permalink to this definition">¶</a></dt>
+<dd><p>Run all data through the given function.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>fun</strong> (<em>callable of signature datum = fun</em><em>(</em><em>datum</em><em>)</em>) – </p>
+</dd>
+</dl>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><a class="reference internal" href="#tracklib.taggedset.TaggedSet.process" title="tracklib.taggedset.TaggedSet.process"><code class="xref py py-meth docutils literal notranslate"><span class="pre">process()</span></code></a>, <code class="xref py py-meth docutils literal notranslate"><span class="pre">map()</span></code></p>
+</div>
+<p class="rubric">Notes</p>
+<p>This function works in-place. If you need the original data to remain
+unchanged, use process().</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="tracklib.taggedset.TaggedSet.process">
+<code class="sig-name descname">process</code><span class="sig-paren">(</span><em class="sig-param">fun</em><span class="sig-paren">)</span><a class="headerlink" href="#tracklib.taggedset.TaggedSet.process" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generate a new TaggedSet with filtered data.</p>
+<p>Same as filter(), except that a new list with the processed data is
+returned, while the original one remains unchanged.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>fun</strong> (<em>callable of signature datum = fun</em><em>(</em><em>datum</em><em>)</em>) – </p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><em>TaggedSet</em> – a new set containing the processed data</p>
+</dd>
+</dl>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><a class="reference internal" href="#tracklib.taggedset.TaggedSet.filter" title="tracklib.taggedset.TaggedSet.filter"><code class="xref py py-meth docutils literal notranslate"><span class="pre">filter()</span></code></a>, <code class="xref py py-meth docutils literal notranslate"><span class="pre">map()</span></code></p>
+</div>
+<p class="rubric">Notes</p>
+<p>The new set will contain only the processed data, i.e. data that are
+not in the current selection will not be copied.</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-tracklib.trajectory">
+<span id="tracklib-trajectory-module"></span><h2>tracklib.trajectory module<a class="headerlink" href="#module-tracklib.trajectory" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="tracklib.trajectory.Trajectory">
+<em class="property">class </em><code class="sig-prename descclassname">tracklib.trajectory.</code><code class="sig-name descname">Trajectory</code><span class="sig-paren">(</span><em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#tracklib.trajectory.Trajectory" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">abc.ABC</span></code></p>
+<p>Represents all kinds of trajectories.</p>
+<p>This class represents trajectories with 1 or 2 loci in 1, 2, or 3 spatial
+dimensions. Consequently, the internal <cite>np.ndarray</cite> has shape (<cite>N</cite>, <cite>T</cite>,
+<cite>d</cite>).  Besides the actual trajectory data, this class also contains a dict
+for meta data. This can be used by the end-user, is also intended for use
+within the library though. <cite>tracklib.analysis.MSD</cite> for example writes the
+‘MSD’ and ‘MSDmeta’ entries of this dict.</p>
+<p>TODO: write a list of all <cite>meta</cite> keys used by the library somewhere</p>
+<p>For creation of actual Trajectory objects, use <cite>fromArray()</cite>. This will
+select and instantiate the appropriate subclass based on the shape of the
+input array. Any keyword arguments given to that function (or the
+constructor) will simply be written to <cite>self.meta</cite></p>
+<p class="rubric">Notes</p>
+<p>For a Trajectory <cite>traj</cite>, the following operations are defined:</p>
+<dl class="simple">
+<dt><code class="docutils literal notranslate"><span class="pre">len(traj)</span></code></dt><dd><p>equivalent to <code class="docutils literal notranslate"><span class="pre">traj.T</span></code></p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">traj[ind]</span></code></dt><dd><p>accesss the time (stretch) specified by ind. The <cite>N</cite> and <cite>T</cite> dimensions
+might be squeezed (removed if they have length 1), while the <cite>d</cite>
+dimension is guaranteed to be present.</p>
+</dd>
+</dl>
+<p>This class implements the Sequence interface, i.e. it can be used
+much like a list.</p>
+<dl class="method">
+<dt id="tracklib.trajectory.Trajectory.fromArray">
+<em class="property">classmethod </em><code class="sig-name descname">fromArray</code><span class="sig-paren">(</span><em class="sig-param">array</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#tracklib.trajectory.Trajectory.fromArray" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create a new Trajectory from an array.</p>
+<p>Any keyword arguments are simply written into <cite>self.meta</cite>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>array</strong> (<em>array-like with shape</em><em> (</em><em>N</em><em>, </em><em>T</em><em>, </em><em>d</em><em>)</em>) – the data for the new trajectory. We expect <cite>N</cite> in {1, 2}, <cite>d</cite> in
+{1, 2, 3}. Arrays with less than three dimensions will be
+interpreted as (<cite>T</cite>, <cite>d</cite>) or (<cite>T</cite>,), respectively.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><em>Trajectory_?N_?d</em> – a new Trajectory object with the specified data</p>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<p>The input data is copied.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="tracklib.trajectory.Trajectory.N">
+<em class="property">property </em><code class="sig-name descname">N</code><a class="headerlink" href="#tracklib.trajectory.Trajectory.N" title="Permalink to this definition">¶</a></dt>
+<dd><p>Number of loci</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="tracklib.trajectory.Trajectory.T">
+<em class="property">property </em><code class="sig-name descname">T</code><a class="headerlink" href="#tracklib.trajectory.Trajectory.T" title="Permalink to this definition">¶</a></dt>
+<dd><p>Length in frames</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="tracklib.trajectory.Trajectory.d">
+<em class="property">property </em><code class="sig-name descname">d</code><a class="headerlink" href="#tracklib.trajectory.Trajectory.d" title="Permalink to this definition">¶</a></dt>
+<dd><p>Number of dimensions</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="tracklib.trajectory.Trajectory.__getitem__">
+<code class="sig-name descname">__getitem__</code><span class="sig-paren">(</span><em class="sig-param">key</em><span class="sig-paren">)</span><a class="headerlink" href="#tracklib.trajectory.Trajectory.__getitem__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Element-access</p>
+<p>The output will be squeezed along the <cite>N</cite> and <cite>T</cite> dimensions (i.e. they
+will be removed if there is only a single entry). The <cite>d</cite> dimension is
+guaranteed to be present.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>key</strong> (<em>index</em><em> or </em><em>slice</em>) – </p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><em>The corresponding part of the trajectory.</em></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="tracklib.trajectory.Trajectory.abs">
+<code class="sig-name descname">abs</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#tracklib.trajectory.Trajectory.abs" title="Permalink to this definition">¶</a></dt>
+<dd><p>Modifier: 2-norm</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p><em>Trajectory</em></p>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<p>For multi-locus trajectories, this will take the norm of each locus
+individually. To get a Trajectory of relative distance, use
+<code class="docutils literal notranslate"><span class="pre">Trajectory.relative().abs()</span></code>.</p>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><a class="reference internal" href="#tracklib.trajectory.Trajectory.diff" title="tracklib.trajectory.Trajectory.diff"><code class="xref py py-meth docutils literal notranslate"><span class="pre">diff()</span></code></a>, <a class="reference internal" href="#tracklib.trajectory.Trajectory.dims" title="tracklib.trajectory.Trajectory.dims"><code class="xref py py-meth docutils literal notranslate"><span class="pre">dims()</span></code></a>, <a class="reference internal" href="#tracklib.trajectory.Trajectory.relative" title="tracklib.trajectory.Trajectory.relative"><code class="xref py py-meth docutils literal notranslate"><span class="pre">relative()</span></code></a></p>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="tracklib.trajectory.Trajectory.diff">
+<code class="sig-name descname">diff</code><span class="sig-paren">(</span><em class="sig-param">dt=1</em><span class="sig-paren">)</span><a class="headerlink" href="#tracklib.trajectory.Trajectory.diff" title="Permalink to this definition">¶</a></dt>
+<dd><p>Modifier: displacements</p>
+<p>Calculate the displacements over <cite>dt</cite> frames.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>dt</strong> (<em>integer</em>) – the time lag to use for displacement calculation
+default: 1, i.e. frame to frame displacements</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><em>Trajectory</em></p>
+</dd>
+</dl>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><a class="reference internal" href="#tracklib.trajectory.Trajectory.abs" title="tracklib.trajectory.Trajectory.abs"><code class="xref py py-meth docutils literal notranslate"><span class="pre">abs()</span></code></a>, <a class="reference internal" href="#tracklib.trajectory.Trajectory.dims" title="tracklib.trajectory.Trajectory.dims"><code class="xref py py-meth docutils literal notranslate"><span class="pre">dims()</span></code></a>, <a class="reference internal" href="#tracklib.trajectory.Trajectory.relative" title="tracklib.trajectory.Trajectory.relative"><code class="xref py py-meth docutils literal notranslate"><span class="pre">relative()</span></code></a></p>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="tracklib.trajectory.Trajectory.dims">
+<code class="sig-name descname">dims</code><span class="sig-paren">(</span><em class="sig-param">key</em><span class="sig-paren">)</span><a class="headerlink" href="#tracklib.trajectory.Trajectory.dims" title="Permalink to this definition">¶</a></dt>
+<dd><p>Modifier: select dimensions</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>key</strong> (<em>list of int</em><em>, or </em><em>slice</em>) – which dimensions to use</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><em>Trajectory</em></p>
+</dd>
+</dl>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><a class="reference internal" href="#tracklib.trajectory.Trajectory.abs" title="tracklib.trajectory.Trajectory.abs"><code class="xref py py-meth docutils literal notranslate"><span class="pre">abs()</span></code></a>, <a class="reference internal" href="#tracklib.trajectory.Trajectory.diff" title="tracklib.trajectory.Trajectory.diff"><code class="xref py py-meth docutils literal notranslate"><span class="pre">diff()</span></code></a>, <a class="reference internal" href="#tracklib.trajectory.Trajectory.relative" title="tracklib.trajectory.Trajectory.relative"><code class="xref py py-meth docutils literal notranslate"><span class="pre">relative()</span></code></a></p>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="tracklib.trajectory.Trajectory.relative">
+<code class="sig-name descname">relative</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#tracklib.trajectory.Trajectory.relative" title="Permalink to this definition">¶</a></dt>
+<dd><p>Modifier: distance vector between two loci</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p><em>Trajectory</em></p>
+</dd>
+</dl>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><a class="reference internal" href="#tracklib.trajectory.Trajectory.abs" title="tracklib.trajectory.Trajectory.abs"><code class="xref py py-meth docutils literal notranslate"><span class="pre">abs()</span></code></a>, <a class="reference internal" href="#tracklib.trajectory.Trajectory.diff" title="tracklib.trajectory.Trajectory.diff"><code class="xref py py-meth docutils literal notranslate"><span class="pre">diff()</span></code></a>, <a class="reference internal" href="#tracklib.trajectory.Trajectory.dims" title="tracklib.trajectory.Trajectory.dims"><code class="xref py py-meth docutils literal notranslate"><span class="pre">dims()</span></code></a></p>
+</div>
+<p class="rubric">Notes</p>
+<p>Applies only to multi-locus trajectories and should thus be implemented
+in subclasses.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="tracklib.trajectory.Trajectory.plot_vstime">
+<code class="sig-name descname">plot_vstime</code><span class="sig-paren">(</span><em class="sig-param">ax=None</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#tracklib.trajectory.Trajectory.plot_vstime" title="Permalink to this definition">¶</a></dt>
+<dd><p>Plot the trajectory / spatial components versus time.</p>
+<p>See the implementations in the <cite>Trajectory_?N</cite> subclasses for more
+detail.</p>
+<p>Keyword arguments are forwarded to <code class="docutils literal notranslate"><span class="pre">ax.plot()</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>ax</strong> (<em>axes</em><em>, </em><em>optional</em>) – the axes to plot in. Can be <cite>None</cite>, in which case we plot to
+<code class="docutils literal notranslate"><span class="pre">plt.gca()</span></code></p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><em>list of matplotlib.lines.Line2D</em> – the output of <code class="docutils literal notranslate"><span class="pre">ax.plot()</span></code>.</p>
+</dd>
+</dl>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><a class="reference internal" href="#tracklib.trajectory.Trajectory.plot_spatial" title="tracklib.trajectory.Trajectory.plot_spatial"><code class="xref py py-meth docutils literal notranslate"><span class="pre">plot_spatial()</span></code></a></p>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="tracklib.trajectory.Trajectory.plot_spatial">
+<em class="property">abstract </em><code class="sig-name descname">plot_spatial</code><span class="sig-paren">(</span><em class="sig-param">ax=None</em>, <em class="sig-param">dims=(0</em>, <em class="sig-param">1)</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#tracklib.trajectory.Trajectory.plot_spatial" title="Permalink to this definition">¶</a></dt>
+<dd><p>Plot the trajectory in space.</p>
+<p>For more detail see the implementation in the subclasses.</p>
+<p>Keyword arguments are forwarded to <code class="docutils literal notranslate"><span class="pre">ax.plot()</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>ax</strong> (<em>axes</em><em>, </em><em>optional</em>) – the axes in which to plot. Can be <cite>None</cite>, in which case we plot to
+<code class="docutils literal notranslate"><span class="pre">plt.gca()</span></code></p></li>
+<li><p><strong>dims</strong> (<em>2-tuple of int</em><em>, </em><em>optional</em>) – the dimensions to plot. Only relevant for <code class="docutils literal notranslate"><span class="pre">d</span> <span class="pre">&gt;=</span> <span class="pre">3</span></code>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><em>list of matplotlib.lines.Line2D</em> – the output of <code class="docutils literal notranslate"><span class="pre">ax.plot()</span></code>.</p>
+</dd>
+</dl>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><a class="reference internal" href="#tracklib.trajectory.Trajectory.plot_vstime" title="tracklib.trajectory.Trajectory.plot_vstime"><code class="xref py py-meth docutils literal notranslate"><span class="pre">plot_vstime()</span></code></a></p>
+</div>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="exception">
+<dt id="tracklib.trajectory.N12Error">
+<em class="property">exception </em><code class="sig-prename descclassname">tracklib.trajectory.</code><code class="sig-name descname">N12Error</code><a class="headerlink" href="#tracklib.trajectory.N12Error" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">ValueError</span></code></p>
+<p>For indicating that you confused N=1 and N=2 trajectories</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="tracklib.trajectory.Trajectory_1N">
+<em class="property">class </em><code class="sig-prename descclassname">tracklib.trajectory.</code><code class="sig-name descname">Trajectory_1N</code><span class="sig-paren">(</span><em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#tracklib.trajectory.Trajectory_1N" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#tracklib.trajectory.Trajectory" title="tracklib.trajectory.Trajectory"><code class="xref py py-class docutils literal notranslate"><span class="pre">tracklib.trajectory.Trajectory</span></code></a></p>
+<p>Single-locus trajectory</p>
+<dl class="method">
+<dt id="tracklib.trajectory.Trajectory_1N.plot_vstime">
+<code class="sig-name descname">plot_vstime</code><span class="sig-paren">(</span><em class="sig-param">ax=None</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#tracklib.trajectory.Trajectory_1N.plot_vstime" title="Permalink to this definition">¶</a></dt>
+<dd><p>Plot spatial components vs. time</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="tracklib.trajectory.Trajectory_2N">
+<em class="property">class </em><code class="sig-prename descclassname">tracklib.trajectory.</code><code class="sig-name descname">Trajectory_2N</code><span class="sig-paren">(</span><em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#tracklib.trajectory.Trajectory_2N" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#tracklib.trajectory.Trajectory" title="tracklib.trajectory.Trajectory"><code class="xref py py-class docutils literal notranslate"><span class="pre">tracklib.trajectory.Trajectory</span></code></a></p>
+<p>Two-locus trajectory</p>
+<dl class="method">
+<dt id="tracklib.trajectory.Trajectory_2N.relative">
+<code class="sig-name descname">relative</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#tracklib.trajectory.Trajectory_2N.relative" title="Permalink to this definition">¶</a></dt>
+<dd><p>Modifier: distance vector between two loci</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p><em>Trajectory</em></p>
+</dd>
+</dl>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><code class="xref py py-meth docutils literal notranslate"><span class="pre">abs()</span></code>, <code class="xref py py-meth docutils literal notranslate"><span class="pre">diff()</span></code>, <code class="xref py py-meth docutils literal notranslate"><span class="pre">dims()</span></code></p>
+</div>
+<p class="rubric">Notes</p>
+<p>Applies only to multi-locus trajectories and should thus be implemented
+in subclasses.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="tracklib.trajectory.Trajectory_2N.plot_vstime">
+<code class="sig-name descname">plot_vstime</code><span class="sig-paren">(</span><em class="sig-param">ax=None</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#tracklib.trajectory.Trajectory_2N.plot_vstime" title="Permalink to this definition">¶</a></dt>
+<dd><p>Plot spatial components of connection vector vs. time</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="tracklib.trajectory.Trajectory_1d">
+<em class="property">class </em><code class="sig-prename descclassname">tracklib.trajectory.</code><code class="sig-name descname">Trajectory_1d</code><span class="sig-paren">(</span><em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#tracklib.trajectory.Trajectory_1d" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#tracklib.trajectory.Trajectory" title="tracklib.trajectory.Trajectory"><code class="xref py py-class docutils literal notranslate"><span class="pre">tracklib.trajectory.Trajectory</span></code></a></p>
+<p>1d trajectory</p>
+<dl class="method">
+<dt id="tracklib.trajectory.Trajectory_1d.plot_spatial">
+<code class="sig-name descname">plot_spatial</code><span class="sig-paren">(</span><em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#tracklib.trajectory.Trajectory_1d.plot_spatial" title="Permalink to this definition">¶</a></dt>
+<dd><p>Plot the trajectory in space.</p>
+<p>For more detail see the implementation in the subclasses.</p>
+<p>Keyword arguments are forwarded to <code class="docutils literal notranslate"><span class="pre">ax.plot()</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>ax</strong> (<em>axes</em><em>, </em><em>optional</em>) – the axes in which to plot. Can be <cite>None</cite>, in which case we plot to
+<code class="docutils literal notranslate"><span class="pre">plt.gca()</span></code></p></li>
+<li><p><strong>dims</strong> (<em>2-tuple of int</em><em>, </em><em>optional</em>) – the dimensions to plot. Only relevant for <code class="docutils literal notranslate"><span class="pre">d</span> <span class="pre">&gt;=</span> <span class="pre">3</span></code>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><em>list of matplotlib.lines.Line2D</em> – the output of <code class="docutils literal notranslate"><span class="pre">ax.plot()</span></code>.</p>
+</dd>
+</dl>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><code class="xref py py-meth docutils literal notranslate"><span class="pre">plot_vstime()</span></code></p>
+</div>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="tracklib.trajectory.Trajectory_2d">
+<em class="property">class </em><code class="sig-prename descclassname">tracklib.trajectory.</code><code class="sig-name descname">Trajectory_2d</code><span class="sig-paren">(</span><em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#tracklib.trajectory.Trajectory_2d" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#tracklib.trajectory.Trajectory" title="tracklib.trajectory.Trajectory"><code class="xref py py-class docutils literal notranslate"><span class="pre">tracklib.trajectory.Trajectory</span></code></a></p>
+<p>2d trajectory</p>
+<dl class="method">
+<dt id="tracklib.trajectory.Trajectory_2d.plot_spatial">
+<code class="sig-name descname">plot_spatial</code><span class="sig-paren">(</span><em class="sig-param">ax=None</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#tracklib.trajectory.Trajectory_2d.plot_spatial" title="Permalink to this definition">¶</a></dt>
+<dd><p>Plot the trajectory in space.</p>
+<p>For more detail see the implementation in the subclasses.</p>
+<p>Keyword arguments are forwarded to <code class="docutils literal notranslate"><span class="pre">ax.plot()</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>ax</strong> (<em>axes</em><em>, </em><em>optional</em>) – the axes in which to plot. Can be <cite>None</cite>, in which case we plot to
+<code class="docutils literal notranslate"><span class="pre">plt.gca()</span></code></p></li>
+<li><p><strong>dims</strong> (<em>2-tuple of int</em><em>, </em><em>optional</em>) – the dimensions to plot. Only relevant for <code class="docutils literal notranslate"><span class="pre">d</span> <span class="pre">&gt;=</span> <span class="pre">3</span></code>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><em>list of matplotlib.lines.Line2D</em> – the output of <code class="docutils literal notranslate"><span class="pre">ax.plot()</span></code>.</p>
+</dd>
+</dl>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><code class="xref py py-meth docutils literal notranslate"><span class="pre">plot_vstime()</span></code></p>
+</div>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="tracklib.trajectory.Trajectory_3d">
+<em class="property">class </em><code class="sig-prename descclassname">tracklib.trajectory.</code><code class="sig-name descname">Trajectory_3d</code><span class="sig-paren">(</span><em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#tracklib.trajectory.Trajectory_3d" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#tracklib.trajectory.Trajectory" title="tracklib.trajectory.Trajectory"><code class="xref py py-class docutils literal notranslate"><span class="pre">tracklib.trajectory.Trajectory</span></code></a></p>
+<p>3d trajectory</p>
+<dl class="method">
+<dt id="tracklib.trajectory.Trajectory_3d.plot_spatial">
+<code class="sig-name descname">plot_spatial</code><span class="sig-paren">(</span><em class="sig-param">ax=None</em>, <em class="sig-param">dims=(0</em>, <em class="sig-param">1)</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#tracklib.trajectory.Trajectory_3d.plot_spatial" title="Permalink to this definition">¶</a></dt>
+<dd><p>Plot the trajectory in space.</p>
+<p>For more detail see the implementation in the subclasses.</p>
+<p>Keyword arguments are forwarded to <code class="docutils literal notranslate"><span class="pre">ax.plot()</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>ax</strong> (<em>axes</em><em>, </em><em>optional</em>) – the axes in which to plot. Can be <cite>None</cite>, in which case we plot to
+<code class="docutils literal notranslate"><span class="pre">plt.gca()</span></code></p></li>
+<li><p><strong>dims</strong> (<em>2-tuple of int</em><em>, </em><em>optional</em>) – the dimensions to plot. Only relevant for <code class="docutils literal notranslate"><span class="pre">d</span> <span class="pre">&gt;=</span> <span class="pre">3</span></code>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><em>list of matplotlib.lines.Line2D</em> – the output of <code class="docutils literal notranslate"><span class="pre">ax.plot()</span></code>.</p>
+</dd>
+</dl>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><code class="xref py py-meth docutils literal notranslate"><span class="pre">plot_vstime()</span></code></p>
+</div>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="tracklib.trajectory.Trajectory_1N1d">
+<em class="property">class </em><code class="sig-prename descclassname">tracklib.trajectory.</code><code class="sig-name descname">Trajectory_1N1d</code><span class="sig-paren">(</span><em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#tracklib.trajectory.Trajectory_1N1d" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#tracklib.trajectory.Trajectory_1N" title="tracklib.trajectory.Trajectory_1N"><code class="xref py py-class docutils literal notranslate"><span class="pre">tracklib.trajectory.Trajectory_1N</span></code></a>, <a class="reference internal" href="#tracklib.trajectory.Trajectory_1d" title="tracklib.trajectory.Trajectory_1d"><code class="xref py py-class docutils literal notranslate"><span class="pre">tracklib.trajectory.Trajectory_1d</span></code></a></p>
+</dd></dl>
+
+<dl class="class">
+<dt id="tracklib.trajectory.Trajectory_1N2d">
+<em class="property">class </em><code class="sig-prename descclassname">tracklib.trajectory.</code><code class="sig-name descname">Trajectory_1N2d</code><span class="sig-paren">(</span><em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#tracklib.trajectory.Trajectory_1N2d" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#tracklib.trajectory.Trajectory_1N" title="tracklib.trajectory.Trajectory_1N"><code class="xref py py-class docutils literal notranslate"><span class="pre">tracklib.trajectory.Trajectory_1N</span></code></a>, <a class="reference internal" href="#tracklib.trajectory.Trajectory_2d" title="tracklib.trajectory.Trajectory_2d"><code class="xref py py-class docutils literal notranslate"><span class="pre">tracklib.trajectory.Trajectory_2d</span></code></a></p>
+</dd></dl>
+
+<dl class="class">
+<dt id="tracklib.trajectory.Trajectory_1N3d">
+<em class="property">class </em><code class="sig-prename descclassname">tracklib.trajectory.</code><code class="sig-name descname">Trajectory_1N3d</code><span class="sig-paren">(</span><em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#tracklib.trajectory.Trajectory_1N3d" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#tracklib.trajectory.Trajectory_1N" title="tracklib.trajectory.Trajectory_1N"><code class="xref py py-class docutils literal notranslate"><span class="pre">tracklib.trajectory.Trajectory_1N</span></code></a>, <a class="reference internal" href="#tracklib.trajectory.Trajectory_3d" title="tracklib.trajectory.Trajectory_3d"><code class="xref py py-class docutils literal notranslate"><span class="pre">tracklib.trajectory.Trajectory_3d</span></code></a></p>
+</dd></dl>
+
+<dl class="class">
+<dt id="tracklib.trajectory.Trajectory_2N1d">
+<em class="property">class </em><code class="sig-prename descclassname">tracklib.trajectory.</code><code class="sig-name descname">Trajectory_2N1d</code><span class="sig-paren">(</span><em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#tracklib.trajectory.Trajectory_2N1d" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#tracklib.trajectory.Trajectory_2N" title="tracklib.trajectory.Trajectory_2N"><code class="xref py py-class docutils literal notranslate"><span class="pre">tracklib.trajectory.Trajectory_2N</span></code></a>, <a class="reference internal" href="#tracklib.trajectory.Trajectory_1d" title="tracklib.trajectory.Trajectory_1d"><code class="xref py py-class docutils literal notranslate"><span class="pre">tracklib.trajectory.Trajectory_1d</span></code></a></p>
+</dd></dl>
+
+<dl class="class">
+<dt id="tracklib.trajectory.Trajectory_2N2d">
+<em class="property">class </em><code class="sig-prename descclassname">tracklib.trajectory.</code><code class="sig-name descname">Trajectory_2N2d</code><span class="sig-paren">(</span><em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#tracklib.trajectory.Trajectory_2N2d" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#tracklib.trajectory.Trajectory_2N" title="tracklib.trajectory.Trajectory_2N"><code class="xref py py-class docutils literal notranslate"><span class="pre">tracklib.trajectory.Trajectory_2N</span></code></a>, <a class="reference internal" href="#tracklib.trajectory.Trajectory_2d" title="tracklib.trajectory.Trajectory_2d"><code class="xref py py-class docutils literal notranslate"><span class="pre">tracklib.trajectory.Trajectory_2d</span></code></a></p>
+</dd></dl>
+
+<dl class="class">
+<dt id="tracklib.trajectory.Trajectory_2N3d">
+<em class="property">class </em><code class="sig-prename descclassname">tracklib.trajectory.</code><code class="sig-name descname">Trajectory_2N3d</code><span class="sig-paren">(</span><em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#tracklib.trajectory.Trajectory_2N3d" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#tracklib.trajectory.Trajectory_2N" title="tracklib.trajectory.Trajectory_2N"><code class="xref py py-class docutils literal notranslate"><span class="pre">tracklib.trajectory.Trajectory_2N</span></code></a>, <a class="reference internal" href="#tracklib.trajectory.Trajectory_3d" title="tracklib.trajectory.Trajectory_3d"><code class="xref py py-class docutils literal notranslate"><span class="pre">tracklib.trajectory.Trajectory_3d</span></code></a></p>
+</dd></dl>
+
+</div>
+<div class="section" id="module-tracklib">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-tracklib" title="Permalink to this headline">¶</a></h2>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">tracklib package</a><ul>
+<li><a class="reference internal" href="#subpackages">Subpackages</a></li>
+<li><a class="reference internal" href="#submodules">Submodules</a></li>
+<li><a class="reference internal" href="#module-tracklib.clean">tracklib.clean module</a></li>
+<li><a class="reference internal" href="#module-tracklib.load">tracklib.load module</a></li>
+<li><a class="reference internal" href="#module-tracklib.taggedset">tracklib.taggedset module</a></li>
+<li><a class="reference internal" href="#module-tracklib.trajectory">tracklib.trajectory module</a></li>
+<li><a class="reference internal" href="#module-tracklib">Module contents</a></li>
+</ul>
+</li>
+</ul>
+
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/tracklib.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">tracklib 0.1 documentation</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2020, Simon Grosse-Holz.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.1.2.
+    </div>
+  </body>
+</html>

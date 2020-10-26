@@ -1,0 +1,226 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <title>tracklib.util package &#8212; tracklib 0.1 documentation</title>
+    <link rel="stylesheet" href="_static/nature.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="_static/language_data.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">tracklib 0.1 documentation</a> &#187;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="tracklib-util-package">
+<h1>tracklib.util package<a class="headerlink" href="#tracklib-util-package" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="module-tracklib.util.mcmc">
+<span id="tracklib-util-mcmc-module"></span><h2>tracklib.util.mcmc module<a class="headerlink" href="#module-tracklib.util.mcmc" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="tracklib.util.mcmc.Sampler">
+<em class="property">class </em><code class="sig-prename descclassname">tracklib.util.mcmc.</code><code class="sig-name descname">Sampler</code><a class="headerlink" href="#tracklib.util.mcmc.Sampler" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">abc.ABC</span></code></p>
+<p>Abstract base class for MCMC sampling</p>
+<dl class="simple">
+<dt>To implement a sampling scheme, subclass this and override</dt><dd><ul class="simple">
+<li><dl class="simple">
+<dt>propose_update(params) # may use self.stepsize</dt><dd><p>propose a step in parameter space. Should return the proposed
+parameter values, forward, and backward probabilities.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt>logL(params)</dt><dd><p>calculate log-likelihood for a given set of parameters</p>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt>(optional) callback_logging(current_values, best_values)</dt><dd><p>will be called whenever a logging line is printed. Can be
+used to print additional info, plot stuff, etc.</p>
+</dd>
+</dl>
+</li>
+</ul>
+</dd>
+</dl>
+<p>The structure of ‘params’ is completely up to the user, this could be an
+np.ndarray of some parameter values, a specific class containing some
+configuration or anything else. All we have to be able to do is propose
+updates and calculate likelihoods, and these are the user specified
+functions.</p>
+<p>Note: if config[‘show progress’] is True</p>
+<dl class="method">
+<dt id="tracklib.util.mcmc.Sampler.propose_update">
+<em class="property">abstract </em><code class="sig-name descname">propose_update</code><span class="sig-paren">(</span><em class="sig-param">params</em><span class="sig-paren">)</span><a class="headerlink" href="#tracklib.util.mcmc.Sampler.propose_update" title="Permalink to this definition">¶</a></dt>
+<dd><p>Propose an update</p>
+<p>proposed_values : array of proposed values
+p_forward : probability of proposing these values from the current ones
+p_backward : probability of proposing the current values from the proposed ones</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="tracklib.util.mcmc.Sampler.logL">
+<em class="property">abstract </em><code class="sig-name descname">logL</code><span class="sig-paren">(</span><em class="sig-param">params</em><span class="sig-paren">)</span><a class="headerlink" href="#tracklib.util.mcmc.Sampler.logL" title="Permalink to this definition">¶</a></dt>
+<dd><p>Give the log-likelihood of the given set of parameters</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="tracklib.util.mcmc.Sampler.callback_logging">
+<code class="sig-name descname">callback_logging</code><span class="sig-paren">(</span><em class="sig-param">current_values</em>, <em class="sig-param">best_values</em><span class="sig-paren">)</span><a class="headerlink" href="#tracklib.util.mcmc.Sampler.callback_logging" title="Permalink to this definition">¶</a></dt>
+<dd><p>Callback upon logging</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="tracklib.util.mcmc.Sampler.run">
+<code class="sig-name descname">run</code><span class="sig-paren">(</span><em class="sig-param">initial_values</em>, <em class="sig-param">config={}</em><span class="sig-paren">)</span><a class="headerlink" href="#tracklib.util.mcmc.Sampler.run" title="Permalink to this definition">¶</a></dt>
+<dd><p>Run the sampling scheme</p>
+<dl class="simple">
+<dt>initial_values<span class="classifier">whatever self.propose_update() / self.logL expect</span></dt><dd><p>the initial values for the sampling scheme</p>
+</dd>
+<dt>config<span class="classifier">dict</span></dt><dd><p>See mcmc._fill_config()</p>
+</dd>
+</dl>
+<dl class="simple">
+<dt>logL<span class="classifier">(M,) array</span></dt><dd><p>list of log-likelihood at each iteration
+EDIT: right now, returning full-length logL. We usually just use
+this to check convergence, so it doesn’t make sense to cut off
+exactly that burn-in period.</p>
+</dd>
+<dt>params<span class="classifier">(M, …) array</span></dt><dd><p>list of the sampled parameter sets.</p>
+</dd>
+</dl>
+<p>where M = ‘iterations’ - ‘burn-in’</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="tracklib.util.mcmc.normMCMC">
+<em class="property">class </em><code class="sig-prename descclassname">tracklib.util.mcmc.</code><code class="sig-name descname">normMCMC</code><a class="headerlink" href="#tracklib.util.mcmc.normMCMC" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#tracklib.util.mcmc.Sampler" title="tracklib.util.mcmc.Sampler"><code class="xref py py-class docutils literal notranslate"><span class="pre">tracklib.util.mcmc.Sampler</span></code></a></p>
+<dl class="method">
+<dt id="tracklib.util.mcmc.normMCMC.propose_update">
+<code class="sig-name descname">propose_update</code><span class="sig-paren">(</span><em class="sig-param">current_value</em><span class="sig-paren">)</span><a class="headerlink" href="#tracklib.util.mcmc.normMCMC.propose_update" title="Permalink to this definition">¶</a></dt>
+<dd><p>Propose an update</p>
+<p>proposed_values : array of proposed values
+p_forward : probability of proposing these values from the current ones
+p_backward : probability of proposing the current values from the proposed ones</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="tracklib.util.mcmc.normMCMC.logL">
+<code class="sig-name descname">logL</code><span class="sig-paren">(</span><em class="sig-param">value</em><span class="sig-paren">)</span><a class="headerlink" href="#tracklib.util.mcmc.normMCMC.logL" title="Permalink to this definition">¶</a></dt>
+<dd><p>Give the log-likelihood of the given set of parameters</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="tracklib.util.mcmc.normMCMC.callback_logging">
+<code class="sig-name descname">callback_logging</code><span class="sig-paren">(</span><em class="sig-param">current_values</em>, <em class="sig-param">best_values</em><span class="sig-paren">)</span><a class="headerlink" href="#tracklib.util.mcmc.normMCMC.callback_logging" title="Permalink to this definition">¶</a></dt>
+<dd><p>Callback upon logging</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-tracklib.util.util">
+<span id="tracklib-util-util-module"></span><h2>tracklib.util.util module<a class="headerlink" href="#module-tracklib.util.util" title="Permalink to this headline">¶</a></h2>
+<dl class="function">
+<dt id="tracklib.util.util.twoLociRelativeACF">
+<code class="sig-prename descclassname">tracklib.util.util.</code><code class="sig-name descname">twoLociRelativeACF</code><span class="sig-paren">(</span><em class="sig-param">ts</em>, <em class="sig-param">A=1</em>, <em class="sig-param">B=1</em>, <em class="sig-param">d=1</em><span class="sig-paren">)</span><a class="headerlink" href="#tracklib.util.util.twoLociRelativeACF" title="Permalink to this definition">¶</a></dt>
+<dd><p>A = σ^2 / √κ     (general prefactor)
+B = Δs^2 / 4κ    (tether length)</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="tracklib.util.util.twoLociRelativeMSD">
+<code class="sig-prename descclassname">tracklib.util.util.</code><code class="sig-name descname">twoLociRelativeMSD</code><span class="sig-paren">(</span><em class="sig-param">ts</em>, <em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#tracklib.util.util.twoLociRelativeMSD" title="Permalink to this definition">¶</a></dt>
+<dd><p>A = σ^2 / √κ     (general prefactor)
+B = Δs^2 / 4κ       (tether length)</p>
+</dd></dl>
+
+</div>
+<div class="section" id="module-tracklib.util">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-tracklib.util" title="Permalink to this headline">¶</a></h2>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">tracklib.util package</a><ul>
+<li><a class="reference internal" href="#submodules">Submodules</a></li>
+<li><a class="reference internal" href="#module-tracklib.util.mcmc">tracklib.util.mcmc module</a></li>
+<li><a class="reference internal" href="#module-tracklib.util.util">tracklib.util.util module</a></li>
+<li><a class="reference internal" href="#module-tracklib.util">Module contents</a></li>
+</ul>
+</li>
+</ul>
+
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/tracklib.util.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">tracklib 0.1 documentation</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2020, Simon Grosse-Holz.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.1.2.
+    </div>
+  </body>
+</html>

@@ -4,17 +4,15 @@ class TaggedSet():
     """
     A set with tags for each object.
 
-    This class can be used as an iterator in constructs such as
-    ```
-    for datum in myset: ...
-    ```
-    The subset to be iterated over can be adjusted using makeSelection(). If
-    you also need the tags for each datum, use myset(giveTags=True).
+    This class can be used as an iterator in constructs such as ``for datum in
+    myset: ...``. The subset to be iterated over can be adjusted using
+    `makeSelection()`. If you also need the tags for each datum, use
+    ``myset(giveTags=True)``.
 
     For processing data (in the sense of "applying a function to all of them")
-    it is often useful to simply use the built-in map(). If the function in
-    question has to overwrite the data, you can use filter(). Note that
-    in-place modification can be achieved with map() though.
+    it is often useful to simply use the built-in `map()`. If the function in
+    question has to overwrite the data, you can use `filter()`. Note that
+    in-place modification can be achieved with `map()`.
 
     Parameters
     ----------
@@ -25,25 +23,24 @@ class TaggedSet():
         whether the iterable in the first argument gives data only or (datum,
         tags) pairs.
 
-    Operators
-    ---------
+    Notes
+    -----
     For a TaggedSet `myset`, the following operations are defined:
-    len(myset)
+
+    ``len(myset)``
         return number of data in current selection
-    myset(giveTags)
+    ``myset(giveTags)``
         return a generator yielding single data or (datum, tags) pairs,
         depending on the value of `giveTags` (False by default).
-    iter(myset)
-        shortcut for (giveTags=False). This enables the construction
-        ```
-        for datum in myset: ...
-        ```
-    myset[i]
-        element access within the current selection. You can use indices from 0
-        to len(myset)-1.
-    myset &= otherset
+    ``iter(myset)``
+        shortcut for ``myset(giveTags=False)``. This enables the construction
+        ``for datum in myset: ...``
+    ``myset[i]``
+        element access within the current selection. You can use indices from
+        ``0`` to ``len(myset)-1``.
+    ``myset &= otherset``
         add the data in `otherset` into `myset`. This is a shortcut for
-        myset.mergein(otherset).
+        ``myset.mergein(otherset)``.
     """
 
     ### Utility ###
@@ -51,8 +48,9 @@ class TaggedSet():
     @staticmethod
     def makeTagsSet(tags):
         """
-        An input processing function making sure that the frequently used
-        'tags' argument is a set of strings. Mostly for internal use.
+        Input reformatting, mostly internal use.
+
+        Make sure that the frequently used `tags` argument is a set of strings.
 
         Parameters
         ----------
@@ -109,10 +107,6 @@ class TaggedSet():
     ### Basic usage ###
 
     def __iter__(self):
-        """
-        Iterate over all data in current selection. Simply a shortcut for
-        self(), i.e. the call syntax.
-        """
         return self()
 
     def __call__(self, giveTags=False):
@@ -139,15 +133,9 @@ class TaggedSet():
                     yield datum
 
     def __len__(self):
-        """
-        Give number of data in current selection
-        """
         return sum(self._selected)
 
     def __getitem__(self, ind):
-        """
-        Give n-th item in current selection
-        """
         for i, datum in enumerate(self):
             if i >= ind:
                 return datum
@@ -215,7 +203,11 @@ class TaggedSet():
 
     def refineSelection(self, *args, **kwargs):
         """
-        A wrapper for makeSelection(..., refining=True). See that docstring.
+        A wrapper for ``makeSelection(..., refining=True)``.
+
+        See also
+        --------
+        makeSelection
         """
         kwargs['refining'] = True
         self.makeSelection(*args, **kwargs)
@@ -226,6 +218,11 @@ class TaggedSet():
 
         This is useful when planning to undo subsequent selections without
         having to redo the whole selection from scratch.
+
+        Returns
+        -------
+        list of bool
+            the current selection.
 
         See also
         --------
@@ -276,13 +273,13 @@ class TaggedSet():
         ----------
         other : TaggedSet
             the list whose data to add
-        additionalTags : str, list of str, or set of str
+        additionalTags : str, list of str, or set of str, optional
             additional tag(s) to add to all of the new data.
 
         Notes
         -----
-        This can also be invoked as self &= other. In that case no additional
-        tags can be added.
+        This can also be invoked as ``self &= other``. In that case no
+        additional tags can be added.
         """
         if not issubclass(type(other), TaggedSet):
             raise TypeError("Can only merge a TaggedSet")
@@ -295,9 +292,6 @@ class TaggedSet():
         self._selected += other._selected
 
     def __iand__(self, other):
-        """
-        Shortcut for self.mergein(other). See there.
-        """
         self.mergein(other)
         return self
 
@@ -323,7 +317,8 @@ class TaggedSet():
 
         Returns
         -------
-        Set of all tags in the current selection
+        set of str
+            set of all tags in the current selection
         """
         tagset = set()
         for _, tags in self(giveTags=True):
@@ -422,7 +417,8 @@ class TaggedSet():
 
         Returns
         -------
-        A new list containing the processed data
+        TaggedSet
+            a new set containing the processed data
 
         See also
         --------
@@ -430,7 +426,7 @@ class TaggedSet():
 
         Notes
         -----
-        The new list will contain only the processed data, i.e. data that are
+        The new set will contain only the processed data, i.e. data that are
         not in the current selection will not be copied.
         """
         def gen(origin):
