@@ -4,7 +4,7 @@ from matplotlib import pyplot as plt
 import scipy.linalg
 import scipy.stats
 
-from tracklib import Trajectory, TaggedList
+from tracklib import Trajectory, TaggedSet
 
 def chi2vsMSD(dataset, n=10, msd=None):
     """
@@ -14,7 +14,7 @@ def chi2vsMSD(dataset, n=10, msd=None):
     
     Input
     -----
-    dataset : TaggedList of Trajectory
+    dataset : TaggedSet of Trajectory
         the trajectories to use
     n : integer
         the window size / length of the snippets to look at
@@ -66,7 +66,7 @@ def summary_plot(dataset, dof=None, p=0.05, ax=None, **kwargs):
 
     Input
     -----
-    dataset : TaggedList of Trajectory
+    dataset : TaggedSet of Trajectory
         the data to use
     dof : integer
         degrees of freedom for the reference chi2 distribution. If omitted, no

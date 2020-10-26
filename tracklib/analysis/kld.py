@@ -6,7 +6,7 @@ import numpy as np
 from sklearn.neighbors import KDTree
 import scipy.fftpack
 
-from tracklib import Trajectory, TaggedList
+from tracklib import Trajectory, TaggedSet
 
 import mkl
 mkl.numthreads = 1
@@ -20,7 +20,7 @@ def KLD_PC(dataset, n=10, k=20, dt=1):
 
     Input
     -----
-    dataset : TaggedList of Trajectory
+    dataset : TaggedSet of Trajectory
         the data to run the KLD estimation on
     n : integer
         snippet length ( = window size)
@@ -111,7 +111,7 @@ class Estimator:
 
         Input
         -----
-        dataset : TaggedList
+        dataset : TaggedSet
             the dataset to run the estimation on
         copy : bool
             whether to copy the dataset upon initialization. This might not be
@@ -186,7 +186,7 @@ class Estimator:
         -----
         preproc : callable, taking a trajectory and returning a trajectory
             the function to use for preprocessing. Will be applied to every
-            trajectory individually via TaggedList.apply().
+            trajectory individually via TaggedSet.apply().
             Examples:
                 lambda traj : traj.relative().abs() # would give absolute distance for two-locus trajectory
                 lambda traj : traj.relative().diff().abs() # would give absolute displacements

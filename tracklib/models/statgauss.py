@@ -4,7 +4,7 @@ from copy import deepcopy
 import numpy as np
 from scipy.linalg import cholesky, toeplitz
 
-from tracklib import Trajectory, TaggedList
+from tracklib import Trajectory, TaggedSet
 
 def sampleMSD(msd, n=1, isCorr=False, subtractMean=True):
     """
@@ -96,7 +96,7 @@ def dataset(msd, N=2, Ts=None, d=3, **kwargs):
 
     Output
     ------
-    A TaggedList of trajectories (with only the trivial tag '_all').
+    A TaggedSet of trajectories (with only the trivial tag '_all').
     """
     if Ts is None:
         Ts = 100*[None]
@@ -120,7 +120,7 @@ def dataset(msd, N=2, Ts=None, d=3, **kwargs):
             mytraces = [traces[:T, ((iT*N + n)*d):((iT*N + n+1)*d)] for n in range(N)]
             yield (Trajectory.fromArray(mytraces), [])
 
-    return TaggedList.generate(gen())
+    return TaggedSet.generate(gen())
 
 def control(dataset, msd=None, setMean='copy'):
     """
@@ -135,7 +135,7 @@ def control(dataset, msd=None, setMean='copy'):
 
     Input
     -----
-    dataset : TaggedList of Trajectory
+    dataset : TaggedSet of Trajectory
         the dataset to generate a control for
     msd : (T,) np.ndarray
         the MSD to use for sampling. Note that this will be divided by
@@ -144,7 +144,7 @@ def control(dataset, msd=None, setMean='copy'):
 
     Output
     ------
-    A TaggedList that's an MSD generated sister data set to the input
+    A TaggedSet that's an MSD generated sister data set to the input
 
     Implementation Note
     -------------------
@@ -171,4 +171,4 @@ def control(dataset, msd=None, setMean='copy'):
 
             yield (newtraj, deepcopy(mytags))
 
-    return TaggedList.generate(gen())
+    return TaggedSet.generate(gen())

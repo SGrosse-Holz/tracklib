@@ -4,8 +4,7 @@
 from copy import deepcopy
 import numpy as np
 
-from .taggedlist import TaggedList
-from .trajectory import Trajectory
+from tracklib import Trajectory, TaggedSet
 
 def split_trajectory_at_big_steps(traj, threshold):
     """
@@ -67,7 +66,7 @@ def split_dataset_at_big_steps(data, threshold):
 
     Input
     -----
-    data : TaggedList
+    data : TaggedSet
         the dataset with possibly too big steps
     threshold : float
         the maximum allowed step size
@@ -81,4 +80,4 @@ def split_dataset_at_big_steps(data, threshold):
             for part_traj in split_trajectory_at_big_steps(traj, threshold):
                 yield (deepcopy(part_traj), deepcopy(tags))
     
-    return TaggedList.generate(gen())
+    return TaggedSet.generate(gen())

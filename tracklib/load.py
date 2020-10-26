@@ -1,12 +1,11 @@
 # This module contains utility functions for loading data from common formats
-# into the TaggedList structure used by this library.
+# into the TaggedSet structure used by this library.
 
 import os,sys
 
 import numpy as np
 
-from .trajectory import Trajectory
-from .taggedlist import TaggedList
+from tracklib import Trajectory, TaggedSet
 
 def evalSPT(filename, tags):
     """
@@ -22,7 +21,7 @@ def evalSPT(filename, tags):
 
     Output
     ------
-    A TaggedList containing the loaded trajectories
+    A TaggedSet containing the loaded trajectories
 
     Format specification
     --------------------
@@ -48,7 +47,7 @@ def evalSPT(filename, tags):
     except Exception as err:
         print("Error loading file '{}'".format(filename))
         raise err
-    return TaggedList.generate(data2gen(data, tags))
+    return TaggedSet.generate(data2gen(data, tags))
 
 # def twoLocusCSV(filename, tags):
 #     def data2gen(data, tags):

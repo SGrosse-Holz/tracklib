@@ -1,7 +1,8 @@
 import numpy as np
 from matplotlib import pyplot as plt
 
-from tracklib import Trajectory, TaggedList
+from tracklib import Trajectory, TaggedSet
+from .msd import MSD
 
 def length_distribution(dataset, **kwargs):
     """
@@ -9,7 +10,7 @@ def length_distribution(dataset, **kwargs):
 
     Input
     -----
-    dataset : TaggedList (possibly with some selection set)
+    dataset : TaggedSet (possibly with some selection set)
         the dataset to use
     All other keyword arguments will be forwarded to plt.hist().
 
@@ -41,7 +42,7 @@ def msd_overview(dataset, **kwargs):
 
     Input
     -----
-    dataset : TaggedList (possibly with some selection set)
+    dataset : TaggedSet (possibly with some selection set)
         the dataset to use
     All further keyword arguments are forwarded to plt.loglog for plotting of
     the individual trajectory MSDs
@@ -84,7 +85,7 @@ def trajectories_spatial(dataset, **kwargs):
 
     Input
     -----
-    dataset : TaggedList
+    dataset : TaggedSet
         the set of trajectories to plot
     colordict : dict
         determines which tag is colored in which color. This should be a dict
@@ -186,7 +187,7 @@ def distance_distribution(dataset, **kwargs):
 
     Input
     -----
-    dataset : TaggedList (possibly with some selection set)
+    dataset : TaggedSet (possibly with some selection set)
         the trajectories to use
     All keyword arguments will be forwarded to plt.hist()
 

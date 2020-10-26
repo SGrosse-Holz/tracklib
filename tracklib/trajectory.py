@@ -1,126 +1,74 @@
-import os,sys
 import importlib
 from copy import deepcopy
 
 from abc import ABC, abstractmethod
-import collections.abc
 
 import numpy as np
 import matplotlib.pyplot as plt
-import joblib
 
-from . import util
-
-class Trajectory(ABC, collections.abc.Sequence):
+class Trajectory(ABC)
     """
-    A class to represent multi-particle trajectories. The key attribute is
-    Trajectory._data, which is a (N, T, d) array, where N is the number of
-    particles, T is the duration in frames, and d the number of dimensions.
-    Note that most functions for now might assume N = 1 or N = 2. The latter is
-    the development focus of this project.
+    Represents all kinds of trajectories.
 
-    Besides the actual data, this class also stores a dictionary containing
-    user-specified meta-data. Some entries in this dict (like parity and label)
-    are used within the class. IMPLEMENTATION: Is this a good idea?
+    This class represents trajectories with 1 or 2 loci in 1, 2, or 3 spatial
+    dimensions. Consequently, the internal np.ndarray has shape (N, T, d).
+    Besides the actual trajectory data, this class also contains a dict for
+    meta data. This can be used by the end-user, is also intended for use
+    within the library though. tracklib.analysis.MSD for example writes the
+    'MSD' and 'MSDmeta' entries of this dict.
+    
+    TODO: write a list of all keys used by the library somewhere
 
-    Note: this implementation should be able to deal with missing data, i.e.
-    np.nan's
+    For creation of actual Trajectory objects, use Trajectory.fromArray(). This
+    will select and instantiate the appropriate subclass based on the shape of
+    the input array.
 
-    Note: the different possible types of trajectories (1 or 2 particles, 1, 2
-    or 3 dimensions) are implemented as subclasses, thus facilitating
-    customization
+    Parameters
+    ----------
+    Any keyword arguments given to the constructor will be written to self.meta
 
-    Note: this class implements the Sequence interface, i.e. it can be used
-    much like a list. Element access returns (N, d) arrays as data points.
+    Operators
+    ---------
+    For a Trajectory traj, the following operations are defined:
+    len(traj)
+        equivalent to traj.T
+    traj[ind]
+        accesss the time (stretch) specified by ind. The N and T dimensions
+        might be squeezed (removed if they have length 1), while the d
+        dimension is guaranteed to be present.
+
+    Notes
+    -----
+    This class implements the Sequence interface, i.e. it can be used
+    much like a list.
     """
+
+    ### Set up ###
+
     def __init__(self, **kwargs):
-        """
-        Set up an empty trajectory
-
-        Any keyword arguments are saved in the dict self.meta
-        """
         self._data = None
-
-        if not 'parity' in kwargs.keys():
-            kwargs['parity'] = 'even'
-        else:
-            assert kwargs['parity'] in {'even', 'odd'}
         self.meta = kwargs
-
-    def __len__(self):
-        """
-        Return duration of trajectory, in frames.
-
-        Notes
-        -----
-        Identical to Trajectory.T
-        """
-        return self._data.shape[1]
-
-    def __getitem__(self, key):
-        """
-        Element-access
-
-        Input
-        -----
-        key : index or slice
-        
-        Output
-        ------
-        The corresponding part of the trajectory.
-        
-        Notes
-        -----
-        Output will be passed through np.squeeze, i.e. single-entry dimensions
-        will be removed. We augment np.squeeze a little bit though, to the
-        effect that scalar return values will be returned as np.array with
-        shape (1,) instead of ().
-        """
-        ret = np.squeeze(self._data[:, key, :])
-        if len(ret.shape) > 0:
-            return ret
-        else:
-            return np.array([ret])
-
-    @property
-    def N(self):
-        """
-        Get the number of loci
-        """
-        return self._data.shape[0]
-    @property
-    def T(self):
-        """
-        Get the length in frames
-        """
-        return self._data.shape[1]
-    @property
-    def d(self):
-        """
-        Get the number of dimensions
-        """
-        return self._data.shape[2]
 
     @classmethod
     def fromArray(cls, array, **kwargs):
         """
         Create a new Trajectory from an array.
 
-        Input
-        -----
+        Parameters
+        ----------
         array : (N, T, d) array-like
-            the data for the new trajectory. Note that for now, we expect N in
-            {1, 2} and d in {1, 2, 3}.
+            the data for the new trajectory. We expect N in {1, 2}, d in {1, 2,
+            3}. Arrays with less than three dimensions will be interpreted as
+            (T, d) or (T,), respectively.
         Additional keyword arguments are saved in the dict self.meta
 
-        Output
-        ------
+        Returns
+        -------
         A new Trajectory object with the specified data
 
         Notes
         -----
         The input data is copied.
-        This function returns objects of the appropriate subclass Trajectory_xNxd.
         """
         array = np.array(array) # Note that this also copies the array
         if len(array.shape) > 3:
@@ -131,6 +79,7 @@ class Trajectory(ABC, collections.abc.Sequence):
             array = np.expand_dims(array, (0, 2))
 
         try:
+            # TODO: is this importlib-stuff necessary, or is there a better way?
             obj = getattr(importlib.import_module(cls.__module__), "Trajectory_{:d}N{:d}d".format(array.shape[0], array.shape[2]))(**kwargs)
         except AttributeError:
             raise ValueError("Could not instantiate trajectory with (N, T, d) = {}".format(str(array.shape)))
@@ -138,130 +87,80 @@ class Trajectory(ABC, collections.abc.Sequence):
         obj._data = array
         return obj
 
-    def copyMeta(self, target):
+    ### Basic properties ###
+
+    @property
+    def N(self):
+        """ Number of loci """
+        return self._data.shape[0]
+    @property
+    def T(self):
+        """ Length in frames """
+        return self._data.shape[1]
+    @property
+    def d(self):
+        """ Number of dimensions """
+        return self._data.shape[2]
+
+    def __len__(self):
+        return self.T
+
+    def __getitem__(self, key):
         """
-        Legacy function; use deepcopy(self.meta)
+        Element-access
 
-        Copy all the meta information (like label, dx, dt) to another object.
-        This will omit attributes prefixed with an underscore. These include
-        _data, which is not considered meta data, and _msdN, which is used for
-        msd memoization.
+        The output will be squeezed along the N and T dimensions (i.e. they
+        will be removed if there is only a single entry). The d dimension is
+        guaranteed to be present.
 
-        Input
-        -----
-        target : Trajectory
-            the Trajectory object to copy the meta data to
+        Parameters
+        ----------
+        key : index or slice
+        
+        Returns
+        -------
+        The corresponding part of the trajectory.
         """
-        raise NotImplementedError("This will be removed from implementation")
-        for key in self.__dict__.keys():
-            if not key.startswith('_'):
-                setattr(target, key, self.__dict__[key])
+        ret = self._data[:, key, :]
+        for ax in [1, 0]: # Go in reverse order
+            try:
+                np.squeeze(ret, axis=ax)
+            except ValueError:
+                pass
+        return ret
 
-    @abstractmethod
-    def _eff1Ndata(self):
-        """
-        Internal use only
+#     def get(self, key, tosqueeze='N'):
+#         """
+#         Element-access with controlled squeezing
+# 
+#         This is an augmentation of the []-operator, handing control over
+#         squeezing (removing of single-entry dimensions) to the user.
+# 
+#         Parameters
+#         ----------
+#         key : slice
+#             indices into the time dimension of the trajectory
+#         tosqueeze : str, optional
+#             which dimensions to remove (if singular). Give this as a string
+#             containing 'N', 'T', 'd' or combinations thereof.
+# 
+#         Returns
+#         -------
+#         np.ndarray
+#             a view into the trajectory
+#         """
+#         ret = self._data[:, key, :]
+#         # If we remove dimensions from the back, then indices in front will
+#         # still be correct, so we can work iteratively
+#         if 'd' in tosqueeze and ret.shape[2] == 1:
+#             ret = np.squeeze(ret, 2)
+#         if 'T' in tosqueeze and ret.shape[1] == 1:
+#             ret = np.squeeze(ret, 1)
+#         if 'N' in tosqueeze and ret.shape[0] == 1:
+#             ret = np.squeeze(ret, 0)
+#         return ret
 
-        Dummy function for aggregation of data over the loci. Should be identity for N=1, relative data for N=2.
-        """
-        raise NotImplementedError()
-
-    @abstractmethod
-    def _get_dimension_labels(self):
-        """
-        Internal use only
-
-        Assemble labels for the individual spatial dimensions from the trajectory labels
-        """
-        raise NotImplementedError()
-
-    def plot_vstime(self, ax=None, **kwargs):
-        """
-        Plot the trajectory data versus time. Different dimensions will be
-        plotted individually, while different loci will be aggregated according
-        to the internal function _eff1Ndata().
-
-        Input
-        -----
-        ax : axes
-            the axes to plot in. Can be None, in which case we plot to
-            plt.gca()
-        All further keyword arguments will be forwarded to ax.plot()
-
-        Output
-        ------
-        The output of ax.plot(), i.e. a collection of lines.
-        """
-        if ax is None:
-            ax = plt.gca()
-
-        if 'label' not in kwargs.keys():
-            kwargs['label'] = self._get_dimension_labels()
-
-        tplot = np.arange(self.T)
-        return ax.plot(tplot, self._eff1Ndata(), **kwargs)
-
-    @abstractmethod
-    def plot_spatial(self, ax=None, dims=(0, 1), **kwargs):
-        """
-        Plot the trajectory in a spatial coordinate system. This function
-        should be overridden by the implementations of subclasses with specific
-        dimension, since its behavior depends crucially on the dimension.
-
-        Input
-        -----
-        ax : axes
-            the axes in which to plot. Can be None, in which case we will plot
-            to plt.gca()
-        dims : 2-tuple of int
-            the dimensions to plot. Only relevant for d >= 3.
-            default: (0, 1)
-        All other keyword arguments will be forwarded to ax.plot()
-
-        Output
-        ------
-        The output of ax.plot(), i.e. a collection of lines.
-        """
-        raise NotImplementedError()
-
-    def msd(self, memo=True, giveN=False):
-        """
-        Calculate mean square displacement (MSD) of the Trajectory. This
-        function is memoized, i.e. will perform the actual calculation only
-        upon the first call, while subsequent calls will simply return the
-        previously computed MSD.
-
-        Input
-        -----
-        memo : bool
-            whether to use memoization. Set to False for explicit
-            recalculation.
-            default: True
-        giveN : bool
-            whether to return the sample size for each point of the MSD. This
-            is important for example when calculating ensemble averages.
-            default: False
-
-        Output
-        ------
-        if giveN:
-            a tuple (msd, N) where both are (T,) arrays containing the
-            respective values
-        if not giveN:
-            only msd, i.e. a (T,) array containing the MSD values.
-
-        Notes
-        -----
-        Corresponding to python's 0-based indexing, msd[0] = 0, such that
-        msd[dt] is the MSD at a time lag of dt frames.
-        """
-        if not hasattr(self, '_msdN') or not memo:
-            self._msdN = util.msd(self._eff1Ndata(), giveN=True)
-
-        if giveN:
-            return self._msdN
-        else:
-            return self._msdN[0]
+    ### Modifiers ###
 
     def abs(self):
         """
@@ -273,13 +172,8 @@ class Trajectory(ABC, collections.abc.Sequence):
         For multi-locus trajectories, this will take the norm of each locus
         individually. To get a Trajectory of relative distance, use
         Trajectory.relative().abs() .
-
-        Absolute value trajectories always have even parity, because they
-        cannot have negative values.
         """
-        obj = Trajectory.fromArray(np.sqrt(np.sum(self._data**2, axis=2, keepdims=True)), **deepcopy(self.meta))
-        obj.meta['parity'] = 'even'
-        return obj
+        return Trajectory.fromArray(np.sqrt(np.sum(self._data**2, axis=2, keepdims=True)), **deepcopy(self.meta))
 
     def relative(self):
         """
@@ -298,38 +192,99 @@ class Trajectory(ABC, collections.abc.Sequence):
         Give a new trajectory holding the steps/displacements/derivative of the
         current one.
 
-        Input
-        -----
+        Parameters
+        ----------
         dt : integer
             the time lag to use for displacement calculation
             default: 1, i.e. frame to frame displacements
-
-        Notes
-        -----
-        Parity of the displacement trajectory is always opposite to the
-        original.
         """
-        obj = Trajectory.fromArray(self._data[:, dt:, :] - self._data[:, :-dt, :], **deepcopy(self.meta))
+        return Trajectory.fromArray(self._data[:, dt:, :] - self._data[:, :-dt, :], **deepcopy(self.meta))
 
-        if obj.meta['parity'] == 'even':
-            obj.meta['parity'] = 'odd'
-        else:
-            obj.meta['parity'] = 'even'
+    def dims(self, key):
+        """
+        Give a new trajectory with only a subset of the spatial components
 
-        return obj
+        Parameters
+        ----------
+        key : list of int, or slice
+            which dimensions to use
+        """
+        return Trajectory.fromArray(self._data[:, :, key], **deepcopy(self.meta))
+
+#     def yield_dims(self):
+#         """
+#         A generator yielding the spatial components as individual traces
+#         """
+#         for i in range(self.d):
+#             yield np.squeeze(self._data[:, :, i])
+
+    ### Plotting ###
+
+    def plot_vstime(self, ax=None, **kwargs):
+        """
+        Plot the trajectory / spatial components versus time.
+
+        See the implementations in the Trajectory\_?N subclasses for more
+        detail.
+
+        Parameters
+        ----------
+        ax : axes
+            the axes to plot in. Can be None, in which case we plot to
+            plt.gca()
+        All further keyword arguments will be forwarded to ax.plot()
+
+        Returns
+        -------
+        list of lines
+            the output of ax.plot().
+        """
+        raise NotImplementedError()
+
+    @abstractmethod
+    def plot_spatial(self, ax=None, dims=(0, 1), **kwargs):
+        """
+        Plot the trajectory in space.
+
+        For more detail see the implementation in the subclasses.
+
+        Parameters
+        ----------
+        ax : axes
+            the axes in which to plot. Can be None, in which case we will plot
+            to plt.gca()
+        dims : 2-tuple of int
+            the dimensions to plot. Only relevant for d >= 3.
+            default: (0, 1)
+        All other keyword arguments will be forwarded to ax.plot()
+
+        Returns
+        -------
+        list of lines
+            the output of ax.plot().
+        """
+        raise NotImplementedError()
 
 # Specialize depending on particle number or dimension, which changes behavior
 # of some functions that can be overridden here
 class N12Error(ValueError):
+    """ For indicating that you confused N=1 and N=2 trajectories """
     pass
 
 # Particle number specializations
 class Trajectory_1N(Trajectory):
     """
-    Behavior specific to trajectories of a single locus
+    Single-locus trajectory
     """
-    def _eff1Ndata(self):
-        return self._data[0]
+    def plot_vstime(self, ax=None, **kwargs):
+        """
+        Plot spatial components vs. time
+        """
+        if ax is None:
+            ax = plt.gca()
+
+        tplot = np.arange(self.T)
+        return ax.plot(tplot, self._data[0], **kwargs)
 
     def _raw_plot_spatial(self, ax, dims, **kwargs):
         """ internal method for spatial plotting """
@@ -338,7 +293,6 @@ class Trajectory_1N(Trajectory):
 
         if 'linestyle' in kwargs.keys():
             if isinstance(kwargs['linestyle'], list) and len(kwargs['linestyle']) == 2:
-                # Give a reasonable error message if someone messes this up
                 raise N12Error("Cannot apply two line styles to one-particle trajectory")
         if 'connect' in kwargs.keys():
             raise N12Error("Cannot connect one-particle trajectory")
@@ -349,13 +303,20 @@ class Trajectory_1N(Trajectory):
 
 class Trajectory_2N(Trajectory):
     """
-    Behavior specific to two-locus trajectories
+    Two-locus trajectory
     """
-    def _eff1Ndata(self):
-        return self._data[0] - self._data[1]
-
     def relative(self):
-        return Trajectory.fromArray(self._eff1Ndata(), **deepcopy(self.meta))
+        return Trajectory.fromArray(self._data[0] - self._data[1], **deepcopy(self.meta))
+
+    def plot_vstime(self, ax=None, **kwargs):
+        """
+        Plot spatial components of connection vector vs. time
+        """
+        if ax is None:
+            ax = plt.gca()
+
+        tplot = np.arange(self.T)
+        return ax.plot(tplot, self._data[1] - self._data[0], **kwargs)
 
     def _raw_plot_spatial(self, ax, dims, connect=True, **kwargs):
         """ internal method for spatial plotting """
@@ -402,60 +363,33 @@ class Trajectory_2N(Trajectory):
 # Dimensionality specializations
 class Trajectory_1d(Trajectory):
     """
-    Behavior specific to 1d trajectories
+    1d trajectory
     """
-    def _get_dimension_labels(self):
-        if 'label' in self.meta.keys():
-            return self.meta['label']
-        else:
-            return None
-
     def plot_spatial(self, *args, **kwargs):
         raise NotImplementedError("Cannot plot spatial trajectory for 1d trajectory. Use plot_vstime()")
 
 class Trajectory_2d(Trajectory):
     """
-    Behavior specific to 2d trajectories
+    2d trajectory
     """
-    def _get_dimension_labels(self):
-        if 'label' in self.meta.keys():
-            return [self.meta['label'] + " (x)", \
-                    self.meta['label'] + " (y)"]
-        else:
-            return None
-
     def plot_spatial(self, ax=None, **kwargs):
         if ax is None:
             ax = plt.gca()
-
-        if 'label' not in kwargs.keys() and 'label' in self.meta.keys():
-            kwargs['label'] = self.meta['label']
 
         return self._raw_plot_spatial(ax, (0, 1), **kwargs)
 
 class Trajectory_3d(Trajectory):
     """
-    Behavior specific to 3d trajectories
+    3d trajectory
     """
-    def _get_dimension_labels(self):
-        if 'label' in self.meta.keys():
-            return [self.meta['label'] + " (x)", \
-                    self.meta['label'] + " (y)", \
-                    self.meta['label'] + " (z)"]
-        else:
-            return None
-
     def plot_spatial(self, ax=None, dims=(0, 1), **kwargs):
         if ax is None:
             ax = plt.gca()
 
-        if 'label' not in kwargs.keys() and 'label' in self.meta.keys():
-            kwargs['label'] = self.meta['label']
-
         return self._raw_plot_spatial(ax, dims, **kwargs)
 
-# Now we're getting to the fully concrete level. It's most likely that there is
-# no further specialization here
+# Now we're getting to the fully concrete level. It's unlikely that there is
+# any further specialization here
 class Trajectory_1N1d(Trajectory_1N, Trajectory_1d):
     pass
 

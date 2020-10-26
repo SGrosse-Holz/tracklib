@@ -1,92 +1,188 @@
+"""
+Everything to do with MSDs and calculating them.
+
+Apart from immediately returning the most relevant results, the functions in
+this module also store data in the Trajectory.meta dict. The fully populated
+structure looks as follows (for a Trajectory traj):
+
+traj.meta['MSD'] : np.ndarray
+    the actual MSD of the trajectory
+traj.meta['MSDmeta'] : dict
+    some meta data for the MSD. Contains the following fields:
+    'N' : np.ndarray
+        the number of sample points for each point of the MSD
+    'alpha' : float
+        the fitted powerlaw exponent at the beginning of the MSD
+    'logG' : float
+        logarithm of the prefactor from the same fit as 'alpha'
+    'fit_covariance' : (2, 2) np.ndarray
+        covariance matrix of (alpha, logG) from the fit
+"""
+
 import numpy as np
 
 import scipy.optimize
 
-from tracklib import Trajectory, TaggedList
+from tracklib import Trajectory, TaggedSet
 
-def MSD(dataset, giveN=False, memo=True):
+def MSDtraj(traj):
+    """
+    Calculate/give MSD for a single trajectory.
+
+    The result of the MSD calculation is stored in traj.meta['MSD'] and
+    traj.meta['MSDmeta']. This function checks whether the corresponding fields
+    exist and if not calculates them, in any case returning their entries at
+    the end. So you can either use the return value of this function for
+    further processing, or access the corresponding fields in traj.meta.
+
+    Parameters
+    ----------
+    traj : tracklib.Trajectory
+        the trajectory for which to calculate the MSD
+
+    Returns
+    -------
+    MSD : np.ndarray
+        the MSD of the trajectory, where MSD[0] = 0, MSD[1] is lag time of 1
+        frame, etc.
+
+    Writes
+    ------
+    traj.meta['MSD']
+        the MSD that is also returned by the function
+    traj.meta['MSDmeta']['N']
+        for each data point in the MSD, how many points it is averaged over.
+        This is mostly important for correct calculation of ensemble means.
+
+    Notes
+    -----
+    This function expects a single-locus trajectory (N=1) and will raise a
+    ValueError otherwise. Preprocess accordingly.
+
+    Usually this function should always be preferred to accessing
+    traj.meta['MSD'] directly.
+    """
+    if not traj.N == 1:
+        raise ValueError("Preprocess your trajectory to have N=1")
+    
+    try:
+        return traj.meta['MSD']
+    except KeyError:
+        traj.meta['MSD'] = np.array([0] + [ \
+                np.nanmean(np.sum( (traj.get(slice(i, None), 'N') - traj.get(slice(None, -i), 'N'))**2, axis=1), axis=0) \
+                for i in range(1, len(traj))])
+
+        N = np.array([np.sum(~np.any(np.isnan(traj.get(slice(None, None), 'N')), axis=1), axis=0)] + \
+                     [np.sum(~np.any(np.isnan(traj.get(slice(i, None), 'N') - traj.get(slice(None, -i), 'N')), axis=1), axis=0) \
+                      for i in range(1, len(traj))])
+        try:
+            traj.meta['MSDmeta']['N'] = N
+        except KeyError:
+            traj.meta['MSDmeta'] = {'N' : N}
+    
+    return traj.meta['MSD']
+
+def MSDdataset(dataset, giveN=False):
     """
     Calculate ensemble MSD for the given dataset
 
-    Input
-    -----
-    dataset : TaggedList (possibly with some selection set)
+    Parameters
+    ----------
+    dataset : TaggedSet
         a list of Trajectory for which to calculate an ensemble MSD
-    giveN : bool
+    giveN : bool, optional
         whether to return the sample size for each MSD data point
-    memo : bool
-        whether to use the memoization of Trajectory.msd()
-        default: True
 
-    Output
-    ------
-    if giveN:
-        a tuple (msd, N) of (T,) arrays containing MSD and sample size
-        respectively
-    if not giveN:
-        only msd, i.e. a (T,) array.
+    Returns
+    -------
+    msd / (msd, N) : np.ndarray / tuple of np.ndarray, see `giveN`
+        either just the enseble MSD or the MSD and the number of samples for
+        each data point
 
     Notes
     -----
     Corresponding to python's 0-based indexing, msd[0] = 0, such that
     msd[dt] is the MSD at a time lag of dt frames.
     """
-    msdNs = [traj.msd(giveN=True, memo=memo) for traj in dataset]
+    MSDs = [MSDtraj(traj) for traj in dataset]
+    Ns = [traj.meta['MSDmeta']['N'] for traj in dataset]
 
-    maxlen = max(len(msdN[0]) for msdN in msdNs)
-    emsd = msdNs[0][0]
-    npad = [(0, maxlen-len(emsd))] + [(0, 0) for _ in emsd.shape[2:]]
-    emsd = np.pad(emsd, npad, constant_values=0)
-    eN = np.pad(msdNs[0][1], npad, constant_values=0)
-    emsd *= eN
+    maxlen = max(len(MSD) for MSD in MSDs)
+    eMSD = np.zeros(maxlen)
+    eN = np.zeros(maxlen)
 
-    for msd, N in msdNs[1:]:
+    for MSD, N in zip(MSDs, Ns):
         ind = N > 0
-        emsd[:len(msd)][ind] += (msd*N)[ind]
-        eN[:len(N)][ind] += N[ind]
-    emsd /= eN
+        eMSD[:len(MSD)][ind] += (MSD*N)[ind]
+        eN[:len(MSD)][ind] += N[ind]
+    eMSD /= eN
 
     if giveN:
-        return (emsd, eN)
+        return (eMSD, eN)
     else:
-        return emsd
+        return eMSD
 
-def fit_scaling(traj, n=5):
+def MSD(*args, **kwargs):
+    """
+    Shortcut function to calculate MSDs.
+
+    Will select either MSDtraj or MSDdataset, depending on the type of the
+    first argument. Everything is then forwarded to the appropriate function.
+    """
+    if issubclass(type(args[0]), Trajectory):
+        return MSDtraj(*args, **kwargs)
+    elif issubclass(type(args[0]), TaggedSet):
+        return MSDdataset(*args, **kwargs)
+    else:
+        raise ValueError("Did not understand first argument, with type {}".format(type(args[0])))
+
+def scaling(traj, n=5):
     """
     Fit a powerlaw scaling to the first n data points of the MSD.
 
-    Input
-    -----
+    Parameters
+    ----------
     traj : Trajectory
         the trajectory whose MSD we are interested in
-    n : integer
+    n : int, optional
         how many data points of the MSD to use for fitting
 
-    Output
+    Returns
+    -------
+    alpha : float
+        the fitted powerlaw scaling. For more details refer to
+        traj.meta['MSDmeta']
+
+    Writes
     ------
-    None. The results of the fit are written to traj.meta['MSDscaling']. This
-    will be a dict with keys 'alpha', 'logG', 'cov' for respectively the
-    exponent, log of the prefactor, covariance matrix from the fit (cov[0, 0]
-    is the variance of alpha, cov[1, 1] that for logG).
+    traj.meta['MSDmeta']['alpha'] : float
+        same as return value
+    traj.meta['MSDmeta']['logG'] : float
+        logarithm of the MSD prefactor
+    traj.meta['MSDmeta']['fit_covariance'] : (2, 2) np.ndarray
+        covariance matrix of (alpha, logG) from the fit
 
     Notes
     -----
-     - logG is known to be a bad estimator for diffusivities.
-     - "first n points of the MSD" means time lags 1 through n.
+    logG is known to be a bad estimator for diffusivities.
+
+    "first n points of the MSD" means time lags 1 through n.
     """
-    nmsd = traj.msd()[1:(n+1)]
-    t = np.arange(len(nmsd))+1
-    ind = ~np.isnan(nmsd)
+    nMSD = MSDtraj(traj)[1:(n+1)]
+    t = np.arange(len(nMSD))+1
+    ind = ~np.isnan(nMSD)
     if np.sum(ind) < 2:
-        traj.meta['MSDscaling'] = {
+        traj.meta['MSDmeta'].update({
                 'alpha' : np.nan,
                 'logG' : np.nan,
-                'cov' : np.nan*np.ones((1, 1)),
-                }
+                'fit_covariance' : np.nan*np.ones((2, 2)),
+                })
     else:
-        popt, pcov = scipy.optimize.curve_fit(lambda x, a, b : x*a + b, np.log(t[ind]), np.log(nmsd[ind]))
-        traj.meta['MSDscaling'] = {
+        popt, pcov = scipy.optimize.curve_fit(lambda x, a, b : x*a + b, np.log(t[ind]), np.log(nMSD[ind]))
+        traj.meta['MSDmeta'].update({
                 'alpha' : popt[0],
                 'logG' : popt[1],
-                'cov' : pcov,
-                }
+                'fit_covariance' : pcov,
+                })
+
+    return traj.meta['MSDmeta']['alpha']

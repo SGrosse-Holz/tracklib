@@ -28,9 +28,9 @@ class Model:
         self.k = k
         self.k_extra = k_extra
 
+        self.bondpos = extrabond
         if setup:
             self.setup_propagation()
-        self.bondpos = extrabond
 
     def __eq__(self, other):
         """
@@ -272,6 +272,11 @@ def _likelihood_filter(trace, looptrace, model, *, noise, w=None, times=None):
     curtime = 2*times[0] - times[1] # we have steady state "before" the trace starts
     for i, nexttime in enumerate(times):
         M1, C1 = model.propagate(M0, C0, nexttime-curtime, bond=looptrace[i])
+        if np.isnan(trace[i]):
+            M0 = M1
+            C0 = C1
+            curtime = nexttime
+            continue
         
         # Update step copied from Christoph
         if noise > 0:
@@ -295,7 +300,7 @@ def _likelihood_filter(trace, looptrace, model, *, noise, w=None, times=None):
         C0 = SigmaPosterior
         curtime = nexttime
         
-    return np.sum(logL)
+    return np.nansum(logL)
 
 def _likelihood_direct(trace, looptrace, model, *, noise, w=None, times=None):
     """
@@ -332,6 +337,11 @@ def _likelihood_direct(trace, looptrace, model, *, noise, w=None, times=None):
 
     # Add localization error
     traceCov += noise**2 * np.eye(len(trace))
+
+    # Make this gap-robust
+    ind = ~np.isnan(trace)
+    traceCov = traceCov[ind, :][:, ind]
+    trace = trace[ind]
 
     (detsign, logdet) = np.linalg.slogdet(traceCov)
     if detsign < 1:

@@ -1,5 +1,5 @@
 from .trajectory import Trajectory
-from .taggedlist import TaggedList
+from .taggedset import TaggedSet
 from . import util
 from . import load
 from . import clean
