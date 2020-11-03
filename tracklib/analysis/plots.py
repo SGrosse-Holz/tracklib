@@ -1,3 +1,7 @@
+"""
+A module to quickly produce some overview plots
+"""
+
 import numpy as np
 from matplotlib import pyplot as plt
 
@@ -8,21 +12,25 @@ def length_distribution(dataset, **kwargs):
     """
     Plot a histogram of trajectory lengths for the given dataset
 
-    Input
-    -----
-    dataset : TaggedSet (possibly with some selection set)
-        the dataset to use
-    All other keyword arguments will be forwarded to plt.hist().
+    All keyword arguments will be forwarded to `!plt.hist()`.
 
-    Output
-    ------
-    The return value of plt.hist(), i.e. a tuple (n, bins, patches)
+    Parameters
+    ----------
+    dataset : `TaggedSet` of `Trajectory`
+        the dataset to use
+
+    Returns
+    -------
+    tuple
+        the return value of `!plt.hist()`, i.e. a tuple ``(n, bins, patches)``
 
     Notes
     -----
     This should be thought of only as a quickshot way to take a look at the
     data. For more elaborate plotting, obtain the trajectory lengths as
-        lengths = [len(traj) for traj in dataset]
+
+    >>> lengths = [len(traj) for traj in dataset]
+
     and produce a plot to your liking.
     """
     lengths = [len(traj) for traj in dataset]
@@ -40,21 +48,23 @@ def msd_overview(dataset, **kwargs):
     """
     Plot individual and ensemble MSDs of the given dataset
 
-    Input
-    -----
-    dataset : TaggedSet (possibly with some selection set)
-        the dataset to use
-    All further keyword arguments are forwarded to plt.loglog for plotting of
-    the individual trajectory MSDs
+    All keyword arguments are forwarded to `!plt.loglog()` for plotting of the
+    individual trajectory MSDs
 
-    Output
-    ------
-    Aggregate of the plt.plot outputs, i.e. a list of lines
+    Parameters
+    ----------
+    dataset : `TaggedSet` of `Trajectory`
+        the dataset to use
+
+    Returns
+    -------
+    list of lines
+        aggregate of the ``plt.plot()`` outputs
 
     Notes
     -----
     Only intended as a quick overview plot, for more customization write your
-    own plotting routine using analysis.MSD(dataset) and Trajectory.msd().
+    own plotting routine using `analysis.MSD <tracklib.analysis.msd.MSD>`
     """
     ensembleLabel = 'ensemble mean'
     if 'label' in kwargs.keys():
@@ -64,7 +74,7 @@ def msd_overview(dataset, **kwargs):
     plt.figure()
     lines = []
     for traj in dataset:
-        msd = traj.msd()
+        msd = MSD(traj)
         tmsd = np.arange(len(msd))
         lines.append(plt.loglog(tmsd, msd, **kwargs))
     msd = MSD(dataset)
@@ -80,35 +90,36 @@ def msd_overview(dataset, **kwargs):
 
 def trajectories_spatial(dataset, **kwargs):
     """
-    Plot the trajectories in the given dataset. The preset selection can be
-    overridden manually to ensure proper coloring (see Notes).
+    Plot the trajectories in the given dataset.
+    
+    Additional keyword arguments will be forwarded to
+    `Trajectory.plot_spatial`.
 
-    Input
-    -----
-    dataset : TaggedSet
+    Parameters
+    ----------
+    dataset : `TaggedSet` of `Trajectory`
         the set of trajectories to plot
+
+    Keyword Arguments
+    -----------------
     colordict : dict
         determines which tag is colored in which color. This should be a dict
         whose keys are the tags in the dataset, while the entries are anything
-        recognized by the 'color' kwarg of plt.plot. 
-        default: cycle through the default color cycle
-    All further keyword arguments will be forwarded to
-    Trajectory.plot_spatial()
-
-    Output
-    ------
-    A list of lines, as returned by plt.plot()
+        recognized by the `!'color'` kwarg of `!plt.plot()`. If omitted, will
+        cycle through the default color cycle.
+    fallback_color : str, or RGB tuple
+        the color to use for anything not appearing in `!'colordict'`
+        
+    Returns
+    -------
+    list of lines
+        the aggregated output of `!plt.plot()`
 
     Notes
     -----
     Each tag will be associated with one color, and trajectories will be
     colored by one of the tags they're associated with.  There is no way to
     determine which one.
-
-    Similarly to the other analysis.plot_* and analysis.hist_* functions, this
-    is mostly intended for use in a quick overview. It does provide some more
-    functionality though, in the hope that the user will not see a necessity to
-    start plotting trajectories themselves.
     """
     flags = {'fallback_used' : False}
 
@@ -142,7 +153,7 @@ def trajectories_spatial(dataset, **kwargs):
         except KeyError: # set().pop() raises a KeyError
             kwargs['color'] = fallback_color
             flags['fallback_used'] = True
-        lines.append(traj.plot_spatial(**kwargs))
+        lines += traj.plot_spatial(**kwargs)
 
     # Delete all non-plotting kwargs
     for key in {'dims'}:
@@ -181,32 +192,40 @@ def trajectories_spatial(dataset, **kwargs):
 
 def distance_distribution(dataset, **kwargs):
     """
-    Draw a histogram of distances. For two-locus trajectories, this is the
-    absolute distance between the loci, for single locus trajectories it is
-    simply the absolute value of the trajectory.
+    Draw a histogram of distances.
+    
+    For two-locus trajectories, this is the absolute distance between the loci,
+    for single locus trajectories it is simply the absolute value of the
+    trajectory.
 
-    Input
-    -----
-    dataset : TaggedSet (possibly with some selection set)
+    All keyword arguments will be forwarded to `!plt.hist()`
+
+    Parameters
+    ----------
+    dataset : `TaggedSet` of `Trajectory`
         the trajectories to use
-    All keyword arguments will be forwarded to plt.hist()
 
-    Output
-    ------
-    The output of plt.hist(), i.e. a tuple (n, bins, patches).
+    Returns
+    -------
+    tuple
+        the output of `!plt.hist()`, i.e. a tuple ``(n, bins, patches)``.
 
     Notes
     -----
     This is intended for gaining a quick overview. For more elaborate tasks,
     obtain the distances as
-        dists = np.concatenate([traj[:].flatten() for traj in dataset.process(<preproc>)])
-    where <preproc> is the preprocessing function appropriate for your dataset.
-    For a two-locus trajectory, this would presumably be
-        preproc = lambda traj : traj.relative().abs()
+
+    >>> dists = np.concatenate([traj[:].flatten() for traj in dataset.process(<preproc>)])
+
+    where ``<preproc>`` is the preprocessing function appropriate for your
+    dataset.  For a two-locus trajectory, this would presumably be
+
+    >>> preproc = lambda traj : traj.relative().abs()
     """
-    if dataset.getHom('N') == 2:
+    N = dataset.map_unique(lambda traj : traj.N)
+    if N == 2:
         preproc = lambda traj : traj.relative().abs()
-    elif dataset.getHom('N') == 1:
+    elif N == 1:
         preproc = lambda traj : traj.abs()
     else:
         raise RuntimeError("Dataset has neither homogeneously N = 1 nor N = 2")

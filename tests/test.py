@@ -4,9 +4,8 @@ try: # prevent any plotting
 except KeyError:
     pass
 
-import joblib
-import tempfile
 import numpy as np
+from matplotlib import pyplot as plt
 
 import unittest
 from unittest.mock import patch
@@ -24,60 +23,142 @@ class myTestCase(unittest.TestCase):
             print(err)
         self.assertTrue(res)
 
-# Test cases are run alphabetically, so we can specify
-# test levels simply as digit in the class name
-# The main purpose of this is to get hierarchical output
-# if anything fails.
+class Test0Trajectory(myTestCase):
+    def test_fromArray(self):
+        traj = tl.Trajectory.fromArray(np.zeros((10,)))
+        self.assertIsInstance(traj, tl.trajectory.Trajectory_1N1d)
 
-class Test0TaggedList(unittest.TestCase):
-    def test_init(self):
-        ls = tl.TaggedList()
-        
-    def test_append(self):
-        ls = tl.TaggedList()
-        ls.append(1)
-        ls.append(2, 'a')
-        ls.append(3, ['b', '_all'])
+        traj = tl.Trajectory.fromArray(np.zeros((10, 2)))
+        self.assertIsInstance(traj, tl.trajectory.Trajectory_1N2d)
 
-    def test_generate(self):
-        ls = tl.TaggedList.generate(zip([1, 2, 3], [["a", "b"], "a", ["b", "c"]]))
-        self.assertListEqual(ls._data, [1, 2, 3])
-        self.assertListEqual(ls._tags, [{"a", "b", "_all"}, {"a", "_all"}, {"b", "c", "_all"}])
-        
-class Test1TaggedList(unittest.TestCase):
+        traj = tl.Trajectory.fromArray(np.zeros((1, 10, 3)))
+        self.assertIsInstance(traj, tl.trajectory.Trajectory_1N3d)
+
+        traj = tl.Trajectory.fromArray(np.zeros((2, 10, 1)))
+        self.assertIsInstance(traj, tl.trajectory.Trajectory_2N1d)
+
+        traj = tl.Trajectory.fromArray(np.zeros((2, 10, 2)))
+        self.assertIsInstance(traj, tl.trajectory.Trajectory_2N2d)
+
+        traj = tl.Trajectory.fromArray(np.zeros((2, 10, 3)))
+        self.assertIsInstance(traj, tl.trajectory.Trajectory_2N3d)
+
+        with self.assertRaises(ValueError):
+            traj = tl.Trajectory.fromArray(np.zeros((1, 1, 1, 1)))
+
+class Test1Trajectory(myTestCase):
     def setUp(self):
-        self.ls = tl.TaggedList.generate(zip([1, 2, 3], [["a", "b"], "a", ["b", "c"]]))
+        self.T = 10
+        self.Ns = [1, 1, 1, 2, 2, 2]
+        self.ds = [1, 2, 3, 1, 2, 3]
+        self.trajs = [tl.Trajectory.fromArray(np.zeros((N, self.T, d))) for N, d in zip(self.Ns, self.ds)]
+
+    def test_interface(self):
+        """
+        test all the methods whose signature is identical for all the
+        subclasses
+        """
+        for traj, N, d in zip(self.trajs, self.Ns, self.ds):
+            # Basic
+            self.assertEqual(len(traj), self.T)
+            self.assertEqual(traj.N, N)
+            self.assertEqual(traj.T, self.T)
+            self.assertEqual(traj.d, d)
+
+            if N == 1:
+                self.assertTupleEqual(traj[3:5].shape, (2, d))
+                self.assert_array_equal(traj[2], np.zeros((d,)))
+            else:
+                self.assertTupleEqual(traj[3:5].shape, (N, 2, d))
+                self.assert_array_equal(traj[2], np.zeros((N, d)))
+
+            # Plotting
+            lines = traj.plot_vstime()
+            self.assertEqual(len(lines), d)
+
+            if d > 1:
+                lines = traj.plot_spatial()
+                self.assertEqual(len(lines), N)
+
+                lines = traj.plot_spatial(linestyle='-')
+                if N == 2:
+                    lines = traj.plot_spatial(linestyle=['-', '--'])
+                else:
+                    with self.assertRaises(ValueError):
+                        lines = traj.plot_spatial(linestyle=['-', '--'])
+
+            # Modifiers
+            if N == 2:
+                rel = traj.relative()
+                self.assertTupleEqual(rel.data.shape, (1, self.T, d))
+                mag = rel.abs()
+                self.assertTupleEqual(mag.data.shape, (1, self.T, 1))
+                dif = rel.diff(dt=2)
+                self.assertTupleEqual(dif.data.shape, (1, self.T-2, d))
+                dim = traj.dims([0])
+                self.assertTupleEqual(dim.data.shape, (2, self.T, 1))
+            elif N == 1:
+                mag = traj.abs()
+                self.assertTupleEqual(mag.data.shape, (1, self.T, 1))
+                with self.assertRaises(NotImplementedError):
+                    rel = traj.relative()
+                dif = traj.diff(dt=3)
+                self.assertTupleEqual(dif.data.shape, (1, self.T-3, d))
+                if d >= 2:
+                    dim = traj.dims([0, 1])
+                    self.assertTupleEqual(dim.data.shape, (1, self.T, 2))
+
+class Test0TaggedSet(unittest.TestCase):
+    def test_init(self):
+        ls = tl.TaggedSet()
+
+        ls = tl.TaggedSet(zip([1, 2, 3], [["a", "b"], "a", ["b", "c"]]))
+        self.assertListEqual(ls._data, [1, 2, 3])
+        self.assertListEqual(ls._tags, [{"a", "b"}, {"a"}, {"b", "c"}])
+
+        ls = tl.TaggedSet([1, 2, 3], hasTags=False)
+        
+    def test_add(self):
+        ls = tl.TaggedSet()
+        ls.add(1)
+        ls.add(2, 'a')
+        ls.add(3, {'b', 'c'})
+        
+class Test1TaggedSet(unittest.TestCase):
+    def setUp(self):
+        self.ls = tl.TaggedSet(zip([1, 2, 3], [["a", "b"], "a", ["b", "c"]]))
+
+    def test_len(self):
+        self.assertEqual(len(self.ls), 3)
         
     def test_iteration(self):
         for ind, val in enumerate(self.ls):
             self.assertEqual(val, self.ls._data[ind])
-        for ind, val in enumerate(self.ls()):
+
+        for ind, (val, tags) in enumerate(self.ls(giveTags=True)):
             self.assertEqual(val, self.ls._data[ind])
+            self.assertSetEqual(tags, self.ls._tags[ind])
+
+    def test_elementaccess(self):
+        self.assertEqual(self.ls[1], 2)
 
     def test_mergein(self):
-        newls = tl.TaggedList.generate(zip([4, 5, 6], [["d"], [], "e"]))
+        newls = tl.TaggedSet(zip([4, 5, 6], [["d"], [], "e"]))
         self.ls.mergein(newls, additionalTags='new')
         self.assertListEqual(self.ls._data, [1, 2, 3, 4, 5, 6])
         self.assertSetEqual(self.ls.tagset(), {'a', 'b', 'c', 'd', 'e', 'new'})
+
+        self.ls &= newls
+        self.assertEqual(len(self.ls), 9)
         
         self.ls.makeSelection(tags='new')
         self.assertSetEqual(set(self.ls), {4, 5, 6})
 
-    def test_homogeneous(self):
-        self.assertTrue(self.ls.isHomogeneous())
-        lsinh = tl.TaggedList.generate(zip([1, 2., 3], [["a", "b"], "a", ["b", "c"]]))
-        self.assertFalse(lsinh.isHomogeneous())
-        st = type('st', (int,), {})
-        lsinh = tl.TaggedList.generate(zip([1, st(5), 3], [["a", "b"], "a", ["b", "c"]]))
-        self.assertTrue(lsinh.isHomogeneous(int, allowSubclass=True))
-        self.assertFalse(lsinh.isHomogeneous(int, allowSubclass=False))
-
-    def test_getHom(self):
-        imag = self.ls.getHom('imag')
-        self.assertEqual(imag, 0)
-        with self.assertRaises(RuntimeError):
-            self.ls._data[0] = 1j
-            imag = self.ls.getHom('imag')
+    def test_makeTagsSet(self):
+        self.assertSetEqual(tl.TaggedSet.makeTagsSet("foo"), {"foo"})
+        self.assertSetEqual(tl.TaggedSet.makeTagsSet(["foo"]), {"foo"})
+        with self.assertRaises(ValueError):
+            tl.TaggedSet.makeTagsSet(1)
 
     def test_selection(self):
         self.ls.makeSelection(tags="a")
@@ -97,295 +178,412 @@ class Test1TaggedList(unittest.TestCase):
         self.ls.refineSelection(tags='c')
         self.assertSetEqual({*self.ls}, {3})
 
-    def test_len(self):
-        self.assertEqual(len(self.ls), 3)
+        sel = self.ls.saveSelection()
+        self.assertListEqual(sel, [False, False, True])
 
-    def test_makeTagsSet(self):
-        self.assertSetEqual(tl.TaggedList.makeTagsSet("foo"), {"foo"})
-        self.assertSetEqual(tl.TaggedList.makeTagsSet(["foo"]), {"foo"})
-        with self.assertRaises(ValueError):
-            tl.TaggedList.makeTagsSet(1)
+        self.ls.makeSelection()
+        self.assertEqual(len(self.ls), 3)
+        self.ls.restoreSelection(sel)
+        self.assertEqual(len(self.ls), 1)
+        self.assertSetEqual({*self.ls}, {3})
+
+        copied = self.ls.copySelection()
+        copied.makeSelection()
+        self.assertEqual(len(copied), 1)
+
+    def test_addTags(self):
+        self.ls.addTags('moo')
+        self.assertSetEqual(self.ls.tagset(), {'a', 'b', 'c', 'moo'})
 
     def test_tagset(self):
         self.assertSetEqual(self.ls.tagset(), {'a', 'b', 'c'})
-        self.assertSetEqual(self.ls.tagset(omit_all=False), {'_all', 'a', 'b', 'c'})
 
-    def test_apply(self):
+    def test_filter(self):
         def fun(i):
             return i+1
-        self.ls.apply(fun)
+        self.ls.filter(fun)
         self.assertListEqual(self.ls._data, [2, 3, 4])
 
     def test_process(self):
-        # need a TaggedList of mutable objects
-        mutls = tl.TaggedList.generate(zip(['hello', 'World', '!'], [["a", "b"], "a", ["b", "c"]]))
+        # need a TaggedSet of mutable objects
+        mutls = tl.TaggedSet(zip(['hello', 'World', '!'], [["a", "b"], "a", ["b", "c"]]))
         mutls.makeSelection(tags="a")
         newls = mutls.process(lambda word : word+'_moo')
 
         self.assertListEqual(mutls._data, ['hello', 'World', '!'])
         self.assertListEqual(newls._data, ['hello_moo', 'World_moo'])
 
-class Test0Trajectory(myTestCase):
-    def test_fromArray(self):
-        traj = tl.Trajectory.fromArray(np.zeros((10,)))
-        self.assertTupleEqual(traj._data.shape, (1, 10, 1))
+    def test_map_unique(self):
+        def funTrue(x):
+            return True
+        def fun2(x):
+            return 2*x
 
-        traj = tl.Trajectory.fromArray(np.zeros((10, 2)))
-        self.assertTupleEqual(traj._data.shape, (1, 10, 2))
+        self.assertTrue(self.ls.map_unique(funTrue))
+        with self.assertRaises(RuntimeError):
+            self.ls.map_unique(fun2)
+        self.assertIsNone(tl.TaggedSet().map_unique(funTrue))
 
-        traj = tl.Trajectory.fromArray(np.zeros((1, 10, 3)))
-        self.assertTupleEqual(traj._data.shape, (1, 10, 3))
+#     def test_homogeneous(self):
+#         self.assertTrue(self.ls.isHomogeneous())
+#         lsinh = tl.TaggedSet(zip([1, 2., 3], [["a", "b"], "a", ["b", "c"]]))
+#         self.assertFalse(lsinh.isHomogeneous())
+#         st = type('st', (int,), {})
+#         lsinh = tl.TaggedSet(zip([1, st(5), 3], [["a", "b"], "a", ["b", "c"]]))
+#         self.assertTrue(lsinh.isHomogeneous(int, allowSubclass=True))
+#         self.assertFalse(lsinh.isHomogeneous(int, allowSubclass=False))
+# 
+#     def test_getHom(self):
+#         imag = self.ls.getHom('imag')
+#         self.assertEqual(imag, 0)
+#         with self.assertRaises(RuntimeError):
+#             self.ls._data[0] = 1j
+#             imag = self.ls.getHom('imag')
 
-        traj = tl.Trajectory.fromArray(np.zeros((2, 10, 1)))
-        self.assertTupleEqual(traj._data.shape, (2, 10, 1))
-
-        traj = tl.Trajectory.fromArray(np.zeros((2, 10, 2)))
-        self.assertTupleEqual(traj._data.shape, (2, 10, 2))
-
-        traj = tl.Trajectory.fromArray(np.zeros((2, 10, 3)))
-        self.assertTupleEqual(traj._data.shape, (2, 10, 3))
-
-        with self.assertRaises(ValueError):
-            traj = tl.Trajectory.fromArray(np.zeros((10, 4)))
-        with self.assertRaises(ValueError):
-            traj = tl.Trajectory.fromArray(np.zeros((3, 10, 1)))
-        with self.assertRaises(ValueError):
-            traj = tl.Trajectory.fromArray(np.zeros((1, 1, 1, 1)))
-        with self.assertRaises(ValueError):
-            traj = tl.Trajectory.fromArray(np.zeros((1, 10, 3)))
-            traj.plot_spatial(dims=(0, 3))
-        with self.assertRaises(ValueError):
-            traj = tl.Trajectory.fromArray(np.zeros((2, 10, 3)))
-            traj.plot_spatial(dims=(0, 3))
-
-class Test1Trajectory(myTestCase):
+class TestClean(myTestCase):
     def setUp(self):
-        self.T = 10
-        self.Ns = [1, 1, 1, 2, 2, 2]
-        self.ds = [1, 2, 3, 1, 2, 3]
-        self.trajs = [tl.Trajectory.fromArray(np.zeros((N, self.T, d))) for N, d in zip(self.Ns, self.ds)]
+        # Split with threshold = 2 => trajectories of lengths [2, 3, 3]
+        self.traj = tl.Trajectory.fromArray([1., 2, 4.1, 4.5, 3, -0.5, -1, -0.7])
 
-    def test_interface(self):
-        """
-        test all the methods whose signature is identical for all the
-        subclasses
-        """
-        for traj, N, d in zip(self.trajs, self.Ns, self.ds):
-            self.assertEqual(len(traj), self.T)
-            self.assertEqual(traj.N, N)
-            self.assertEqual(traj.T, self.T)
-            self.assertEqual(traj.d, d)
+        # Split with threshold = 3 => 3 trajectories with lengths [4, 5, 6]
+        self.ds = tl.TaggedSet()
+        self.ds.add(tl.Trajectory.fromArray([0, 0.75, 0.5, 0.3, 5.4, 5.5, 5.3, -2.0, 5.4]))
+        self.ds.add(tl.Trajectory.fromArray([1.2, 1.4, np.nan, np.nan, 10.0, 10.2]))
 
-            self.assertTupleEqual(traj[3:5].shape, (N, 2, d))
-            self.assert_array_equal(traj[2], np.zeros((N, d)))
+    def test_split_trajectory(self):
+        split_trajs = tl.clean.split_trajectory_at_big_steps(self.traj, 2)
+        self.assert_array_equal(np.sort([len(traj) for traj in split_trajs]), np.array([2, 3, 3]))
 
-            lines = traj.plot_vstime()
-            self.assertEqual(len(lines), d)
+    def test_split_dataset(self):
+        split_ds = tl.clean.split_dataset_at_big_steps(self.ds, 3)
+        self.assert_array_equal(np.sort([len(traj) for traj in split_ds]), np.array([4, 5, 6]))
 
-            if d > 1:
-                lines = traj.plot_spatial()
-                self.assertEqual(len(lines), N)
+class TestLoad(myTestCase):
+    def test_evalSPT(self):
+        filename = "testdata/evalSPT.csv"
+        # file contents:
+        # 1.0	2.3	1	5	
+        # 1.5	2.1	2	5	
+        # 2.1	1.5	3	5	
+        # 1.9	1.7	5	5	
+        # 0.5	9.3	-5	10	
+        # 0.4	8.5	-4	10	
+        # 1.2	9.1	-6	10	
 
-                lines = traj.plot_spatial(linestyle='-')
-                if N == 2:
-                    lines = traj.plot_spatial(linestyle=['-', '--'])
-                else:
-                    with self.assertRaises(ValueError):
-                        lines = traj.plot_spatial(linestyle=['-', '--'])
+        ds = tl.load.evalSPT(filename, tags={'test'})
 
-            msd = traj.msd()
-            self.assertTupleEqual(msd.shape, (self.T,))
-            (_, Nmsd) = traj.msd(giveN=True)
-            self.assertTupleEqual(Nmsd.shape, (self.T,))
+        ds.makeSelection(selector = lambda traj, _ : len(traj) <= 3)
+        self.assert_array_equal(ds[0][:], np.array([[1.2, 9.1], [0.5, 9.3], [0.4, 8.5]]))
 
-            if N == 2:
-                rel = traj.relative()
-                self.assertTupleEqual(rel._data.shape, (1, self.T, d))
-                mag = rel.abs()
-                self.assertTupleEqual(mag._data.shape, (1, self.T, 1))
-            elif N == 1:
-                mag = traj.abs()
-                self.assertTupleEqual(mag._data.shape, (1, self.T, 1))
-                with self.assertRaises(NotImplementedError):
-                    rel = traj.relative()
+        ds.makeSelection(selector = lambda traj, _ : len(traj) > 3)
+        self.assert_array_equal(ds[0][:], np.array([[1.0, 2.3], [1.5, 2.1], [2.1, 1.5], [np.nan, np.nan], [1.9, 1.7]]))
 
-class TestUtil(myTestCase):
-    def test_msd(self):
-        # Testing 1d trajectories
-        traj = [1, 2, 3, 4]
-        self.assert_array_equal(tl.util.msd(traj), np.array([0, 1, 4, 9]))
+class TestUtilSweep(myTestCase):
+    @staticmethod
+    def countfun(ds, what, factor=1):
+        cnt = 0
+        for traj in ds:
+            if np.isnan(what):
+                cnt += np.sum(np.isnan(traj[:]))
+            else:
+                cnt += np.sum(traj[:]*factor == what)
+        return cnt
 
-        (msd, N) = tl.util.msd(traj, giveN=True)
-        self.assert_array_equal(N, np.array([4, 3, 2, 1]))
-
-        (msd, N) = tl.util.msd(np.array([1, 2, np.nan, 4]), giveN=True)
-        self.assert_array_equal(msd, np.array([0, 1, 4, 9]))
-        self.assert_array_equal(N, np.array([3, 1, 1, 1]))
-
-        with self.assertRaises(ValueError):
-            tl.util.msd([[1, 2, 3, 4]])
-
-        # Correct handling of multiple trajectories
-        traj = np.array([[[1, 2, 3]], [[4, 5, 6]], [[7, 8, 9]]]).swapaxes(0, 2)
-        msd = tl.util.msd(traj)
-        self.assert_array_equal(msd, np.array([[0, 1, 4], [0, 1, 4], [0, 1, 4]]).swapaxes(0, 1))
-
-    def test_sampleMSD(self):
-        msd = np.sqrt(np.arange(10))
-        trajs = tl.util.sampleMSD(msd, n=2)
-        self.assertTupleEqual(trajs.shape, (10, 2))
-        acf = np.zeros((10,))
-        acf[0] = 1
-        trajs = tl.util.sampleMSD(acf, n=2, isCorr=True)
-        self.assertTupleEqual(trajs.shape, (10, 2))
-
-class TestAnalysis(myTestCase):
     def setUp(self):
-        tags = ["foo", ["foo", "bar"], ["bar"], {"foobar", "bar"}, "foo"]
-        self.ntraj = len(tags)
-        self.N = 1
-        self.T = 10
-        self.d = 2
-        msd = np.sqrt(np.arange(self.T))
-        trajs = tl.util.sampleMSD(msd, n=self.N*self.d*len(tags), subtractMean=False)
+        ds = tl.TaggedSet()
+        ds.add(tl.Trajectory.fromArray([0, 0.75, 0.5, 0.3, 5.4, 5.5, 5.3, -2.0, 5.4]))
+        ds.add(tl.Trajectory.fromArray([1.2, 1.4, np.nan, np.nan, 10.0, 10.2]))
 
-        def gen():
-            for i, mytags in enumerate(tags):
-                mytracelist = [trajs[:, ((i*self.N + n)*self.d):((i*self.N + n+1)*self.d)] \
-                               for n in range(self.N)]
-                yield (tl.Trajectory.fromArray(mytracelist), mytags)
-        self.ds = tl.TaggedList.generate(gen())
-
-    def test_setup(self):
-        self.assertEqual(len(self.ds), 5)
-        for traj in self.ds:
-            self.assertEqual(traj.N, self.N)
-            self.assertEqual(traj.T, self.T)
-            self.assertEqual(traj.d, self.d)
-
-    def test_msd(self):
-        msd = tl.analysis.MSD(self.ds)
-        self.assertTupleEqual(msd.shape, (self.T,))
-        (_, N) = tl.analysis.MSD(self.ds, giveN=True)
-        self.assertTupleEqual(N.shape, (self.T,))
-        
-    def test_hist_lengths(self):
-        h = tl.analysis.hist_lengths(self.ds)
-        self.assert_array_equal(h[0], np.array(self.ntraj))
-
-    def test_plot_msds(self):
-        lines = tl.analysis.plot_msds(self.ds)
-        self.assertEqual(len(lines), self.ntraj+1)
-
-        self.ds.makeSelection(tags={'foo'})
-        lines = tl.analysis.plot_msds(self.ds, label='ensemble')
-        self.assertEqual(len(lines), 4)
-
-    def test_plot_trajectories(self):
-        lines = tl.analysis.plot_trajectories(self.ds)
-        self.assertEqual(len(lines), self.ntraj)
-        self.ds.makeSelection(tags="foo")
-        lines = tl.analysis.plot_trajectories(self.ds)
-        self.assertEqual(len(lines), 3)
-
-    def test_KLD_PC(self):
-        KLD = tl.analysis.KLD_PC(self.ds, n=2, k=5)
-        
-class TestAnalysisKLDestimator(myTestCase):
-    def setUp(self):
-        tags = ["foo", ["foo", "bar"], ["bar"], {"foobar", "bar"}, "foo"]
-        self.ntraj = len(tags)
-        self.N = 2
-        self.T = 100
-        self.d = 2
-        msd = np.sqrt(np.arange(self.T))
-        trajs = tl.util.sampleMSD(msd, n=self.N*self.d*len(tags), subtractMean=False)
-
-        def gen():
-            for i, mytags in enumerate(tags):
-                mytracelist = [trajs[:, ((i*self.N + n)*self.d):((i*self.N + n+1)*self.d)] \
-                               for n in range(self.N)]
-                yield (tl.Trajectory.fromArray(mytracelist), mytags)
-        self.dataset = tl.TaggedList.generate(gen())
-        self.est = tl.analysis.KLDestimator(self.dataset)
-        self.est.setup(bootstraprepeats=2, processes=2, n=[2, 5], k=2, dt=1)
+        self.sweep = tl.util.Sweeper(ds, self.countfun)
 
     def test_preprocess(self):
-        self.est.preprocess(lambda traj : traj.relative())
-        self.assertTupleEqual(self.est.dataset._data[0]._data.shape, (1, self.T, self.d))
-
+        self.sweep.preprocess(lambda traj : traj.abs())
+    
     def test_run(self):
-        res = self.est.run()
-        self.assertEqual(len(res['KLD']), 4)
+        res = self.sweep.run({'what' : [5.5, np.nan, 10.0], 'factor' : 1})
+        self.assertDictEqual(res, {'what' : [5.5, np.nan, 10.0], 'factor' : [1, 1, 1], 'result' : [1, 2, 1]})
 
-    @patch("multiprocessing.Pool")
-    def test_noparallel(self, mockmap):
-        self.est.setup(processes=1)
-        res = self.est.run()
-        mockmap.assert_not_called()
+        self.sweep.processes = 2
+        res = self.sweep.run({'what' : [10.8, 0.5], 'factor' : [1, 2]})
+        self.assertDictEqual(res, {'what' : [10.8, 10.8, 0.5, 0.5], 'factor' : [1, 2, 1, 2], 'result' : [0, 2, 1, 0]})
 
-class TestTools(myTestCase):
+        self.sweep.processes = 1
+        res = self.sweep.run([{'what' : 10.0}, {'what' : 1.5, 'factor' : 2}])
+        self.assertDictEqual(res, {'what' : [10.0, 1.5], 'factor' : [None, 2], 'result' : [1, 1]})
+
+class TestUtilmcmc(myTestCase):
+    @patch('builtins.print')
+    def test_mcmc(self, mock_print):
+        # Simply use the example from the docs
+        class normMCMC(tl.util.mcmc.Sampler):
+            callback_tracker = 0
+
+            def propose_update(self, current_value):
+                proposed_value = current_value + np.random.normal(scale=self.stepsize)
+                logp_forward = -0.5*(proposed_value - current_value)**2/self.stepsize**2 - 0.5*np.log(2*np.pi*self.stepsize**2)
+                logp_backward = -0.5*(current_value - proposed_value)**2/self.stepsize**2 - 0.5*np.log(2*np.pi*self.stepsize**2)
+                return proposed_value, logp_forward, logp_backward
+                
+            def logL(self, value):
+                return -0.5*value**2 - 0.5*np.log(2*np.pi)
+            
+            def callback_logging(self, current_value, best_value):
+                self.callback_tracker += np.abs(current_value) + np.abs(best_value)
+                print("test")
+        
+        mc = normMCMC()
+        mc.configure(iterations=10, burn_in=5, log_every=2, show_progress=False)
+        logL, vals = mc.run(1)
+
+        self.assertEqual(mock_print.call_count, 10)
+        self.assertEqual(len(logL), 10)
+        self.assertEqual(len(vals), 5)
+        self.assertGreater(mc.callback_tracker, 0)
+
+        mc.config['best_only'] = True
+        logL, val = mc.run(1)
+        self.assertIsInstance(logL, float)
+        self.assertIsInstance(val, float)
+
+class TestModelsRouse(myTestCase):
     def setUp(self):
-        tags = ["foo", ["foo", "bar"], ["bar"], {"foobar", "bar"}, "foo"]
-        self.ntraj = len(tags)
-        self.N = 1
-        self.T = 10
-        self.d = 2
-        msd = np.sqrt(np.arange(self.T))
-        trajs = tl.util.sampleMSD(msd, n=self.N*self.d*len(tags), subtractMean=False)
+        self.model = tl.models.Rouse(5, 1, 1, 1)
 
-        def gen():
-            for i, mytags in enumerate(tags):
-                mytracelist = [trajs[:, ((i*self.N + n)*self.d):((i*self.N + n+1)*self.d)] \
-                               for n in range(self.N)]
-                yield (tl.Trajectory.fromArray(mytracelist), mytags)
-        self.ds = tl.TaggedList.generate(gen())
+    def test_operators(self):
+        self.assertTrue(self.model == tl.models.Rouse(5, 1, 1, 1, setup=False))
+        self.assertFalse(self.model == tl.models.Rouse(6, 1, 1, 1, setup=False))
+
+        self.assertEqual(repr(self.model), "rouse.Model(N=5, D=1, k=1, k_extra=1)")
+        self.assertEqual(repr(tl.models.Rouse(5, 1, 1, 1, extrabond=(2, 4))), "rouse.Model(N=5, D=1, k=1, k_extra=1, extrabond=(2, 4))")
+
+    def test_matrices(self):
+        A, S = self.model.give_matrices(False)
+        self.assert_array_equal(A, np.array([
+            [-1,  1,  0,  0,  0],
+            [ 1, -2,  1,  0,  0],
+            [ 0,  1, -2,  1,  0],
+            [ 0,  0,  1, -2,  1],
+            [ 0,  0,  0,  1, -1]]))
+        self.assert_array_equal(S, 2*np.eye(5))
+
+        A, S = self.model.give_matrices(True)
+        self.assert_array_equal(A, np.array([
+            [-2,  1,  0,  0,  1],
+            [ 1, -2,  1,  0,  0],
+            [ 0,  1, -2,  1,  0],
+            [ 0,  0,  1, -2,  1],
+            [ 1,  0,  0,  1, -2]]))
+        self.assert_array_equal(S, 2*np.eye(5))
+
+        A, S = self.model.give_matrices(False, tethered=True)
+        self.assert_array_equal(A, np.array([
+            [-2,  1,  0,  0,  0],
+            [ 1, -2,  1,  0,  0],
+            [ 0,  1, -2,  1,  0],
+            [ 0,  0,  1, -2,  1],
+            [ 0,  0,  0,  1, -1]]))
+        self.assert_array_equal(S, 2*np.eye(5))
+
+    def test_check_setup(self):
+        self.model.check_setup_called(dt=1)
+
+        mod = tl.models.Rouse(5, 1, 1, 1, setup=False)
+        mod.check_setup_called(dt=1, run_if_necessary=True)
+        mod.k = 2
+        with self.assertRaises(RuntimeError):
+            mod.check_setup_called(dt=1)
+
+    def test_propagate(self):
+        _, C0 = self.model.steady_state(False)
+        M0 = np.linspace(0, 1, self.model.N)
+
+        self.model.propagate = self.model._propagate_ode
+        M1, C1 = self.model.propagate(M0, C0, 1, True)
+
+        self.model.propagate = self.model._propagate_exp
+        M2, C2 = self.model.propagate(M0, C0, 1, True)
+
+        self.assertTrue(np.allclose(M1, M2, atol=0.01))
+        self.assertTrue(np.allclose(C1, C2, atol=0.01))
+
+    def test_evolve(self):
+        conf = self.model.conf_ss(False, d=2)
+        self.assertTupleEqual(conf.shape, (5, 2))
+        conf = self.model.evolve(conf, True)
+        self.assertTupleEqual(conf.shape, (5, 2))
+
+    def test_confs_from_looptrace(self):
+        confs = list(self.model.conformations_from_looptrace([False, True, False, True]))
+        self.assertEqual(len(confs), 4)
+
+    def test_likelihood(self):
+        looptrace = [False, False, True, True]
+        trace = np.array([conf[-1][0] - conf[0][0] for conf in self.model.conformations_from_looptrace(looptrace)])
+        trace[2] = np.nan
+
+        logL = tl.models.rouse.likelihood(trace, looptrace, self.model, noise=1)
+        self.assertIsInstance(logL, float)
+        logL = tl.models.rouse._likelihood_filter(trace, looptrace, self.model, noise=1)
+        self.assertIsInstance(logL, float)
+        logL = tl.models.rouse._likelihood_direct(trace, looptrace, self.model, noise=1)
+        self.assertIsInstance(logL, float)
+
+class TestModelsStatgauss(myTestCase):
+    def test_sampleMSD(self):
+        traces = tl.models.statgauss.sampleMSD(np.linspace(0, 5, 10), n=5, subtractMean=True)
+        self.assertTupleEqual(traces.shape, (10, 5))
+        self.assertTrue(np.allclose(np.mean(traces, axis=0), np.zeros(5)))
+
+    def test_dataset_and_control(self):
+        ds = tl.models.statgauss.dataset(np.linspace(0, 5, 10), Ts=[10, 5, 6, None, 4])
+        self.assertEqual(len(ds), 5)
+
+        cont = tl.models.statgauss.control(ds, msd=np.linspace(0, 5, 10))
+        for original, control in zip(ds, cont):
+            self.assertEqual(len(original), len(control))
+
+class TestAnalysisKLILoopSequence(myTestCase):
+    def setUp(self):
+        self.lt = tl.analysis.kli.LoopSequence(T=100, numInt=10)
+
+    def test_setup(self):
+        self.assertEqual(len(self.lt.t), 9)
+        self.assertEqual(len(self.lt.isLoop), 10)
+
+    def test_fromLooptrace(self):
+        mylt = tl.analysis.kli.LoopSequence.fromLooptrace([True, False, False, True, True, True, False])
+        self.assert_array_equal(mylt.t, np.array([1, 3, 6]))
+        self.assert_array_equal(mylt.isLoop, np.array([True, False, True, False]))
+
+    def test_toLooptrace(self):
+        ltrace = self.lt.toLooptrace()
+        self.assertEqual(len(ltrace), self.lt.T)
+        self.assertIs(ltrace.dtype, np.dtype('bool'))
+    
+    def test_numLoops(self):
+        mylt = tl.analysis.kli.LoopSequence.fromLooptrace([True, False, False, True, True, True, False])
+        self.assertEqual(mylt.numLoops(), 2)
+
+    def test_plottable(self):
+        plt.plot(*self.lt.plottable())
+
+class TestAnalysisKLI(myTestCase):
+    def setUp(self):
+        self.traj = tl.Trajectory.fromArray([[1, 0], [2, 0.5], [3, 0.2], [4, 0.7]])
+        self.model = tl.models.Rouse(5, 1, 1, 1)
+    
+    def test_traj_likelihood(self):
+        logL = tl.analysis.kli.traj_likelihood(self.traj, len(self.traj)*[False], self.model, noise=1)
+        self.assertIsInstance(logL, float)
+
+    def test_LoopSequenceMCMC(self):
+        # Note: the actual sampling is tested on mcmc.Sampler directly. Here we
+        # only check that the overridden methods work
+        mc = tl.analysis.kli.LoopSequenceMCMC()
+        mc.setup(self.traj, self.model, noise=1)
+        mc.stepsize = 0.1 # Workaround: usually this is set in mc.run()
+        seq = tl.analysis.kli.LoopSequence(T=len(self.traj), numInt=2)
+
+        newSeq, pf, pb = mc.propose_update(seq)
+        self.assertIsInstance(newSeq, tl.analysis.kli.LoopSequence)
+        self.assertIsInstance(pf, float)
+        self.assertIsInstance(pb, float)
+
+        logL = mc.logL(seq)
+        self.assertIsInstance(logL, float)
+
+    def test_LoopTraceMCMC(self):
+        # Note: the actual sampling is tested on mcmc.Sampler directly. Here we
+        # only check that the overridden methods work
+        mc = tl.analysis.kli.LoopTraceMCMC()
+        mc.setup(self.traj, self.model, noise=1)
+        mc.stepsize = 0.1 # Workaround: usually this is set in mc.run()
+        ltrace = tl.analysis.kli.LoopSequence(T=len(self.traj), numInt=2).toLooptrace()
+
+        newltrace, pf, pb = mc.propose_update(ltrace)
+        self.assertEqual(len(newltrace), len(self.traj))
+        self.assertIsInstance(pf, float)
+        self.assertIsInstance(pb, float)
+
+        logL = mc.logL(ltrace)
+        self.assertIsInstance(logL, float)
+
+class TestAnalysisChi2(myTestCase):
+    def setUp(self):
+        self.msd = np.linspace(0, 5, 100)
+        self.ds1 = tl.models.statgauss.dataset(self.msd, Ts=10*[None])
+        self.ds1[2].data[:, 5, :] = np.nan # Just to ensure nan-robustness
+
+        self.ds2 = tl.models.statgauss.dataset(self.msd, N=2, Ts=10*[None])
+        self.ds2[5].data[:, 4, :] = np.nan # Just to ensure nan-robustness
+
+    def test_chi2(self):
+        dof = tl.analysis.chi2.chi2vsMSD(self.ds1, n=5, msd=self.msd)
+        tl.analysis.chi2.summary_plot(self.ds1, dof)
+
+        dof = tl.analysis.chi2.chi2vsMSD(self.ds2, n=5, msd=self.msd)
+        tl.analysis.chi2.summary_plot(self.ds2, dof)
+
+class TestAnalysisMSD(myTestCase):
+    def setUp(self):
+        self.traj = tl.Trajectory.fromArray([1, 2, 3, 4, np.nan, 6])
+        self.ds = tl.models.statgauss.dataset(msd=np.linspace(0, 5, 10), Ts=10*[None])
+
+    def test_MSDtraj(self):
+        msd = tl.analysis.msd.MSDtraj(self.traj)
+        self.assert_array_equal(msd, self.traj.meta['MSD'])
+        self.assert_array_equal(msd, np.array([0, 1, 4, 9, 16, 25]))
+        self.assert_array_equal(self.traj.meta['MSDmeta']['N'], np.array([5, 3, 3, 2, 1, 1]))
+
+        self.assert_array_equal(msd, tl.analysis.MSD(self.traj))
 
     def test_MSDdataset(self):
-        msd = np.sqrt(np.arange(10))
-        ds = tl.tools.MSDdataset(msd)
+        msd, N = tl.analysis.msd.MSDdataset(self.ds, giveN=True)
+        self.assertEqual(len(msd), 10)
+        self.assert_array_equal(N, len(self.ds)*np.linspace(10, 1, 10))
 
-        with self.assertRaises(ValueError):
-            ds = tl.tools.MSDdataset(msd, Ts=[5, 6, 15])
+        self.assert_array_equal(msd, tl.analysis.MSD(self.ds))
 
-    def test_MSDcontrol(self):
-        # Note: the MSD of generated trajectories (such as our sample) can lead
-        # to exceptions bc it is noisy. Therefore, use a definitely clean one
-        msd = np.sqrt(np.arange(len(self.ds._data[0])))
-        control = tl.tools.MSDcontrol(self.ds, msd)
-        self.assertEqual(len(control), len(self.ds))
-        self.ds.makeSelection(tags="foo")
-        control = tl.tools.MSDcontrol(self.ds, msd)
-        self.assertEqual(len(control), 3)
-        with self.assertRaises(RuntimeError):
-            control = tl.tools.MSDcontrol(self.ds, -msd)
+    def test_scaling(self):
+        alpha = tl.analysis.msd.scaling(self.traj, n=5)
+        self.assertAlmostEqual(alpha, 2, places=5)
+        self.assertTrue(np.isnan(tl.analysis.msd.scaling(tl.Trajectory.fromArray([np.nan, np.nan]), n=1)))
 
-# Check that all the examples are still running, possibly mocking
-# time-intensive stuff
-sys.path.insert(0, os.path.abspath('../examples'))
-# import KLD_on_MSDdataset
-class TestExamples(myTestCase):
-    def mockKLDrun(KLDest, *args, **kwargs):
-        return np.zeros((len(KLDest.ds), 4))
-    def mockMSD(traj, giveN=False, **kwargs):
-        if giveN:
-            return (np.ones((len(traj),)), np.ones((len(traj),)))
-        else:
-            return np.ones((len(traj),))
-    def mocksampleMSD(msd, n=1, **kwargs):
-        return np.zeros((len(msd), n))
-    def mockplot(*args, **kwargs):
-        return []
+class TestAnalysisKLD(myTestCase):
+    def setUp(self):
+        self.ds = tl.models.statgauss.dataset(msd=np.linspace(0, 5, 10), Ts=10*[None])
 
-### The main (remaining) time cost in this test is the actual plotting of
-### hundreds of traces. For some reason it turns out to be incredibly hard to
-### properly mock this, so I will just leave it for now.
-#     @patch("tracklib.util.msd", new=mockMSD)
-#     @patch("tracklib.util.sampleMSD", new=mocksampleMSD)
-#     @patch("tracklib.analysis.KLDestimator.run", new=mockKLDrun)
-#     @patch("KLD_on_MSDdataset.tl.Trajectory.plot_spatial", new=mockplot)
-#     def test_KLDonMSD(self):
-#         KLD_on_MSDdataset.run_full()
+    def test_perezcruz(self):
+        Dest = tl.analysis.kld.perezcruz(self.ds, n=2, k=5, dt=1, parity='even')
+        self.assertIsInstance(Dest, float)
+        Dest = tl.analysis.kld.perezcruz(self.ds, n=2, k=5, dt=1, parity='odd')
+        self.assertIsInstance(Dest, float)
+
+class TestAnalysisPlots(myTestCase):
+    def setUp(self):
+        self.ds = tl.models.statgauss.dataset(msd=np.linspace(0, 5, 10), Ts=[None, 5, 6, 7, None, 10, 1, 5])
+        self.ds2 = tl.models.statgauss.dataset(msd=np.linspace(0, 5, 10), N=2, Ts=[None, 5, 6, 7, None, 10, 1, 5])
+
+    def test_length_dist(self):
+        _ = tl.analysis.plots.length_distribution(self.ds)
+
+    def test_msd_overview(self):
+        lines = tl.analysis.plots.msd_overview(self.ds)
+        self.assertEqual(len(lines), len(self.ds)+1)
+
+    def test_spatial(self):
+        lines = tl.analysis.plots.trajectories_spatial(self.ds)
+        self.assertEqual(len(lines), len(self.ds))
+
+        lines = tl.analysis.plots.trajectories_spatial(self.ds2)
+        self.assertEqual(len(lines), 2*len(self.ds2))
+
+        self.ds2.addTags("tag")
+        lines = tl.analysis.plots.trajectories_spatial(self.ds2, colordict={'tag' : 'k'}, linestyle=['--', ':'])
+
+    def test_distance_dist(self):
+        _ = tl.analysis.plots.distance_distribution(self.ds)
+        _ = tl.analysis.plots.distance_distribution(self.ds2)
 
 if __name__ == '__main__':
     unittest.main(module=__file__[:-3])

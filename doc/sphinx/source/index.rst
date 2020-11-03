@@ -7,9 +7,11 @@ Welcome to tracklib's documentation!
 ====================================
 
 .. toctree::
-   :maxdepth: 2
-   :caption: Contents:
+   :maxdepth: 5
 
+   modules
+
+.. .. include:: modules.rst
 
 
 Indices and tables

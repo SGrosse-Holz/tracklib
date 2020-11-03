@@ -12,8 +12,11 @@
     <script type="text/javascript" src="_static/underscore.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
     <script type="text/javascript" src="_static/language_data.js"></script>
+    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
     <link rel="index" title="Index" href="genindex.html" />
-    <link rel="search" title="Search" href="search.html" /> 
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="tracklib.util package" href="tracklib.util.html" />
+    <link rel="prev" title="tracklib.analysis package" href="tracklib.analysis.html" /> 
   </head><body>
     <div class="related" role="navigation" aria-label="related navigation">
       <h3>Navigation</h3>
@@ -24,7 +27,14 @@
         <li class="right" >
           <a href="py-modindex.html" title="Python Module Index"
              >modules</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">tracklib 0.1 documentation</a> &#187;</li> 
+        <li class="right" >
+          <a href="tracklib.util.html" title="tracklib.util package"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="tracklib.analysis.html" title="tracklib.analysis package"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">tracklib 0.1 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="tracklib.html" accesskey="U">tracklib package</a> &#187;</li> 
       </ul>
     </div>  
 
@@ -40,97 +50,316 @@
 </div>
 <div class="section" id="module-tracklib.models.rouse">
 <span id="tracklib-models-rouse-module"></span><h2>tracklib.models.rouse module<a class="headerlink" href="#module-tracklib.models.rouse" title="Permalink to this headline">¶</a></h2>
+<p>This module provides a Rouse model with a switchable extra bond.</p>
+<p class="rubric">Notes</p>
+<p><strong>Nomenclature:</strong> a ‘trace’ is a <code class="xref any docutils literal notranslate"><span class="pre">np.ndarray</span></code> of shape (T,). Consequently, a
+‘looptrace’ is a <code class="xref any docutils literal notranslate"><span class="pre">np.ndarray</span></code> with <code class="docutils literal notranslate"><span class="pre">shape</span> <span class="pre">=</span> <span class="pre">(T,)</span></code> and <code class="docutils literal notranslate"><span class="pre">dtype</span> <span class="pre">=</span> <span class="pre">bool</span></code>,
+indicating at which points the extra bond is present.</p>
+<p>Similarly to <a class="reference internal" href="#tracklib.models.rouse.Model.propagate" title="tracklib.models.rouse.Model.propagate"><code class="xref any py py-meth docutils literal notranslate"><span class="pre">Model.propagate</span></code></a>, <a class="reference internal" href="#tracklib.models.rouse.likelihood" title="tracklib.models.rouse.likelihood"><code class="xref any py py-func docutils literal notranslate"><span class="pre">likelihood</span></code></a> is just an alias for one of two
+methods of calculating the likelihood: <code class="xref any docutils literal notranslate"><span class="pre">_likelihood_filter</span></code> (default) uses a
+Kalman filter to run through the trajectory and calculate the likelihood
+iteratively, while <code class="xref any docutils literal notranslate"><span class="pre">_likelihood_direct</span></code> just evaluates the probability density
+over the space of all trajectories of a given length. These two methods, while
+not giving the exact same result, are equivalent in the sense that they differ
+by a constant offset. You can change which method is used by reassigning
+<a class="reference internal" href="#tracklib.models.rouse.likelihood" title="tracklib.models.rouse.likelihood"><code class="xref any py py-func docutils literal notranslate"><span class="pre">rouse.likelihood</span></code></a>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">rouse</span><span class="o">.</span><span class="n">likelihood</span> <span class="o">=</span> <span class="n">rouse</span><span class="o">.</span><span class="n">_likelihood_filter</span> <span class="c1"># use Kalman filter (default)</span>
+<span class="gp">... </span><span class="n">rouse</span><span class="o">.</span><span class="n">likelihood</span> <span class="o">=</span> <span class="n">rouse</span><span class="o">.</span><span class="n">_likelihood_direct</span> <span class="c1"># use high-dimensional Rouse PDF</span>
+</pre></div>
+</div>
 <dl class="class">
 <dt id="tracklib.models.rouse.Model">
 <em class="property">class </em><code class="sig-prename descclassname">tracklib.models.rouse.</code><code class="sig-name descname">Model</code><span class="sig-paren">(</span><em class="sig-param">N</em>, <em class="sig-param">D</em>, <em class="sig-param">k</em>, <em class="sig-param">k_extra</em>, <em class="sig-param">setup=True</em>, <em class="sig-param">extrabond=(0</em>, <em class="sig-param">-1)</em><span class="sig-paren">)</span><a class="headerlink" href="#tracklib.models.rouse.Model" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
-<p>Note: if k_extra &lt; -k/(N-1) the connectivity matrix will have a negative
+<p>The Rouse model with extra bond</p>
+<p>Main capabilities of this class: <a class="reference internal" href="#tracklib.models.rouse.Model.propagate" title="tracklib.models.rouse.Model.propagate"><code class="xref any py py-meth docutils literal notranslate"><span class="pre">propagate</span></code></a> an ensemble, or <a class="reference internal" href="#tracklib.models.rouse.Model.evolve" title="tracklib.models.rouse.Model.evolve"><code class="xref any py py-meth docutils literal notranslate"><span class="pre">evolve</span></code></a> a
+single conformation. In the first case, the PDF of the ensemble over
+conformation space is Gaussian, so it is fully specified by a mean
+conformation and a covariance matrix. These follow deterministic equations
+(exponential relaxation towards steady state), whose initial value problem
+has an explicit solution. In the second case, we start from an explicit
+conformation and follow the Rouse evolution for a definite time. This is
+also done by utilizing the explicit solution to these EOM.</p>
+<p>Remember to call <a class="reference internal" href="#tracklib.models.rouse.Model.setup_dynamics" title="tracklib.models.rouse.Model.setup_dynamics"><code class="xref any py py-meth docutils literal notranslate"><span class="pre">setup_dynamics</span></code></a> if changing parameters after
+initialization.</p>
+<dl class="attribute">
+<dt id="tracklib.models.rouse.Model.N">
+<code class="sig-name descname">N</code><a class="headerlink" href="#tracklib.models.rouse.Model.N" title="Permalink to this definition">¶</a></dt>
+<dd><p>number of monomers</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>int</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="tracklib.models.rouse.Model.D">
+<code class="sig-name descname">D</code><a class="headerlink" href="#tracklib.models.rouse.Model.D" title="Permalink to this definition">¶</a></dt>
+<dd><p>diffusion constant of a single free monomer</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="tracklib.models.rouse.Model.k">
+<code class="sig-name descname">k</code><a class="headerlink" href="#tracklib.models.rouse.Model.k" title="Permalink to this definition">¶</a></dt>
+<dd><p>strength of the backbone bonds</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="tracklib.models.rouse.Model.k_extra">
+<code class="sig-name descname">k_extra</code><a class="headerlink" href="#tracklib.models.rouse.Model.k_extra" title="Permalink to this definition">¶</a></dt>
+<dd><p>strength of the extra bond</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="field-list simple">
+<dt class="field-odd">Other Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>setup</strong> (<em>bool, optional</em>) – whether to run <a class="reference internal" href="#tracklib.models.rouse.Model.setup_dynamics" title="tracklib.models.rouse.Model.setup_dynamics"><code class="xref any py py-meth docutils literal notranslate"><span class="pre">setup_dynamics</span></code></a> after initialization.</p></li>
+<li><p><strong>extrabond</strong> (<em>2-tuple of int, optional</em>) – the position of the extra bond. By default this is between the ends of
+the chain.</p></li>
+</ul>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<p>If <code class="docutils literal notranslate"><span class="pre">k_extra</span> <span class="pre">&lt;</span> <span class="pre">-k/(N-1)</span></code> the connectivity matrix will have a negative
 eigenvalue. In this situation there is a repulsive bond between the ends
 that is stronger than the backbone, so it will tear the polymer apart. The
 model can still be useful in this limit, but if the extra bond is switched
 on too much, it will tear everything apart. This can also lead to negative
 covariance matrices.</p>
-<dl class="method">
-<dt id="tracklib.models.rouse.Model.__eq__">
-<code class="sig-name descname">__eq__</code><span class="sig-paren">(</span><em class="sig-param">other</em><span class="sig-paren">)</span><a class="headerlink" href="#tracklib.models.rouse.Model.__eq__" title="Permalink to this definition">¶</a></dt>
-<dd><p>Models are equal if all the parameters are equal.</p>
-</dd></dl>
-
+<p>Relation between the Rouse model with physical constants and the parameters
+used here: if we write the equation of motion as</p>
+<div class="math notranslate nohighlight">
+\[\gamma\dot{x} = \kappa Ax + \xi \,,\qquad \left\langle\xi(t)\xi(t')\right\rangle = 2\gamma k_\text{B}T\delta(t-t') \,,\]</div>
+<p>then we have</p>
+<div class="math notranslate nohighlight">
+\[k = \frac{\kappa}{\gamma} \,,\qquad D = \frac{k_\text{B}T}{\gamma} \,.\]</div>
+<p>For a Rouse <a class="reference internal" href="#tracklib.models.rouse.Model" title="tracklib.models.rouse.Model"><code class="xref any py py-class docutils literal notranslate"><span class="pre">Model</span></code></a> <code class="docutils literal notranslate"><span class="pre">model</span></code>, the following operations are defined:</p>
+<dl class="simple">
+<dt><code class="docutils literal notranslate"><span class="pre">model</span> <span class="pre">==</span> <span class="pre">other_model</span></code></dt><dd><p>comparison. Gives <code class="docutils literal notranslate"><span class="pre">True</span></code> if all the parameters are equal.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">repr(model)</span></code></dt><dd><p>give a string representation.</p>
+</dd>
+</dl>
+<p>There are two methods that can be used for propagation: solve the mean and
+covariance equations numerically, or use the known analytical solutions.
+The latter involves calculating matrix exponentials, but is a factor 8
+faster in tests. Both are implemented, as <code class="xref any docutils literal notranslate"><span class="pre">_propagate_ode</span></code> and
+<code class="xref any docutils literal notranslate"><span class="pre">_propagate_exp</span></code> respectively. <a class="reference internal" href="#tracklib.models.rouse.Model.propagate" title="tracklib.models.rouse.Model.propagate"><code class="xref any py py-meth docutils literal notranslate"><span class="pre">Model.propagate</span></code></a> is then simply assigned to
+one of them, <code class="xref any docutils literal notranslate"><span class="pre">_propagate_exp</span></code> by default.</p>
 <dl class="method">
 <dt id="tracklib.models.rouse.Model.give_matrices">
 <code class="sig-name descname">give_matrices</code><span class="sig-paren">(</span><em class="sig-param">bond</em>, <em class="sig-param">tethered=False</em><span class="sig-paren">)</span><a class="headerlink" href="#tracklib.models.rouse.Model.give_matrices" title="Permalink to this definition">¶</a></dt>
-<dd><p>Assemble the matrices needed for evolution of the Rouse model</p>
-<dl class="simple">
-<dt>bond<span class="classifier">bool</span></dt><dd><p>is the extra bond present?</p>
+<dd><p>Assemble the Rouse matrices (connectivity and noise covariance).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>bond</strong> (<em>bool</em>) – is the extra bond present?</p></li>
+<li><p><strong>tethered</strong> (<em>bool</em><em>, </em><em>optional</em>) – set to True to tether monomer 0 to the origin, i.e. get a
+non-singular connectivity. This is important if we want to sample
+from steady state (an untethered chain has COM diffusion and thus
+no steady state).</p></li>
+</ul>
 </dd>
-<dt>tethered<span class="classifier">bool</span></dt><dd><p>set to True to tether monomer 0 to the origin, i.e. get a non-singular A
-default: False</p>
-</dd>
-</dl>
-<p>A : the transition matrix for the deterministic part of the equation
-S : covariance of the noise</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="tracklib.models.rouse.Model.setup_propagation">
-<code class="sig-name descname">setup_propagation</code><span class="sig-paren">(</span><em class="sig-param">dt=1</em><span class="sig-paren">)</span><a class="headerlink" href="#tracklib.models.rouse.Model.setup_propagation" title="Permalink to this definition">¶</a></dt>
-<dd><p>Pre-calculate the matrices needed for propagation using the analytical
-solution</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="tracklib.models.rouse.Model.check_propagation_memo_uptodate">
-<code class="sig-name descname">check_propagation_memo_uptodate</code><span class="sig-paren">(</span><em class="sig-param">dt=None</em><span class="sig-paren">)</span><a class="headerlink" href="#tracklib.models.rouse.Model.check_propagation_memo_uptodate" title="Permalink to this definition">¶</a></dt>
-<dd><p>Check whether the internal storage variable _propagation_memo exists
-and is up to date with the current parameters.</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="tracklib.models.rouse.Model.conf_ss">
-<code class="sig-name descname">conf_ss</code><span class="sig-paren">(</span><em class="sig-param">bond=False</em>, <em class="sig-param">d=3</em><span class="sig-paren">)</span><a class="headerlink" href="#tracklib.models.rouse.Model.conf_ss" title="Permalink to this definition">¶</a></dt>
-<dd><p>Draw a conformation from steady state. To guarantee existence of a
-steady state, we tether one end of the chain to the origin.</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="tracklib.models.rouse.Model.evolve">
-<code class="sig-name descname">evolve</code><span class="sig-paren">(</span><em class="sig-param">conf</em>, <em class="sig-param">bond=False</em><span class="sig-paren">)</span><a class="headerlink" href="#tracklib.models.rouse.Model.evolve" title="Permalink to this definition">¶</a></dt>
-<dd><p>Evolve the conformation conf for the timestep given to setup_propagation()</p>
-<dl class="simple">
-<dt>conf<span class="classifier">(N, …) np.ndarray</span></dt><dd><p>the conformation(s) to evolve</p>
-</dd>
-<dt>bond<span class="classifier">bool</span></dt><dd><p>whether to use the bound or unbound model</p>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><strong>A</strong> ((<a class="reference internal" href="#tracklib.models.rouse.Model.N" title="tracklib.models.rouse.Model.N"><code class="xref any py py-attr docutils literal notranslate"><span class="pre">N</span></code></a>, <a class="reference internal" href="#tracklib.models.rouse.Model.N" title="tracklib.models.rouse.Model.N"><code class="xref any py py-attr docutils literal notranslate"><span class="pre">N</span></code></a>) np.ndarray) – the connectivity matrix</p></li>
+<li><p><strong>S</strong> ((<a class="reference internal" href="#tracklib.models.rouse.Model.N" title="tracklib.models.rouse.Model.N"><code class="xref any py py-attr docutils literal notranslate"><span class="pre">N</span></code></a>, <a class="reference internal" href="#tracklib.models.rouse.Model.N" title="tracklib.models.rouse.Model.N"><code class="xref any py py-attr docutils literal notranslate"><span class="pre">N</span></code></a>) np.ndarray) – covariance of the noise</p></li>
+</ul>
+</p>
 </dd>
 </dl>
-<p>the evolved conformation</p>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><a class="reference internal" href="#tracklib.models.rouse.Model.steady_state" title="tracklib.models.rouse.Model.steady_state"><code class="xref py py-meth docutils literal notranslate"><span class="pre">steady_state()</span></code></a>, <a class="reference internal" href="#tracklib.models.rouse.Model.conf_ss" title="tracklib.models.rouse.Model.conf_ss"><code class="xref py py-meth docutils literal notranslate"><span class="pre">conf_ss()</span></code></a></p>
+</div>
 </dd></dl>
 
 <dl class="method">
-<dt id="tracklib.models.rouse.Model.conformations_from_looptrace">
-<code class="sig-name descname">conformations_from_looptrace</code><span class="sig-paren">(</span><em class="sig-param">looptrace</em>, <em class="sig-param">d=3</em><span class="sig-paren">)</span><a class="headerlink" href="#tracklib.models.rouse.Model.conformations_from_looptrace" title="Permalink to this definition">¶</a></dt>
-<dd><p>A generator yielding conformations for a given looptrace. We start from
-steady state with/without the extra bond according to looptrace[0] and
-evolve from there. This means that looptrace[i] can be seen as the
-indicator for whether or not there is a bond present between time
-points i-1 and i.</p>
-<dl class="simple">
-<dt>looptrace<span class="classifier">(T,) iterable of bool</span></dt><dd><p>the looptrace to simulate for</p>
-</dd>
-<dt>d<span class="classifier">int</span></dt><dd><p>the dimensionality of the conformations to generate
-default: 3</p>
+<dt id="tracklib.models.rouse.Model.setup_dynamics">
+<code class="sig-name descname">setup_dynamics</code><span class="sig-paren">(</span><em class="sig-param">dt=1.0</em><span class="sig-paren">)</span><a class="headerlink" href="#tracklib.models.rouse.Model.setup_dynamics" title="Permalink to this definition">¶</a></dt>
+<dd><p>Pre-calculate some matrices needed for propagation/evolution.</p>
+<p>By default, this function is called by the constructor, so in most
+cases it has only to be invoked by the user if they change parameters
+in the model.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>dt</strong> (<em>float</em>) – the timestep that we use for propagtion</p>
 </dd>
 </dl>
-<p>A generator yielding T conformations sampled according to looptrace.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="tracklib.models.rouse.Model.check_setup_called">
+<code class="sig-name descname">check_setup_called</code><span class="sig-paren">(</span><em class="sig-param">dt=None</em>, <em class="sig-param">run_if_necessary=False</em><span class="sig-paren">)</span><a class="headerlink" href="#tracklib.models.rouse.Model.check_setup_called" title="Permalink to this definition">¶</a></dt>
+<dd><p>Check whether <a class="reference internal" href="#tracklib.models.rouse.Model.setup_dynamics" title="tracklib.models.rouse.Model.setup_dynamics"><code class="xref any py py-meth docutils literal notranslate"><span class="pre">setup_dynamics</span></code></a> has been called.</p>
+<p>Mostly internal use. Checks whether <a class="reference internal" href="#tracklib.models.rouse.Model.setup_dynamics" title="tracklib.models.rouse.Model.setup_dynamics"><code class="xref any py py-meth docutils literal notranslate"><span class="pre">setup_dynamics</span></code></a> has been called
+and if so, whether parameters have changed since then.</p>
+<p>This function does not have a return value, it simply raises a
+<code class="xref any docutils literal notranslate"><span class="pre">RuntimeError</span></code> if something does not work out.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>dt</strong> (<em>float</em>) – the time step that we need to be set up for. Set to <code class="docutils literal notranslate"><span class="pre">None</span></code>
+(default) to omit this check.</p></li>
+<li><p><strong>run_if_necessary</strong> (<em>bool</em><em>, </em><em>optional</em>) – if True, instead of raising an error, just run the setup.</p></li>
+</ul>
+</dd>
+</dl>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><a class="reference internal" href="#tracklib.models.rouse.Model.setup_dynamics" title="tracklib.models.rouse.Model.setup_dynamics"><code class="xref py py-meth docutils literal notranslate"><span class="pre">setup_dynamics()</span></code></a></p>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="tracklib.models.rouse.Model.steady_state">
+<code class="sig-name descname">steady_state</code><span class="sig-paren">(</span><em class="sig-param">bond=False</em><span class="sig-paren">)</span><a class="headerlink" href="#tracklib.models.rouse.Model.steady_state" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return mean and covariance of the steady state.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p><ul class="simple">
+<li><p><strong>M</strong> ((<a class="reference internal" href="#tracklib.models.rouse.Model.N" title="tracklib.models.rouse.Model.N"><code class="xref any py py-attr docutils literal notranslate"><span class="pre">N</span></code></a>,) <code class="xref any docutils literal notranslate"><span class="pre">np.ndarray</span></code>) – the mean for each monomer (which is zero, this is mostly for
+convenience).</p></li>
+<li><p><strong>C</strong> ((<a class="reference internal" href="#tracklib.models.rouse.Model.N" title="tracklib.models.rouse.Model.N"><code class="xref any py py-attr docutils literal notranslate"><span class="pre">N</span></code></a>, <a class="reference internal" href="#tracklib.models.rouse.Model.N" title="tracklib.models.rouse.Model.N"><code class="xref any py py-attr docutils literal notranslate"><span class="pre">N</span></code></a>) <code class="xref any docutils literal notranslate"><span class="pre">np.ndarray</span></code>) – the long run covariance</p></li>
+</ul>
+</p>
+</dd>
+</dl>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><a class="reference internal" href="#tracklib.models.rouse.Model.propagate" title="tracklib.models.rouse.Model.propagate"><code class="xref py py-meth docutils literal notranslate"><span class="pre">propagate()</span></code></a>, <a class="reference internal" href="#tracklib.models.rouse.Model.give_matrices" title="tracklib.models.rouse.Model.give_matrices"><code class="xref py py-meth docutils literal notranslate"><span class="pre">give_matrices()</span></code></a></p>
+</div>
+<p class="rubric">Notes</p>
+<p>The long run covariance <span class="math notranslate nohighlight">\(C\)</span> is given by</p>
+<div class="math notranslate nohighlight">
+\[C = \frac{1}{2k}A^{-1}S \,.\]</div>
+<p>To ensure invertibility of the connectivity matrix, we tether one end
+of the chain to the origin.</p>
 </dd></dl>
 
 <dl class="method">
 <dt id="tracklib.models.rouse.Model.propagate">
 <code class="sig-name descname">propagate</code><span class="sig-paren">(</span><em class="sig-param">M0</em>, <em class="sig-param">C0</em>, <em class="sig-param">t</em>, <em class="sig-param">bond</em><span class="sig-paren">)</span><a class="headerlink" href="#tracklib.models.rouse.Model.propagate" title="Permalink to this definition">¶</a></dt>
-<dd><p>Propagate M0 and C0 using the analytical solution to the equations used
-by _propagate_ode.</p>
-<p>Note: call setup_propagation before using this. Failing to do so will
-raise a RuntimeError.
-Speedup over _propagate_ode is roughly 8x.</p>
+<dd><p>Propagate the ensemble <code class="docutils literal notranslate"><span class="pre">(M0,</span> <span class="pre">C0)</span></code> for a time t.</p>
+<p>This is simply assigned to one of <code class="xref any docutils literal notranslate"><span class="pre">_propagate_ode</span></code> or <code class="xref any docutils literal notranslate"><span class="pre">_propagate_exp</span></code>
+(default), which either solve the equations of motion numerically, or
+use the known analytical solution. Users can reassign this attribute:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">model</span> <span class="o">=</span> <span class="n">Model</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+<span class="gp">... </span><span class="n">model</span><span class="o">.</span><span class="n">propagate</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">_propagate_ode</span> <span class="c1"># for numerical solution</span>
+<span class="gp">... </span><span class="n">model</span><span class="o">.</span><span class="n">propagate</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">_propagate_exp</span> <span class="c1"># for evaluation of analytical solution</span>
+</pre></div>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>M0</strong> ((<a class="reference internal" href="#tracklib.models.rouse.Model.N" title="tracklib.models.rouse.Model.N"><code class="xref any py py-attr docutils literal notranslate"><span class="pre">N</span></code></a>,) np.ndarray) – the initial value for the mean conformation</p></li>
+<li><p><strong>C0</strong> ((<a class="reference internal" href="#tracklib.models.rouse.Model.N" title="tracklib.models.rouse.Model.N"><code class="xref any py py-attr docutils literal notranslate"><span class="pre">N</span></code></a>, <a class="reference internal" href="#tracklib.models.rouse.Model.N" title="tracklib.models.rouse.Model.N"><code class="xref any py py-attr docutils literal notranslate"><span class="pre">N</span></code></a>) np.ndarray) – the initial value for the covariance</p></li>
+<li><p><strong>t</strong> (<em>float</em>) – the time to propagate for</p></li>
+<li><p><strong>bond</strong> (<em>boool</em>) – whether the extra bond should be present or absent</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><strong>M1</strong> ((<a class="reference internal" href="#tracklib.models.rouse.Model.N" title="tracklib.models.rouse.Model.N"><code class="xref any py py-attr docutils literal notranslate"><span class="pre">N</span></code></a>,) np.ndarray) – the propagated mean</p></li>
+<li><p><strong>C1</strong> ((<a class="reference internal" href="#tracklib.models.rouse.Model.N" title="tracklib.models.rouse.Model.N"><code class="xref any py py-attr docutils literal notranslate"><span class="pre">N</span></code></a>, <a class="reference internal" href="#tracklib.models.rouse.Model.N" title="tracklib.models.rouse.Model.N"><code class="xref any py py-attr docutils literal notranslate"><span class="pre">N</span></code></a>) np.ndarray) – the propagated covariance</p></li>
+</ul>
+</p>
+</dd>
+</dl>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><a class="reference internal" href="#tracklib.models.rouse.Model.steady_state" title="tracklib.models.rouse.Model.steady_state"><code class="xref py py-meth docutils literal notranslate"><span class="pre">steady_state()</span></code></a></p>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="tracklib.models.rouse.Model.conf_ss">
+<code class="sig-name descname">conf_ss</code><span class="sig-paren">(</span><em class="sig-param">bond=False</em>, <em class="sig-param">d=3</em><span class="sig-paren">)</span><a class="headerlink" href="#tracklib.models.rouse.Model.conf_ss" title="Permalink to this definition">¶</a></dt>
+<dd><p>Draw a conformation from steady state.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>bond</strong> (<em>bool</em><em>, </em><em>optional</em>) – whether the extra bond is present</p></li>
+<li><p><strong>d</strong> (<em>int</em><em>, </em><em>optional</em>) – the number of spatial dimensions</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>(<a class="reference internal" href="#tracklib.models.rouse.Model.N" title="tracklib.models.rouse.Model.N"><code class="xref any py py-attr docutils literal notranslate"><span class="pre">N</span></code></a>, d) np.ndarray – the sampled conformation</p>
+</dd>
+</dl>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><a class="reference internal" href="#tracklib.models.rouse.Model.evolve" title="tracklib.models.rouse.Model.evolve"><code class="xref py py-meth docutils literal notranslate"><span class="pre">evolve()</span></code></a>, <a class="reference internal" href="#tracklib.models.rouse.Model.conformations_from_looptrace" title="tracklib.models.rouse.Model.conformations_from_looptrace"><code class="xref py py-meth docutils literal notranslate"><span class="pre">conformations_from_looptrace()</span></code></a></p>
+</div>
+<p class="rubric">Notes</p>
+<p>This uses the <code class="docutils literal notranslate"><span class="pre">tethered</span></code> keyword to <a class="reference internal" href="#tracklib.models.rouse.Model.give_matrices" title="tracklib.models.rouse.Model.give_matrices"><code class="xref any py py-meth docutils literal notranslate"><span class="pre">give_matrices</span></code></a> to ensure an
+invertible connectivity matrix.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="tracklib.models.rouse.Model.evolve">
+<code class="sig-name descname">evolve</code><span class="sig-paren">(</span><em class="sig-param">conf</em>, <em class="sig-param">bond=False</em>, <em class="sig-param">dt=None</em><span class="sig-paren">)</span><a class="headerlink" href="#tracklib.models.rouse.Model.evolve" title="Permalink to this definition">¶</a></dt>
+<dd><p>Evolve the conformation conf.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>conf</strong> ((<a class="reference internal" href="#tracklib.models.rouse.Model.N" title="tracklib.models.rouse.Model.N"><code class="xref any py py-attr docutils literal notranslate"><span class="pre">N</span></code></a>, …) np.ndarray) – the conformation(s) to evolve</p></li>
+<li><p><strong>bond</strong> (<em>bool</em><em>, </em><em>optional</em>) – whether the extra bond should be present</p></li>
+<li><p><strong>dt</strong> (<em>float</em><em>, </em><em>optional</em>) – the time step to take. Set this to <code class="docutils literal notranslate"><span class="pre">None</span></code> (the default) to use
+the time step given to <a class="reference internal" href="#tracklib.models.rouse.Model.setup_dynamics" title="tracklib.models.rouse.Model.setup_dynamics"><code class="xref any py py-meth docutils literal notranslate"><span class="pre">setup_dynamics</span></code></a>. This should be
+default usage, since recalculating the dynamic matrices at each
+step is expensive.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>(<a class="reference internal" href="#tracklib.models.rouse.Model.N" title="tracklib.models.rouse.Model.N"><code class="xref any py py-attr docutils literal notranslate"><span class="pre">N</span></code></a>, …) np.ndarray – the evolved conformation</p>
+</dd>
+</dl>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><a class="reference internal" href="#tracklib.models.rouse.Model.conf_ss" title="tracklib.models.rouse.Model.conf_ss"><code class="xref py py-meth docutils literal notranslate"><span class="pre">conf_ss()</span></code></a>, <a class="reference internal" href="#tracklib.models.rouse.Model.conformations_from_looptrace" title="tracklib.models.rouse.Model.conformations_from_looptrace"><code class="xref py py-meth docutils literal notranslate"><span class="pre">conformations_from_looptrace()</span></code></a>, <a class="reference internal" href="#tracklib.models.rouse.Model.setup_dynamics" title="tracklib.models.rouse.Model.setup_dynamics"><code class="xref py py-meth docutils literal notranslate"><span class="pre">setup_dynamics()</span></code></a></p>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="tracklib.models.rouse.Model.conformations_from_looptrace">
+<code class="sig-name descname">conformations_from_looptrace</code><span class="sig-paren">(</span><em class="sig-param">looptrace</em>, <em class="sig-param">d=3</em><span class="sig-paren">)</span><a class="headerlink" href="#tracklib.models.rouse.Model.conformations_from_looptrace" title="Permalink to this definition">¶</a></dt>
+<dd><p>A generator yielding conformations for a given looptrace.</p>
+<p>We start from steady state with/without the extra bond according to
+<code class="docutils literal notranslate"><span class="pre">looptrace[0]</span></code> and <a class="reference internal" href="#tracklib.models.rouse.Model.evolve" title="tracklib.models.rouse.Model.evolve"><code class="xref any py py-meth docutils literal notranslate"><span class="pre">evolve</span></code></a> from there. This means that
+<code class="docutils literal notranslate"><span class="pre">looptrace[i]</span></code> can be seen as the indicator for whether or not there
+is a bond present between time points <code class="docutils literal notranslate"><span class="pre">i-1</span></code> and <code class="docutils literal notranslate"><span class="pre">i</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>looptrace</strong> (<em>(</em><em>T</em><em>,</em><em>) </em><em>iterable of bool</em>) – the looptrace to simulate for</p></li>
+<li><p><strong>d</strong> (<em>int</em><em>, </em><em>optional</em>) – the dimensionality of the conformations to generate</p></li>
+</ul>
+</dd>
+<dt class="field-even">Yields</dt>
+<dd class="field-even"><p>(<a class="reference internal" href="#tracklib.models.rouse.Model.N" title="tracklib.models.rouse.Model.N"><code class="xref any py py-attr docutils literal notranslate"><span class="pre">N</span></code></a>, d) np.ndarray – the conformation at the corresponding time step.</p>
+</dd>
+</dl>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><a class="reference internal" href="#tracklib.models.rouse.Model.conf_ss" title="tracklib.models.rouse.Model.conf_ss"><code class="xref py py-meth docutils literal notranslate"><span class="pre">conf_ss()</span></code></a>, <a class="reference internal" href="#tracklib.models.rouse.Model.evolve" title="tracklib.models.rouse.Model.evolve"><code class="xref py py-meth docutils literal notranslate"><span class="pre">evolve()</span></code></a></p>
+</div>
 </dd></dl>
 
 </dd></dl>
@@ -140,129 +369,140 @@ Speedup over _propagate_ode is roughly 8x.</p>
 <code class="sig-prename descclassname">tracklib.models.rouse.</code><code class="sig-name descname">likelihood</code><span class="sig-paren">(</span><em class="sig-param">trace</em>, <em class="sig-param">looptrace</em>, <em class="sig-param">model</em>, <em class="sig-param">*</em>, <em class="sig-param">noise</em>, <em class="sig-param">w=None</em>, <em class="sig-param">times=None</em><span class="sig-paren">)</span><a class="headerlink" href="#tracklib.models.rouse.likelihood" title="Permalink to this definition">¶</a></dt>
 <dd><p>Calculate log likelihood for the given combination of
 trace, looping sequence, and model.</p>
-<dl class="simple">
-<dt>trace<span class="classifier">(T,) array</span></dt><dd><p>the distance trace</p>
-</dd>
-<dt>looptrace<span class="classifier">(T,) array, dtype=bool</span></dt><dd><p>for which steps there is a loop. looptrace[i] indicates that
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>trace</strong> (<em>(</em><em>T</em><em>,</em><em>) </em><em>array</em>) – the observed trace.</p></li>
+<li><p><strong>looptrace</strong> (<em>(</em><em>T</em><em>,</em><em>) </em><em>array</em><em>, </em><em>dtype=bool</em>) – for which steps there is a loop. looptrace[i] indicates that
 there is a loop during the evolution from trace[i-1] to trace[i]
-and looptrace[0] is the value used for initialization.</p>
+and looptrace[0] is the value used for initialization.</p></li>
+<li><p><strong>model</strong> (<a class="reference internal" href="#tracklib.models.rouse.Model" title="tracklib.models.rouse.Model"><em>Model</em></a>) – the model to use for likelihood calculation</p></li>
+<li><p><strong>noise</strong> (<em>float</em>) – the localization error on each point in the trace</p></li>
+</ul>
 </dd>
-<dt>model<span class="classifier">Model</span></dt><dd><p>the model to use for likelihood calculation</p>
+<dt class="field-even">Other Parameters</dt>
+<dd class="field-even"><p><strong>w</strong> (<em>(N,) array</em>) – the measurement vector. Set to <code class="docutils literal notranslate"><span class="pre">None</span></code> (the default) to indicate
+end-to-end measurement, i.e. <code class="docutils literal notranslate"><span class="pre">w</span> <span class="pre">=</span> <span class="pre">np.array([1,</span> <span class="pre">0,</span> <span class="pre">...,</span> <span class="pre">0,</span> <span class="pre">-1])</span></code>.</p>
 </dd>
-<dt>noise<span class="classifier">float</span></dt><dd><p>the localization error on each trace</p>
-</dd>
-<dt>w<span class="classifier">(N,) array</span></dt><dd><p>the measurement vector
-default: (1, 0, …, 0, -1) (i.e. end-to-end distance)</p>
-</dd>
-<dt>times<span class="classifier">(T,) array</span></dt><dd><p>the times at which the trace is evaluated
-default: np.arange(T)</p>
-</dd>
-</dl>
-<dl class="simple">
-<dt>logL<span class="classifier">float</span></dt><dd><p>the calculated log-likelihood</p>
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p><strong>logL</strong> (<em>float</em>) – the calculated log-likelihood</p>
 </dd>
 </dl>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><a class="reference internal" href="#tracklib.models.rouse.Model" title="tracklib.models.rouse.Model"><code class="xref py py-func docutils literal notranslate"><span class="pre">Model()</span></code></a></p>
+</div>
 <p class="rubric">Notes</p>
-<p>We assume that the ensemble starts from steady state.
-This is filterData in Christoph’s / Hugo’s code</p>
+<p>We assume that the ensemble starts from steady state.</p>
 </dd></dl>
 
 </div>
 <div class="section" id="module-tracklib.models.statgauss">
 <span id="tracklib-models-statgauss-module"></span><h2>tracklib.models.statgauss module<a class="headerlink" href="#module-tracklib.models.statgauss" title="Permalink to this headline">¶</a></h2>
+<p>This module provides a useful way to sample from a stationary Gaussian process.</p>
+<p>By assuming stationary, Gaussian, mean-zero increments, the process is uniquely
+defined by its MSD. Here we use that observation to generate sample traces from
+such processes, given the MSD.</p>
 <dl class="function">
 <dt id="tracklib.models.statgauss.sampleMSD">
 <code class="sig-prename descclassname">tracklib.models.statgauss.</code><code class="sig-name descname">sampleMSD</code><span class="sig-paren">(</span><em class="sig-param">msd</em>, <em class="sig-param">n=1</em>, <em class="sig-param">isCorr=False</em>, <em class="sig-param">subtractMean=True</em><span class="sig-paren">)</span><a class="headerlink" href="#tracklib.models.statgauss.sampleMSD" title="Permalink to this definition">¶</a></dt>
-<dd><p>Sample trajectories from a Gaussian process with zero-mean stationary
-increments with given autocorrelation function γ(k). Usually the more
-intuitive quantity is the MSD of the process, so by default we expect the
-MSD μ(k) to be given. They are related by
-<a href="#id1"><span class="problematic" id="id2">``</span></a><a href="#id3"><span class="problematic" id="id4">`</span></a></p>
-<blockquote>
-<div><p>γ(k) = 1/2 * ( μ(<a href="#id9"><span class="problematic" id="id10">|k+1|</span></a>) + μ(<a href="#id11"><span class="problematic" id="id12">|k-1|</span></a>) - 2*μ(<a href="#id13"><span class="problematic" id="id14">|k|</span></a>) ) .</p>
-</div></blockquote>
-<p><a href="#id5"><span class="problematic" id="id6">``</span></a><a href="#id7"><span class="problematic" id="id8">`</span></a></p>
-<dl class="simple">
-<dt>msd<span class="classifier">(N, ) array</span></dt><dd><p>The msd from which to sample. The trajectories will have length N-1 and
-msd[0] should be 0, such that generally msd[k] is the MSD for a time
-lag of k*Δt. If isCorr = True, then this is expected to be the
-autocorrelation function already, instead of the MSD. In this case, the
-trajectories will have length N.</p>
+<dd><p>Sample traces from a stationary Gaussian process with given MSD.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>msd</strong> (<em>(</em><em>N</em><em>, </em><em>) </em><em>np.array</em>) – the MSD from which to sample. We use the convention that <code class="docutils literal notranslate"><span class="pre">msd[t]</span></code>
+should be the MSD at time lag <code class="docutils literal notranslate"><span class="pre">t</span></code>, i.e. <code class="docutils literal notranslate"><span class="pre">msd[0]</span> <span class="pre">=</span> <span class="pre">0</span></code>.</p></li>
+<li><p><strong>n</strong> (<em>integer</em><em>, </em><em>optional</em>) – Number of traces to generate</p></li>
+<li><p><strong>isCorr</strong> (<em>bool</em><em>, </em><em>optional</em>) – whether the input array is MSD (default) or autocorrelation.</p></li>
+<li><p><strong>subtractMean</strong> (<em>bool</em>) – whether to subtract the mean of each trace. See Notes below.</p></li>
+</ul>
 </dd>
-<dt>n<span class="classifier">integer</span></dt><dd><p>Number of trajectories to generate
-default: 1</p>
-</dd>
-<dt>isCorr<span class="classifier">whether the input array is MSD or autocorrelation.</span></dt><dd><p>default: False, i.e. input is MSD.</p>
-</dd>
-<dt>subtractMean<span class="classifier">whether to subtract the mean of each trajectory. See Notes</span></dt><dd><p>below
-default: True</p>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>traj</strong> (<em>(N, n) array</em>) – The generated traces.</p>
 </dd>
 </dl>
-<dl class="simple">
-<dt>traj<span class="classifier">(N, n) array</span></dt><dd><p>The generated trajectories</p>
-</dd>
-</dl>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><a class="reference internal" href="#tracklib.models.statgauss.dataset" title="tracklib.models.statgauss.dataset"><code class="xref py py-func docutils literal notranslate"><span class="pre">dataset()</span></code></a></p>
+</div>
 <p class="rubric">Notes</p>
-<p>To produce a trajectory of length N from an MSD of length N, we assume the
-very last data point of the autocorrelation function to be identical to the
-second to last.
-Strictly speaking, only the ensemble of displacements is well-defined,
-because this is the one we assume steady state for. For the actual
-trajectories, we can add an arbitrary offset, and the reasonable thing to
-do here depends on the process we are sampling. For purely diffusive
-trajectories for example it makes sense to have them all start from zero,
-since there is no steady state anyways. If however, we are sampling from an
-MSD that plateaus at long times, we basically also have a steady state for
-the trajectories and we can reasonably talk about the mean of a trajectory.
-In that case of course it makes sense to keep this mean constant. The
-option subtractMean does exactly this: if True, we subtract the mean from
-all generated trajectories, i.e. fix the ensemble mean to zero.</p>
+<p>To produce a trace of length <span class="math notranslate nohighlight">\(N\)</span> from an MSD of length <span class="math notranslate nohighlight">\(!N\)</span>, we
+assume the very last data point of the autocorrelation function to be
+identical to the second to last.</p>
+<p>Strictly speaking, only the ensemble of displacements is well-defined,
+because this is the one we assume steady state for. For the actual traces,
+we can add an arbitrary offset, and the reasonable thing to do here depends
+on the process we are sampling. For a purely diffusive process for example
+it makes sense to have them all start from zero, since there is no steady
+state anyways. If however, we are sampling from an MSD that plateaus at
+long times, we basically also have a steady state for the traces and thus
+the long-run mean converges.  In that case of course it makes sense to have
+this mean be identical for all traces. The option <code class="xref any docutils literal notranslate"><span class="pre">subtractMean</span></code> does
+exactly this: if <code class="docutils literal notranslate"><span class="pre">True</span></code>, we subtract the mean from all generated traces,
+i.e. fix the ensemble mean to zero. Note that this is not precisely correct
+for finite-length traces, but probably the best we can do.</p>
+<p><strong>Algorithm:</strong> from the MSD <span class="math notranslate nohighlight">\(\mu(k)\)</span> we calculate the increment
+autocorrelation function <span class="math notranslate nohighlight">\(\gamma(k)\)</span> as</p>
+<div class="math notranslate nohighlight">
+\[\gamma(k) = \frac{1}{2} \left( \mu(|k+1|) + \mu(|k-1|) - 2\mu(|k|) \right) \,.\]</div>
+<p>The covariance matrix of the increment process we want to sample from is
+then the Toeplitz matrix with diagonals <span class="math notranslate nohighlight">\(\gamma(k)\)</span>.</p>
 </dd></dl>
 
 <dl class="function">
 <dt id="tracklib.models.statgauss.dataset">
-<code class="sig-prename descclassname">tracklib.models.statgauss.</code><code class="sig-name descname">dataset</code><span class="sig-paren">(</span><em class="sig-param">msd</em>, <em class="sig-param">N=2</em>, <em class="sig-param">Ts=None</em>, <em class="sig-param">d=3</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#tracklib.models.statgauss.dataset" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">tracklib.models.statgauss.</code><code class="sig-name descname">dataset</code><span class="sig-paren">(</span><em class="sig-param">msd</em>, <em class="sig-param">N=1</em>, <em class="sig-param">Ts=None</em>, <em class="sig-param">d=3</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#tracklib.models.statgauss.dataset" title="Permalink to this definition">¶</a></dt>
 <dd><p>Generate a dataset of MSD sampled trajectories.</p>
-<dl class="simple">
-<dt>msd<span class="classifier">1d numpy.ndarray</span></dt><dd><p>the MSD to sample from.</p>
+<p>All keyword arguments not mentioned below will be forwarded to <a class="reference internal" href="#tracklib.models.statgauss.sampleMSD" title="tracklib.models.statgauss.sampleMSD"><code class="xref any py py-func docutils literal notranslate"><span class="pre">sampleMSD</span></code></a>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>msd</strong> (<em>(</em><em>N</em><em>,</em><em>) </em><em>np.ndarray</em>) – the MSD to sample from.</p></li>
+<li><p><strong>N</strong> (<em>int</em><em>, </em><em>optional</em>) – number of particles per trajectory</p></li>
+<li><p><strong>Ts</strong> (<em>list of int</em><em>, </em><em>optional</em>) – list of trajectory lengths, i.e. this determines number and length of
+trajectories. Any <code class="docutils literal notranslate"><span class="pre">None</span></code> entry will be replaced by the maximum possible
+value, <code class="docutils literal notranslate"><span class="pre">len(msd)</span></code>. If there are values bigger than that, raises a
+<code class="xref any docutils literal notranslate"><span class="pre">ValueError</span></code>. If not specified, will default to 100 trajectories of
+maximum length.</p></li>
+<li><p><strong>d</strong> (<em>int</em><em>, </em><em>optional</em>) – spatial dimension of the trajectories to sample</p></li>
+</ul>
 </dd>
-<dt>N<span class="classifier">integer</span></dt><dd><p>number of particles per trajectory
-default: 2</p>
-</dd>
-<dt>Ts<span class="classifier">list of int</span></dt><dd><p>list of trajectory lengths, i.e. this determines number and length of
-trajectories. Any None entry will be replaced by the maximum possible
-value, len(msd). If there are values bigger than that, raises a
-ValueError.
-default: 100*[None]</p>
-</dd>
-<dt>d<span class="classifier">integer</span></dt><dd><p>spatial dimension of the trajectories to sample
-default: 3</p>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><a class="reference internal" href="tracklib.html#tracklib.taggedset.TaggedSet" title="tracklib.taggedset.TaggedSet"><code class="xref any py py-class docutils literal notranslate"><span class="pre">TaggedSet</span></code></a> of <a class="reference internal" href="tracklib.html#tracklib.trajectory.Trajectory" title="tracklib.trajectory.Trajectory"><code class="xref any py py-class docutils literal notranslate"><span class="pre">Trajectory</span></code></a> – the generated data set.</p>
 </dd>
 </dl>
-<p>other kwargs are forwarded to util.sampleMSD()</p>
-<p>A TaggedSet of trajectories (with only the trivial tag ‘_all’).</p>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><a class="reference internal" href="#tracklib.models.statgauss.sampleMSD" title="tracklib.models.statgauss.sampleMSD"><code class="xref py py-func docutils literal notranslate"><span class="pre">sampleMSD()</span></code></a>, <a class="reference internal" href="tracklib.html#tracklib.trajectory.Trajectory" title="tracklib.trajectory.Trajectory"><code class="xref py py-func docutils literal notranslate"><span class="pre">tracklib.trajectory.Trajectory()</span></code></a>, <a class="reference internal" href="tracklib.html#tracklib.taggedset.TaggedSet" title="tracklib.taggedset.TaggedSet"><code class="xref py py-func docutils literal notranslate"><span class="pre">tracklib.taggedset.TaggedSet()</span></code></a></p>
+</div>
 </dd></dl>
 
 <dl class="function">
 <dt id="tracklib.models.statgauss.control">
-<code class="sig-prename descclassname">tracklib.models.statgauss.</code><code class="sig-name descname">control</code><span class="sig-paren">(</span><em class="sig-param">dataset</em>, <em class="sig-param">msd=None</em>, <em class="sig-param">setMean='copy'</em><span class="sig-paren">)</span><a class="headerlink" href="#tracklib.models.statgauss.control" title="Permalink to this definition">¶</a></dt>
-<dd><p>Generate a sister data set where each trajectory is sampled from a
-stationary Gaussian process with MSD equal to the ensemble mean of the
-given data set or the explicitly given MSD. Note generation from
-experimental data (i.e. the ensemble mean) does not always work, because
-that is noisy. Thus the option to provide a cleaned version.</p>
+<code class="sig-prename descclassname">tracklib.models.statgauss.</code><code class="sig-name descname">control</code><span class="sig-paren">(</span><em class="sig-param">dataset</em>, <em class="sig-param">msd=None</em><span class="sig-paren">)</span><a class="headerlink" href="#tracklib.models.statgauss.control" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generate a stationary control data set to the one given.</p>
+<p>The control will look exactly like the original in all “meta”-aspects
+(number of trajectories, their length, any meta data, etc.), but the
+trajectories will be sampled from a stationary Gaussian process with the
+given MSD (or the empirical ensemble MSD of the original).</p>
 <p>The mean of each trajectory will be set to coincide with the mean of the
 sister trajectory it is generated from.</p>
-<dl class="simple">
-<dt>dataset<span class="classifier">TaggedSet of Trajectory</span></dt><dd><p>the dataset to generate a control for</p>
-</dd>
-<dt>msd<span class="classifier">(T,) np.ndarray</span></dt><dd><p>the MSD to use for sampling. Note that this will be divided by
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>dataset</strong> (<a class="reference internal" href="tracklib.html#tracklib.taggedset.TaggedSet" title="tracklib.taggedset.TaggedSet"><code class="xref any py py-class docutils literal notranslate"><span class="pre">TaggedSet</span></code></a> of <a class="reference internal" href="tracklib.html#tracklib.trajectory.Trajectory" title="tracklib.trajectory.Trajectory"><code class="xref any py py-class docutils literal notranslate"><span class="pre">Trajectory</span></code></a>) – the dataset to generate a control for</p></li>
+<li><p><strong>msd</strong> (<em>(</em><em>T</em><em>,</em><em>) </em><em>np.ndarray</em>) – the MSD to use for sampling. Note that this will be divided by
 (#loci)x(#dimensions) before sampling scalar traces, matching the usual
-notion of MSD of (e.g.) multidimensional trajectories.</p>
+notion of MSD of (e.g.) multidimensional trajectories.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><a class="reference internal" href="tracklib.html#tracklib.taggedset.TaggedSet" title="tracklib.taggedset.TaggedSet"><code class="xref any py py-class docutils literal notranslate"><span class="pre">TaggedSet</span></code></a> of <a class="reference internal" href="tracklib.html#tracklib.trajectory.Trajectory" title="tracklib.trajectory.Trajectory"><code class="xref any py py-class docutils literal notranslate"><span class="pre">Trajectory</span></code></a> – the generated control data set.</p>
 </dd>
 </dl>
-<p>A TaggedSet that’s an MSD generated sister data set to the input</p>
-<p>Should this be merged/unified with MSDdataset?</p>
+<p class="rubric">Notes</p>
+<p>Generation from empirical MSDs does not always work, since they might be
+noisy. In that case, provide a smoothed version as <code class="xref any docutils literal notranslate"><span class="pre">msd</span></code>.</p>
 </dd></dl>
 
 </div>
@@ -288,6 +528,12 @@ notion of MSD of (e.g.) multidimensional trajectories.</p>
 </li>
 </ul>
 
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="tracklib.analysis.html"
+                        title="previous chapter">tracklib.analysis package</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="tracklib.util.html"
+                        title="next chapter">tracklib.util package</a></p>
   <div role="note" aria-label="source link">
     <h3>This Page</h3>
     <ul class="this-page-menu">
@@ -318,7 +564,14 @@ notion of MSD of (e.g.) multidimensional trajectories.</p>
         <li class="right" >
           <a href="py-modindex.html" title="Python Module Index"
              >modules</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">tracklib 0.1 documentation</a> &#187;</li> 
+        <li class="right" >
+          <a href="tracklib.util.html" title="tracklib.util package"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="tracklib.analysis.html" title="tracklib.analysis package"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">tracklib 0.1 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="tracklib.html" >tracklib package</a> &#187;</li> 
       </ul>
     </div>
     <div class="footer" role="contentinfo">

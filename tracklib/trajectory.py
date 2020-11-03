@@ -11,22 +11,31 @@ class Trajectory(ABC):
     Represents all kinds of trajectories.
 
     This class represents trajectories with 1 or 2 loci in 1, 2, or 3 spatial
-    dimensions. Consequently, the internal `np.ndarray` has shape (`N`, `T`,
+    dimensions. Consequently, the internal `!np.ndarray` has shape (`N`, `T`,
     `d`).  Besides the actual trajectory data, this class also contains a dict
     for meta data. This can be used by the end-user, is also intended for use
-    within the library though. `tracklib.analysis.MSD` for example writes the
-    'MSD' and 'MSDmeta' entries of this dict.
+    within the library though. `tracklib.analysis.MSD
+    <tracklib.analysis.msd.MSD>` for example writes the 'MSD' and 'MSDmeta'
+    entries of this dict.
     
     TODO: write a list of all `meta` keys used by the library somewhere
 
-    For creation of actual Trajectory objects, use `fromArray()`. This will
+    For creation of actual `Trajectory` objects, use `fromArray`. This will
     select and instantiate the appropriate subclass based on the shape of the
     input array. Any keyword arguments given to that function (or the
-    constructor) will simply be written to `self.meta`
+    constructor) will simply be written to `meta`
+
+    Attributes
+    ----------
+    data : (N, T, d) np.ndarray
+        the actual data in the trajectory. Try to avoid direct access.
+    meta : dict
+        a dict for (mostly user-specified) meta data. Also occasionally used by
+        the library
 
     Notes
     -----
-    For a Trajectory `traj`, the following operations are defined:
+    For a `Trajectory` ``traj``, the following operations are defined:
 
     ``len(traj)``
         equivalent to ``traj.T``
@@ -42,15 +51,15 @@ class Trajectory(ABC):
     ### Set up ###
 
     def __init__(self, **kwargs):
-        self._data = None
+        self.data = None
         self.meta = kwargs
 
     @classmethod
     def fromArray(cls, array, **kwargs):
         """
-        Create a new Trajectory from an array.
+        Create a new `Trajectory` from an array.
 
-        Any keyword arguments are simply written into `self.meta`.
+        Any keyword arguments are simply written into ``self.meta``.
 
         Parameters
         ----------
@@ -62,7 +71,7 @@ class Trajectory(ABC):
         Returns
         -------
         Trajectory\_?N\_?d
-            a new Trajectory object with the specified data
+            a new `Trajectory` object with the specified data
 
         Notes
         -----
@@ -82,7 +91,7 @@ class Trajectory(ABC):
         except AttributeError:
             raise ValueError("Could not instantiate trajectory with (N, T, d) = {}".format(str(array.shape)))
 
-        obj._data = array
+        obj.data = array
         return obj
 
     ### Basic properties ###
@@ -90,15 +99,15 @@ class Trajectory(ABC):
     @property
     def N(self):
         """ Number of loci """
-        return self._data.shape[0]
+        return self.data.shape[0]
     @property
     def T(self):
         """ Length in frames """
-        return self._data.shape[1]
+        return self.data.shape[1]
     @property
     def d(self):
         """ Number of dimensions """
-        return self._data.shape[2]
+        return self.data.shape[2]
 
     def __len__(self):
         return self.T
@@ -107,24 +116,27 @@ class Trajectory(ABC):
         """
         Element-access
 
-        The output will be squeezed along the `N` and `T` dimensions (i.e. they
-        will be removed if there is only a single entry). The `d` dimension is
-        guaranteed to be present.
-
         Parameters
         ----------
-        key : index or slice
+        key : index or slice into the `T` dimension
         
         Returns
         -------
-        The corresponding part of the trajectory.
+        np.ndarray
+            the corresponding part of the trajectory.
+
+        Notes
+        -----
+        The `N` dimension will be squeezed, i.e. for single locus trajectories
+        that first dimension will be removed. The `T` dimension of the output
+        follows the numpy conventions, while `d` is guaranteed to be present.
         """
-        ret = self._data[:, key, :]
-        for ax in [1, 0]: # Go in reverse order
-            try:
-                np.squeeze(ret, axis=ax)
-            except ValueError:
-                pass
+        ret = self.data[:, key, :]
+        # T squeezing is already done by np element-access
+        try:
+            ret = np.squeeze(ret, axis=0)
+        except ValueError:
+            pass
         return ret
 
 #     def get(self, key, tosqueeze='N'):
@@ -147,7 +159,7 @@ class Trajectory(ABC):
 #         np.ndarray
 #             a view into the trajectory
 #         """
-#         ret = self._data[:, key, :]
+#         ret = self.data[:, key, :]
 #         # If we remove dimensions from the back, then indices in front will
 #         # still be correct, so we can work iteratively
 #         if 'd' in tosqueeze and ret.shape[2] == 1:
@@ -171,20 +183,20 @@ class Trajectory(ABC):
         Notes
         -----
         For multi-locus trajectories, this will take the norm of each locus
-        individually. To get a Trajectory of relative distance, use
+        individually. To get a `Trajectory` of relative distance, use
         ``Trajectory.relative().abs()``.
 
         See also
         --------
         diff, dims, relative
         """
-        return Trajectory.fromArray(np.sqrt(np.sum(self._data**2, axis=2, keepdims=True)), **deepcopy(self.meta))
+        return Trajectory.fromArray(np.sqrt(np.sum(self.data**2, axis=2, keepdims=True)), **deepcopy(self.meta))
 
     def diff(self, dt=1):
         """
         Modifier: displacements
 
-        Calculate the displacements over `dt` frames.
+        Calculate the displacements over `!dt` frames.
 
         Parameters
         ----------
@@ -200,7 +212,7 @@ class Trajectory(ABC):
         --------
         abs, dims, relative
         """
-        return Trajectory.fromArray(self._data[:, dt:, :] - self._data[:, :-dt, :], **deepcopy(self.meta))
+        return Trajectory.fromArray(self.data[:, dt:, :] - self.data[:, :-dt, :], **deepcopy(self.meta))
 
     def dims(self, key):
         """
@@ -209,7 +221,8 @@ class Trajectory(ABC):
         Parameters
         ----------
         key : list of int, or slice
-            which dimensions to use
+            which dimensions to use. Attention: this cannot be a single `!int`. To
+            get the ``i``-th spatial component, use ``traj.dims([i])``.
 
         Returns
         -------
@@ -219,7 +232,7 @@ class Trajectory(ABC):
         --------
         abs, diff, relative
         """
-        return Trajectory.fromArray(self._data[:, :, key], **deepcopy(self.meta))
+        return Trajectory.fromArray(self.data[:, :, key], **deepcopy(self.meta))
 
     def relative(self):
         """
@@ -245,7 +258,7 @@ class Trajectory(ABC):
 #         A generator yielding the spatial components as individual traces
 #         """
 #         for i in range(self.d):
-#             yield np.squeeze(self._data[:, :, i])
+#             yield np.squeeze(self.data[:, :, i])
 
     ### Plotting ###
 
@@ -253,7 +266,7 @@ class Trajectory(ABC):
         """
         Plot the trajectory / spatial components versus time.
 
-        See the implementations in the `Trajectory\_?N` subclasses for more
+        See the implementations in the `!Trajectory\_?N` subclasses for more
         detail.
 
         Keyword arguments are forwarded to ``ax.plot()``
@@ -261,8 +274,8 @@ class Trajectory(ABC):
         Parameters
         ----------
         ax : axes, optional
-            the axes to plot in. Can be `None`, in which case we plot to
-            ``plt.gca()``
+            the axes in which to plot. Can be ``None``, in which case we plot
+            to ``plt.gca()``
 
         Returns
         -------
@@ -287,8 +300,8 @@ class Trajectory(ABC):
         Parameters
         ----------
         ax : axes, optional
-            the axes in which to plot. Can be `None`, in which case we plot to
-            ``plt.gca()``
+            the axes in which to plot. Can be ``None``, in which case we plot
+            to ``plt.gca()``
         dims : 2-tuple of int, optional
             the dimensions to plot. Only relevant for ``d >= 3``.
 
@@ -306,7 +319,7 @@ class Trajectory(ABC):
 # Specialize depending on particle number or dimension, which changes behavior
 # of some functions that can be overridden here
 class N12Error(ValueError):
-    """ For indicating that you confused N=1 and N=2 trajectories """
+    """ For indicating that you confused ``N=1`` and ``N=2`` trajectories """
     pass
 
 # Particle number specializations
@@ -322,7 +335,7 @@ class Trajectory_1N(Trajectory):
             ax = plt.gca()
 
         tplot = np.arange(self.T)
-        return ax.plot(tplot, self._data[0], **kwargs)
+        return ax.plot(tplot, self.data[0], **kwargs)
 
     def _raw_plot_spatial(self, ax, dims, **kwargs):
         """ internal method for spatial plotting """
@@ -335,8 +348,8 @@ class Trajectory_1N(Trajectory):
         if 'connect' in kwargs.keys():
             raise N12Error("Cannot connect one-particle trajectory")
 
-        return ax.plot(self._data[0, :, dims[0]], \
-                       self._data[0, :, dims[1]], \
+        return ax.plot(self.data[0, :, dims[0]], \
+                       self.data[0, :, dims[1]], \
                        **kwargs)
 
 class Trajectory_2N(Trajectory):
@@ -344,7 +357,7 @@ class Trajectory_2N(Trajectory):
     Two-locus trajectory
     """
     def relative(self):
-        return Trajectory.fromArray(self._data[0] - self._data[1], **deepcopy(self.meta))
+        return Trajectory.fromArray(self.data[0] - self.data[1], **deepcopy(self.meta))
 
     def plot_vstime(self, ax=None, **kwargs):
         """
@@ -354,7 +367,7 @@ class Trajectory_2N(Trajectory):
             ax = plt.gca()
 
         tplot = np.arange(self.T)
-        return ax.plot(tplot, self._data[1] - self._data[0], **kwargs)
+        return ax.plot(tplot, self.data[1] - self.data[0], **kwargs)
 
     def _raw_plot_spatial(self, ax, dims, connect=True, **kwargs):
         """ internal method for spatial plotting """
@@ -376,14 +389,14 @@ class Trajectory_2N(Trajectory):
         # First plot the connection, such that it is underneath the
         # trajectories
         if connect:
-            m = np.mean(self._data, axis=1)
+            m = np.mean(self.data, axis=1)
             ax.plot(m[:, dims[0]], m[:, dims[1]], color='k')
 
         # Plot first particle
         # This is the one setting the tone, so also create the legend entry
         kwargs['linestyle'] = linestyles[0]
-        lines = ax.plot(self._data[0, :, dims[0]], \
-                        self._data[0, :, dims[1]], \
+        lines = ax.plot(self.data[0, :, dims[0]], \
+                        self.data[0, :, dims[1]], \
                         **kwargs)
         kwargs['color'] = lines[0].get_color()
 
@@ -392,8 +405,8 @@ class Trajectory_2N(Trajectory):
 
         # Plot second particle
         kwargs['linestyle'] = linestyles[1]
-        lines.append(ax.plot(self._data[1, :, dims[0]], \
-                             self._data[1, :, dims[1]], \
+        lines.append(ax.plot(self.data[1, :, dims[0]], \
+                             self.data[1, :, dims[1]], \
                              **kwargs))
 
         return lines

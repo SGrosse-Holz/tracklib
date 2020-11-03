@@ -12,6 +12,14 @@ tracklib.util.mcmc module
    :undoc-members:
    :show-inheritance:
 
+tracklib.util.sweep module
+--------------------------
+
+.. automodule:: tracklib.util.sweep
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 tracklib.util.util module
 -------------------------
 

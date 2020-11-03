@@ -9,58 +9,87 @@ from tracklib.models import rouse
 
 ### Utility stuff ###
 
-def _fill_config(config):
+def traj_likelihood(traj, looptrace, model, **kwargs):
     """
-    Fill a given config dict with default values where nothing else is provided
+    Apply `rouse.likelihood` to a `Trajectory`
 
-    Input
+    Keyword arguments will be forwarded to `tracklib.models.rouse.likelihood`
+
+    Parameters
+    ----------
+    traj : Trajectory
+        the trajectory to use
+    looptrace : (traj.T,) np.ndarray, dtype=bool
+        the looptrace to use
+    model : tracklib.models.rouse.Model
+        the model to use
+
+    Returns
+    -------
+    float
+        the log-likelihood (simply the sum over the spatial dimensions)
+
+    See also
+    --------
+    tracklib.models.rouse
+
+    Notes
     -----
-    config : dict
-        some dict, possibly containing configuration fields
-
-    Output
-    ------
-    config : dict
-        a copy of the input, augmented with default values for missing fields
+    If ``traj.N == 2``, this will evaluate the likelihood for
+    ``traj.relative()``.
     """
-    default_config = {
-        'MCMC config' : mcmc._fill_config({}),
-        'unknown params' : ['D', 'k'],
-        'numIntervals' : 10,
-        'pLoop_method' : 'sequence', # 'sequence' or 'trace'
-        }
-    return default_config.update(config) or default_config
+    try:
+        traj = traj.relative()
+    except NotImplementedError:
+        pass
+
+    return np.sum([
+        rouse.likelihood(traj[:][:, i], looptrace, model, **kwargs) \
+                for i in range(traj.d)])
 
 class LoopSequence:
     """
-    Represent a sequence of looping intervals
+    Represents a sequence of looping intervals
+
+    The constructor initializes this as a sequence of intervals of equal
+    length, with the looping indicator for each one being chosen randomly.
     
-    Attributes:
-    t : (n-1,) float-array
-        the boundaries of a loop/no-loop region
-        the region t[i]---t[i+1] contains all trajectory indices ind with
-             t[i]-0.5 <= ind < t[i+1]-0.5
-    isLoop : (n,) bool-array
-        isLoop[i] tells us whether the interval ending at t[i] has a loop
+    Attributes
+    ----------
+    t : (n-1,) np.ndarray
+        the boundaries of a loop/no-loop region the region ``t[i]---t[i+1]``
+        contains all trajectory indices `!ind` with ``t[i]-0.5 <= ind <
+        t[i+1]-0.5``
+    isLoop : (n,) np.ndarray, dtype=bool
+        ``isLoop[i]`` tells us whether the interval ending at ``t[i]`` has a
+        loop
+
+    Parameters
+    ----------
+    T : int
+        maximum value for the `t` axis
+    numInt : int
+        the number of looping intervals to initialize with
     """
     def __init__(self, T, numInt):
-        """ initialize equally spaced intervals, randomly """
         self.T = T
         self.t = np.linspace(0, T, numInt+1)[1:-1]
         self.isLoop = np.array([np.random.rand() > 0.5 for _ in range(numInt)])
         
-    def toLooptrace(self):
-        """ give a list of True/False for each time point """
-        looptrace = np.array(self.T*[False])
-        t1 = 0
-        for t2, isLoop in zip(np.append(self.t, self.T), self.isLoop):
-            looptrace[ np.ceil(t1-0.5).astype(int) : np.ceil(t2-0.5).astype(int) ] = isLoop
-            t1 = t2
-        
-        return looptrace
-
     @classmethod
     def fromLooptrace(cls, looptrace):
+        """
+        Initialize a new `LoopSequence` from a looptrace.
+
+        Parameters
+        ----------
+        looptrace : (T,) np.ndarray
+            the looptrace to convert
+
+        Returns
+        -------
+        LoopSequence
+        """
         isLoop = [looptrace[0]]
         t = []
         for i, loop in enumerate(looptrace):
@@ -73,11 +102,55 @@ class LoopSequence:
         obj.t = np.array(t)
         return obj
 
+    def toLooptrace(self):
+        """
+        Convert to a looptrace.
+
+        Returns
+        -------
+        (self.T,) np.ndarry, dtype=bool
+        """
+        looptrace = np.array(self.T*[False])
+        t1 = 0
+        for t2, isLoop in zip(np.append(self.t, self.T), self.isLoop):
+            looptrace[ np.ceil(t1-0.5).astype(int) : np.ceil(t2-0.5).astype(int) ] = isLoop
+            t1 = t2
+        
+        return looptrace
+
     def numLoops(self):
+        """
+        Count the number of loops in the sequence
+
+        This counts adjacent intervals with ``self.isLoop[i] == True`` as a
+        single loop. An efficient way to count this is to count loop breakings,
+        i.e. where ``isLoop[i-1] == True and isLoop[i] == False``.
+
+        Returns
+        -------
+        int
+            the number of loops
+        """
         return np.sum(self.isLoop[:-1] * (1-self.isLoop[1:])) + self.isLoop[-1]
         
     def plottable(self):
-        """ Return t, loop for plotting """
+        """
+        Give arrays that can be used for plotting
+
+        Returns
+        -------
+        t : np.ndarray
+            the time points where the looping status changes, doubled
+        loop : np.ndarray
+            the looping status at the corresponding time point
+
+        Example
+        -------
+        For a `LoopSequence` ``seq``, use this as
+
+        >>> from matplotlib import pyplot as plt
+        ... plt.plot(*seq.plottable())
+        """
         t = np.array([0] + [time for time in self.t for _ in range(2)] + [self.T]) - 0.5
         loop = np.array([float(isLoop) for isLoop in self.isLoop for _ in range(2)])
         return t, loop
@@ -96,34 +169,63 @@ class LoopSequence:
 
 class LoopSequenceMCMC(mcmc.Sampler):
     """
-    Here we will use LoopSequence objects as parameters
+    An MCMC sampler that uses `LoopSequence` objects as parametrization.
+
+    See also
+    --------
+    setup, traj_likelihood, tracklib.util.mcmc, tracklib.models.rouse
+
+    Examples
+    --------
+    Assuming we have a `Trajectory` ``traj`` and a `rouse.Model` ``model``:
+
+    >>> MCMCconfig = {
+    ...        'stepsize' : 0.1,
+    ...        'iterations' : 100,
+    ...        'burn_in' : 50,
+    ...        'log_every' : 10,
+    ...        'show_progress' : True,
+    ...        }
+    ... mc = LoopSequenceMCMC()
+    ... mc.setup(traj, model, noise=1)
+    ... mc.configure(**MCMCconfig)
+    ... logL, sequneces = mc.run(LoopSequence(len(traj), 10))
+
     """
     def setup(self, traj, model, **kwargs):
         """
         Load the data for loop estimation
 
-        Input
-        -----
+        Keyword arguments will be forwared to
+        `tracklib.models.rouse.likelihood`
+
+        Parameters
+        ----------
         traj : Trajectory
             the trajectory to run on
         model : tracklib.models.rouse.Model
             the model to use
-        Remaining kwargs go to tracklib.models.rouse.likelihood()
-        """
-        if traj.N == 1:
-            self.traj = traj # We already are given a distance trajectory
-        elif traj.N == 2:
-            self.traj = traj.relative()
-        else:
-            raise ValueError("Don't know what to do with trajectory with N = {}".format(traj.N))
 
+        See also
+        --------
+        traj_likelihood, tracklib.models.rouse
+        """
+        self.traj = traj
         self.model = model
         self.logL_kwargs = kwargs
+
+    # Get documentation for these
+    # Does this hack have drawbacks?
+    configure = mcmc.Sampler.configure
+    run = mcmc.Sampler.run
+    run.__doc__ = run.__doc__.replace("<user-specified parameter structure>", "LoopSequence")
         
     def propose_update(self, current_sequence):
+        "" # Remove the default docstring from mcmc.Sampler; this is an internal function now
+
         proposed_sequence = deepcopy(current_sequence)
-        p_forward = 0
-        p_backward = 0
+        p_forward = 0.
+        p_backward = 0.
         
         # Update a boundary
         ind_up = np.random.randint(len(current_sequence.t))
@@ -160,27 +262,30 @@ class LoopSequenceMCMC(mcmc.Sampler):
         return proposed_sequence, p_forward, p_backward
 
     def logL(self, sequence):
-        return np.sum([
-            rouse.likelihood(self.traj[:][:, i], sequence.toLooptrace(), self.model, **self.logL_kwargs) \
-                    for i in range(self.traj.d)]) \
+        "" # Remove the default docstring from mcmc.Sampler; this is an internal function now
+
+        return traj_likelihood(self.traj, sequence.toLooptrace(), self.model, **self.logL_kwargs) \
                 + (sequence.numLoops() - 1)*np.log(1-0.3) # from Christoph's code
-    
-    def callback_logging(self, current_sequence, best_sequence):
-        pass
     
 class LoopTraceMCMC(LoopSequenceMCMC):
     """
     Run MCMC directly on the loop trace.
+
+    See `LoopSequenceMCMC` for usage (just that now of course the
+    `!initial_values` argument to `run <tracklib.util.mcmc.Sampler.run>` should
+    be a looptrace instead of a `LoopSequence`.
+
+    See also
+    --------
+    LoopSequenceMCMC, tracklib.util.mcmc.Sampler.run
     """
     def propose_update(self, current_looptrace):
         proposed_looptrace = deepcopy(current_looptrace)
         ind_up = np.random.randint(len(proposed_looptrace))
         proposed_looptrace[ind_up] = not proposed_looptrace[ind_up]
-        return proposed_looptrace, 0, 0
+        return proposed_looptrace, 0., 0.
     
     def logL(self, looptrace):
         # Could also do this by reusing LoopSequenceMCMC's logL, but maybe
         # better to have separate control (for example over loop counting)
-        return np.sum([
-            rouse.likelihood(self.traj[:][:, i], looptrace, self.model, **self.logL_kwargs) \
-                    for i in range(self.traj.d)])
+        return traj_likelihood(self.traj, looptrace, self.model, **self.logL_kwargs)

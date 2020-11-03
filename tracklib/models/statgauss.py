@@ -1,3 +1,11 @@
+"""
+This module provides a useful way to sample from a stationary Gaussian process.
+
+By assuming stationary, Gaussian, mean-zero increments, the process is uniquely
+defined by its MSD. Here we use that observation to generate sample traces from
+such processes, given the MSD.
+"""
+
 import os,sys
 from copy import deepcopy
 
@@ -7,53 +15,56 @@ from scipy.linalg import cholesky, toeplitz
 from tracklib import Trajectory, TaggedSet
 
 def sampleMSD(msd, n=1, isCorr=False, subtractMean=True):
-    """
-    Sample trajectories from a Gaussian process with zero-mean stationary
-    increments with given autocorrelation function γ(k). Usually the more
-    intuitive quantity is the MSD of the process, so by default we expect the
-    MSD μ(k) to be given. They are related by
-    ```
-        γ(k) = 1/2 * ( μ(|k+1|) + μ(|k-1|) - 2*μ(|k|) ) .
-    ```
+    r"""
+    Sample traces from a stationary Gaussian process with given MSD.
 
-    Inputs
-    ------
-    msd : (N, ) array
-        The msd from which to sample. The trajectories will have length N-1 and
-        msd[0] should be 0, such that generally msd[k] is the MSD for a time
-        lag of k*Δt. If isCorr = True, then this is expected to be the
-        autocorrelation function already, instead of the MSD. In this case, the
-        trajectories will have length N.
-    n : integer
-        Number of trajectories to generate
-        default: 1
-    isCorr : whether the input array is MSD or autocorrelation.
-        default: False, i.e. input is MSD.
-    subtractMean : whether to subtract the mean of each trajectory. See Notes
-        below
-        default: True
+    Parameters
+    ----------
+    msd : (N, ) np.array
+        the MSD from which to sample. We use the convention that ``msd[t]``
+        should be the MSD at time lag ``t``, i.e. ``msd[0] = 0``.
+    n : integer, optional
+        Number of traces to generate
+    isCorr : bool, optional
+        whether the input array is MSD (default) or autocorrelation.
+    subtractMean : bool
+        whether to subtract the mean of each trace. See Notes below.
 
-    Output
-    ------
+    Returns
+    -------
     traj : (N, n) array
-        The generated trajectories
+        The generated traces.
+
+    See also
+    --------
+    dataset
 
     Notes
     -----
-    To produce a trajectory of length N from an MSD of length N, we assume the
-    very last data point of the autocorrelation function to be identical to the
-    second to last.
+    To produce a trace of length :math:`N` from an MSD of length :math:`!N`, we
+    assume the very last data point of the autocorrelation function to be
+    identical to the second to last.
+
     Strictly speaking, only the ensemble of displacements is well-defined,
-    because this is the one we assume steady state for. For the actual
-    trajectories, we can add an arbitrary offset, and the reasonable thing to
-    do here depends on the process we are sampling. For purely diffusive
-    trajectories for example it makes sense to have them all start from zero,
-    since there is no steady state anyways. If however, we are sampling from an
-    MSD that plateaus at long times, we basically also have a steady state for
-    the trajectories and we can reasonably talk about the mean of a trajectory.
-    In that case of course it makes sense to keep this mean constant. The
-    option subtractMean does exactly this: if True, we subtract the mean from
-    all generated trajectories, i.e. fix the ensemble mean to zero.
+    because this is the one we assume steady state for. For the actual traces,
+    we can add an arbitrary offset, and the reasonable thing to do here depends
+    on the process we are sampling. For a purely diffusive process for example
+    it makes sense to have them all start from zero, since there is no steady
+    state anyways. If however, we are sampling from an MSD that plateaus at
+    long times, we basically also have a steady state for the traces and thus
+    the long-run mean converges.  In that case of course it makes sense to have
+    this mean be identical for all traces. The option `!subtractMean` does
+    exactly this: if ``True``, we subtract the mean from all generated traces,
+    i.e. fix the ensemble mean to zero. Note that this is not precisely correct
+    for finite-length traces, but probably the best we can do.
+
+    **Algorithm:** from the MSD :math:`\mu(k)` we calculate the increment
+    autocorrelation function :math:`\gamma(k)` as
+
+    .. math:: \gamma(k) = \frac{1}{2} \left( \mu(|k+1|) + \mu(|k-1|) - 2\mu(|k|) \right) \,.
+
+    The covariance matrix of the increment process we want to sample from is
+    then the Toeplitz matrix with diagonals :math:`\gamma(k)`.
     """
     if not isCorr:
         msd[0] = 0
@@ -72,31 +83,35 @@ def sampleMSD(msd, n=1, isCorr=False, subtractMean=True):
 
     return trajs
 
-def dataset(msd, N=2, Ts=None, d=3, **kwargs):
+def dataset(msd, N=1, Ts=None, d=3, **kwargs):
     """
     Generate a dataset of MSD sampled trajectories.
 
-    Input
-    -----
-    msd : 1d numpy.ndarray
-        the MSD to sample from.
-    N : integer
-        number of particles per trajectory
-        default: 2
-    Ts : list of int
-        list of trajectory lengths, i.e. this determines number and length of
-        trajectories. Any None entry will be replaced by the maximum possible
-        value, len(msd). If there are values bigger than that, raises a
-        ValueError.
-        default: 100*[None]
-    d : integer
-        spatial dimension of the trajectories to sample
-        default: 3
-    other kwargs are forwarded to util.sampleMSD()
+    All keyword arguments not mentioned below will be forwarded to `sampleMSD`.
 
-    Output
-    ------
-    A TaggedSet of trajectories (with only the trivial tag '_all').
+    Parameters
+    ----------
+    msd : (N,) np.ndarray
+        the MSD to sample from.
+    N : int, optional
+        number of particles per trajectory
+    Ts : list of int, optional
+        list of trajectory lengths, i.e. this determines number and length of
+        trajectories. Any ``None`` entry will be replaced by the maximum possible
+        value, ``len(msd)``. If there are values bigger than that, raises a
+        `!ValueError`. If not specified, will default to 100 trajectories of
+        maximum length.
+    d : int, optional
+        spatial dimension of the trajectories to sample
+
+    Returns
+    -------
+    `TaggedSet` of `Trajectory`
+        the generated data set.
+
+    See also
+    --------
+    sampleMSD, tracklib.trajectory.Trajectory, tracklib.taggedset.TaggedSet
     """
     if Ts is None:
         Ts = 100*[None]
@@ -113,62 +128,62 @@ def dataset(msd, N=2, Ts=None, d=3, **kwargs):
     # len(msd)), sampling all traces at the same time is faster, even though we
     # might generate a bunch of unused data.
     kwargs['n'] = len(Ts)*N*d
-    traces = util.sampleMSD(msd, **kwargs)
+    traces = sampleMSD(msd, **kwargs)
 
     def gen():
         for iT, T in enumerate(Ts):
             mytraces = [traces[:T, ((iT*N + n)*d):((iT*N + n+1)*d)] for n in range(N)]
-            yield (Trajectory.fromArray(mytraces), [])
+            yield Trajectory.fromArray(mytraces)
 
-    return TaggedSet.generate(gen())
+    return TaggedSet(gen(), hasTags=False)
 
-def control(dataset, msd=None, setMean='copy'):
+def control(dataset, msd=None):
     """
-    Generate a sister data set where each trajectory is sampled from a
-    stationary Gaussian process with MSD equal to the ensemble mean of the
-    given data set or the explicitly given MSD. Note generation from
-    experimental data (i.e. the ensemble mean) does not always work, because
-    that is noisy. Thus the option to provide a cleaned version.
+    Generate a stationary control data set to the one given.
+
+    The control will look exactly like the original in all "meta"-aspects
+    (number of trajectories, their length, any meta data, etc.), but the
+    trajectories will be sampled from a stationary Gaussian process with the
+    given MSD (or the empirical ensemble MSD of the original).
 
     The mean of each trajectory will be set to coincide with the mean of the
     sister trajectory it is generated from.
 
-    Input
-    -----
-    dataset : TaggedSet of Trajectory
+    Parameters
+    ----------
+    dataset : `TaggedSet` of `Trajectory`
         the dataset to generate a control for
     msd : (T,) np.ndarray
         the MSD to use for sampling. Note that this will be divided by
         (#loci)x(#dimensions) before sampling scalar traces, matching the usual
         notion of MSD of (e.g.) multidimensional trajectories.
 
-    Output
-    ------
-    A TaggedSet that's an MSD generated sister data set to the input
+    Returns
+    -------
+    `TaggedSet` of `Trajectory`
+        the generated control data set.
 
-    Implementation Note
-    -------------------
-    Should this be merged/unified with MSDdataset?
+    Notes
+    -----
+    Generation from empirical MSDs does not always work, since they might be
+    noisy. In that case, provide a smoothed version as `!msd`.
     """
     if msd is None:
         msd = analysis.MSD(dataset)
 
-    msd /= dataset.getHom('N')*dataset.getHom('d')
+    N = dataset.map_unique(lambda traj : traj.N)
+    d = dataset.map_unique(lambda traj : traj.d)
+    msd /= N*d
 
     def gen():
         for (traj, mytags) in dataset(giveTags=True):
             try:
-                traces = util.sampleMSD(msd[:len(traj)], n=traj.N*traj.d)
+                traces = sampleMSD(msd[:len(traj)], n=traj.N*traj.d, subtractMean=True)
             except np.linalg.LinAlgError:
-                raise RuntimeError("Could not generate trajectories from provided (or ensemble) MSD. Try to use something cleaner.")
+                raise RuntimeError("Could not generate trajectories from provided (or ensemble) MSD. Try using something cleaner.")
             newdata = np.array([traces[:, (i*traj.d):((i+1)*traj.d)] for i in range(traj.N)])
-            newdata += np.mean(traj[:], axis=1, keepdims=True)
+            newdata += np.mean(traj.data, axis=1, keepdims=True)
 
-            newtraj = Trajectory.fromArray(newdata, **deepcopy(traj.meta))
+            yield (Trajectory.fromArray(newdata, **deepcopy(traj.meta)), deepcopy(mytags))
 
-            if len(traj) != len(newtraj):
-                print("traj : {}, newtraj : {} entries".format(len(traj), len(newtraj)))
-
-            yield (newtraj, deepcopy(mytags))
-
-    return TaggedSet.generate(gen())
+    return TaggedSet(gen())

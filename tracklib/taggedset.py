@@ -6,32 +6,32 @@ class TaggedSet():
 
     This class can be used as an iterator in constructs such as ``for datum in
     myset: ...``. The subset to be iterated over can be adjusted using
-    `makeSelection()`. If you also need the tags for each datum, use
+    `makeSelection`. If you also need the tags for each datum, use
     ``myset(giveTags=True)``.
 
     For processing data (in the sense of "applying a function to all of them")
-    it is often useful to simply use the built-in `map()`. If the function in
-    question has to overwrite the data, you can use `filter()`. Note that
-    in-place modification can be achieved with `map()`.
+    it is often useful to simply use the built-in `!map`. If the function in
+    question has to overwrite the data, you can use `filter`. Note that
+    in-place modification can be achieved with `!map()`.
 
     Parameters
     ----------
     iterable : iterable of data or (datum, tags) pairs, optional
         most useful things to use here: an actual list, or a generator.
-        Remember to set `hasTags` accordingly.
+        Remember to set `!hasTags` accordingly.
     hasTags : bool, optional
         whether the iterable in the first argument gives data only or (datum,
         tags) pairs.
 
     Notes
     -----
-    For a TaggedSet `myset`, the following operations are defined:
+    For a TaggedSet ``myset``, the following operations are defined:
 
     ``len(myset)``
         return number of data in current selection
     ``myset(giveTags)``
         return a generator yielding single data or (datum, tags) pairs,
-        depending on the value of `giveTags` (False by default).
+        depending on the value of `!giveTags` (False by default).
     ``iter(myset)``
         shortcut for ``myset(giveTags=False)``. This enables the construction
         ``for datum in myset: ...``
@@ -39,7 +39,7 @@ class TaggedSet():
         element access within the current selection. You can use indices from
         ``0`` to ``len(myset)-1``.
     ``myset &= otherset``
-        add the data in `otherset` into `myset`. This is a shortcut for
+        add the data in `!otherset` into `!myset`. This is a shortcut for
         ``myset.mergein(otherset)``.
     """
 
@@ -50,7 +50,7 @@ class TaggedSet():
         """
         Input reformatting, mostly internal use.
 
-        Make sure that the frequently used `tags` argument is a set of strings.
+        Make sure that the frequently used `!tags` argument is a set of strings.
 
         Parameters
         ----------
@@ -124,6 +124,10 @@ class TaggedSet():
             the data in the current selection
         set of str, optional
             the tags associated with the datum
+
+        See also
+        --------
+        makeSelection
         """
         for (datum, tags, selected) in zip(self._data, self._tags, self._selected):
             if selected:
@@ -149,8 +153,9 @@ class TaggedSet():
 
         There are multiple ways to select data. Which one is used depends on
         the kwargs given. With increasing preference, these methods are
-         - select by tag: use the kwargs 'tags' and 'logic'
-         - select with a user-specified function: use kwarg 'selector'
+
+        - select by tag: use the kwargs `!tags` and `!logic`
+        - select with a user-specified function: use kwarg `!selector`
 
         Call this without arguments to reset the selection to the whole
         dataset.
@@ -159,11 +164,12 @@ class TaggedSet():
         ----------
         tags : str, list of str, or set of str
             the tags to select. How these go together will be determined by
-            'logic'.
+            `!logic`.
         logic : callable with signature bool = logic(<list of bool>)
             the logic for handling multiple tags. Set this to (the built-in)
-            `all` to select the data being tagged with all the given tags, or to
-            `any` (the default) to select the data having any of the given tags.
+            `!all` to select the data being tagged with all the given tags, or
+            to `!any` (the default) to select the data having any of the given
+            tags.
         selector : callable with signature bool = selector(datum, tags)
             should expect the datum and a set of tags as input and return True
             if the datum is to be selected, False otherwise.
@@ -228,7 +234,7 @@ class TaggedSet():
         --------
         restoreSelection, makeSelection
         """
-        return deepcopy(self._selection)
+        return deepcopy(self._selected)
 
     def restoreSelection(self, selection):
         """
@@ -237,13 +243,13 @@ class TaggedSet():
         Parameters
         ----------
         selection : list of bool
-            the selection that was saved using saveSelection(). Will be copied.
+            the selection that was saved using `saveSelection`. Will be copied.
 
         See also
         --------
         saveSelection, makeSelection
         """
-        self._selection = deepcopy(selection)
+        self._selected = deepcopy(selection)
 
     def copySelection(self):
         """
@@ -267,7 +273,7 @@ class TaggedSet():
 
     def mergein(self, other, additionalTags=set()):
         """
-        Add the contents of the TaggedSet 'other' to the caller.
+        Add the contents of the TaggedSet `!other` to the caller.
 
         Parameters
         ----------
@@ -387,16 +393,16 @@ class TaggedSet():
 
         Parameters
         ----------
-        fun : callable of signature datum = fun(datum)
+        fun : callable of signature ``datum = fun(datum)``
 
         See also
         --------
-        process, map
+        process, builtins.map
 
         Notes
         -----
         This function works in-place. If you need the original data to remain
-        unchanged, use process().
+        unchanged, use ``process``.
         """
         # Have to explicitly run through the data array, because the entries
         # might be reassigned.
@@ -406,14 +412,14 @@ class TaggedSet():
 
     def process(self, fun):
         """
-        Generate a new TaggedSet with filtered data.
+        Generate a new `TaggedSet` with filtered data.
 
-        Same as filter(), except that a new list with the processed data is
+        Same as `filter`, except that a new list with the processed data is
         returned, while the original one remains unchanged.
 
         Parameters
         ----------
-        fun : callable of signature datum = fun(datum)
+        fun : callable of signature ``datum = fun(datum)``
 
         Returns
         -------
@@ -422,7 +428,7 @@ class TaggedSet():
 
         See also
         --------
-        filter, map
+        filter, builtins.map
 
         Notes
         -----
@@ -434,6 +440,45 @@ class TaggedSet():
                 yield (fun(deepcopy(datum)), deepcopy(tags))
 
         return TaggedSet(gen(self))
+
+    def map_unique(self, fun):
+        """
+        Apply a function to all data and check that the result is unique.
+
+        Parameters
+        ----------
+        fun : callable with signature ``ret = fun(datum)``
+            the function to apply. The return value can be any object for which
+            ``ret1 == ret2`` is defined.
+
+        Returns
+        -------
+        ret : object
+            if `!fun` returns the same value on all data, that value.
+
+        Raises
+        ------
+        RuntimeError
+            if the return value of `!fun` is not the same on all data.
+
+        See also
+        --------
+        builtins.map
+
+        Notes
+        -----
+        Returns ``None`` if ``len(self) == 0`` (i.e. the caller / its current
+        selection does not contain any data)
+        """
+        it = map(fun, self)
+        try:
+            first = next(it)
+        except StopIteration:
+            return None
+        if all(first == rest for rest in it):
+            return first
+        else:
+            raise RuntimeError("TaggedSet.map_unique() called on data that do not give uniform values")
 
 #     def map(self, fun):
 #         """

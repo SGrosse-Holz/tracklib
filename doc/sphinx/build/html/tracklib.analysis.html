@@ -12,8 +12,11 @@
     <script type="text/javascript" src="_static/underscore.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
     <script type="text/javascript" src="_static/language_data.js"></script>
+    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
     <link rel="index" title="Index" href="genindex.html" />
-    <link rel="search" title="Search" href="search.html" /> 
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="tracklib.models package" href="tracklib.models.html" />
+    <link rel="prev" title="tracklib package" href="tracklib.html" /> 
   </head><body>
     <div class="related" role="navigation" aria-label="related navigation">
       <h3>Navigation</h3>
@@ -24,7 +27,14 @@
         <li class="right" >
           <a href="py-modindex.html" title="Python Module Index"
              >modules</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">tracklib 0.1 documentation</a> &#187;</li> 
+        <li class="right" >
+          <a href="tracklib.models.html" title="tracklib.models package"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="tracklib.html" title="tracklib package"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">tracklib 0.1 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="tracklib.html" accesskey="U">tracklib package</a> &#187;</li> 
       </ul>
     </div>  
 
@@ -40,210 +50,225 @@
 </div>
 <div class="section" id="module-tracklib.analysis.chi2">
 <span id="tracklib-analysis-chi2-module"></span><h2>tracklib.analysis.chi2 module<a class="headerlink" href="#module-tracklib.analysis.chi2" title="Permalink to this headline">¶</a></h2>
+<p>This module implements an analysis method to check stationarity.</p>
+<p>Still under construction.</p>
+<p>The basic idea is to test the null hypothesis “the trajectories are generated
+from a process with stationary Gaussian increments”. Under this hypothesis, we know that snippets of the displacement trajectory should follow a multivariate Gaussian, whose covariance matrix we can calculate from the MSD. We can thus calculate a <span class="math notranslate nohighlight">\(\chi^2\)</span> statistic for each of these snippets, and check that they follow the expected <span class="math notranslate nohighlight">\(\chi^2\)</span> distribution.</p>
 <dl class="function">
 <dt id="tracklib.analysis.chi2.chi2vsMSD">
 <code class="sig-prename descclassname">tracklib.analysis.chi2.</code><code class="sig-name descname">chi2vsMSD</code><span class="sig-paren">(</span><em class="sig-param">dataset</em>, <em class="sig-param">n=10</em>, <em class="sig-param">msd=None</em><span class="sig-paren">)</span><a class="headerlink" href="#tracklib.analysis.chi2.chi2vsMSD" title="Permalink to this definition">¶</a></dt>
-<dd><p>Calculate the snippet-wise chi-square score for trajectories vs. a given
-MSD. This can be used to check for statistical homogeneity, within single
-trajectories and across the dataset.</p>
-<dl class="simple">
-<dt>dataset<span class="classifier">TaggedSet of Trajectory</span></dt><dd><p>the trajectories to use</p>
+<dd><p>Calculate snippet-wise chi2 scores assuming the given MSD.</p>
+<p>The actual scores will be written to <code class="docutils literal notranslate"><span class="pre">traj.meta['chi2scores']</span></code> for each <code class="xref any docutils literal notranslate"><span class="pre">traj</span></code>
+in <code class="xref any docutils literal notranslate"><span class="pre">dataset</span></code>. This function then returns just the number of degrees of
+freedom that the reference chi2 distribution should have.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>dataset</strong> (<a class="reference internal" href="tracklib.html#tracklib.taggedset.TaggedSet" title="tracklib.taggedset.TaggedSet"><code class="xref any py py-class docutils literal notranslate"><span class="pre">TaggedSet</span></code></a> of <a class="reference internal" href="tracklib.html#tracklib.trajectory.Trajectory" title="tracklib.trajectory.Trajectory"><code class="xref any py py-class docutils literal notranslate"><span class="pre">Trajectory</span></code></a>) – the trajectories to use</p></li>
+<li><p><strong>n</strong> (<em>int</em>) – the window size / length of the snippets to look at</p></li>
+<li><p><strong>msd</strong> (<em>(</em><em>T</em><em>,</em><em>) </em><em>array-like</em>) – the MSD to use for defining the reference Gaussian process. If omitted,
+this will be the empirical <a class="reference internal" href="#tracklib.analysis.msd.MSD" title="tracklib.analysis.msd.MSD"><code class="xref any py py-func docutils literal notranslate"><span class="pre">MSD</span></code></a> of the data, as given by
+<code class="docutils literal notranslate"><span class="pre">MSD(dataset)</span></code>.</p></li>
+</ul>
 </dd>
-<dt>n<span class="classifier">integer</span></dt><dd><p>the window size / length of the snippets to look at</p>
-</dd>
-<dt>msd<span class="classifier">array-like, longer than n</span></dt><dd><p>the MSD to use for defining the reference Gaussian process. If omitted,
-this will be the empirical MSD of the data, as given by MSD(dataset).
-Note: we assume that this MSD is for trajectories like the one in the
-dataset, i.e. if you want to specify diffusive motion in d-dimensions,
-use 2*d*D*t, not 2*D*t.</p>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>dof</strong> (<em>int</em>) – number of degrees of freedom for reference distribution.</p>
 </dd>
 </dl>
-<p>The calculated chi-square scores will be written to the trajectory metadata
-as ‘chi2scores’.
-This function returns the #dof for the reference chi2 distribution (for use
-with scipy.stats.chi2)</p>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><a class="reference internal" href="#tracklib.analysis.chi2.summary_plot" title="tracklib.analysis.chi2.summary_plot"><code class="xref py py-func docutils literal notranslate"><span class="pre">summary_plot()</span></code></a>, <a class="reference internal" href="#tracklib.analysis.msd.MSD" title="tracklib.analysis.msd.MSD"><code class="xref py py-func docutils literal notranslate"><span class="pre">tracklib.analysis.msd.MSD()</span></code></a></p>
+</div>
 </dd></dl>
 
 <dl class="function">
 <dt id="tracklib.analysis.chi2.summary_plot">
 <code class="sig-prename descclassname">tracklib.analysis.chi2.</code><code class="sig-name descname">summary_plot</code><span class="sig-paren">(</span><em class="sig-param">dataset</em>, <em class="sig-param">dof=None</em>, <em class="sig-param">p=0.05</em>, <em class="sig-param">ax=None</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#tracklib.analysis.chi2.summary_plot" title="Permalink to this definition">¶</a></dt>
-<dd><p>Histogram the chi-square scores calculated with chi2vsMSD(). This assumes
-that each trajectory has a metadata field ‘chi2scores’. Optionally also
+<dd><p>Produce a summary plot of chi2 scores.</p>
+<p>Histogram the chi-square scores calculated with <a class="reference internal" href="#tracklib.analysis.chi2.chi2vsMSD" title="tracklib.analysis.chi2.chi2vsMSD"><code class="xref any py py-func docutils literal notranslate"><span class="pre">chi2vsMSD</span></code></a>. This assumes
+that each trajectory has a metadata field <code class="xref any docutils literal notranslate"><span class="pre">'chi2scores'</span></code>. Optionally also
 plots significance thresholds and/or the expected chi2 distribution.</p>
-<dl class="simple">
-<dt>dataset<span class="classifier">TaggedSet of Trajectory</span></dt><dd><p>the data to use</p>
-</dd>
-<dt>dof<span class="classifier">integer</span></dt><dd><p>degrees of freedom for the reference chi2 distribution. If omitted, no
-reference will be shown.</p>
-</dd>
-<dt>p<span class="classifier">float in (0, 1)</span></dt><dd><p>significance level at which to draw cutoffs. Can be set to None to
-prevent the plotting of these lines.
-default: 0.05</p>
-</dd>
-<dt>ax<span class="classifier">the axes handle into which to plot.</span></dt><dd><p>default: plt.gca()</p>
+<p>Any keyword arguments not listed below will be forwarded to <code class="xref any docutils literal notranslate"><span class="pre">plt.hist</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>dataset</strong> (<a class="reference internal" href="tracklib.html#tracklib.taggedset.TaggedSet" title="tracklib.taggedset.TaggedSet"><code class="xref any py py-class docutils literal notranslate"><span class="pre">TaggedSet</span></code></a> of <a class="reference internal" href="tracklib.html#tracklib.trajectory.Trajectory" title="tracklib.trajectory.Trajectory"><code class="xref any py py-class docutils literal notranslate"><span class="pre">Trajectory</span></code></a>) – the data to use</p></li>
+<li><p><strong>dof</strong> (<em>int</em>) – degrees of freedom for the reference chi2 distribution. If omitted, no
+reference will be shown.</p></li>
+<li><p><strong>p</strong> (<em>float in</em><em> (</em><em>0</em><em>, </em><em>1</em><em>)</em>) – significance level at which to draw cutoffs. Set to <code class="docutils literal notranslate"><span class="pre">None</span></code> to prevent
+plotting of significance cutoffs.</p></li>
+<li><p><strong>ax</strong> (<em>handle</em>) – the axes handle into which to plot. Will be set to plt.gca() if
+omitted.</p></li>
+</ul>
 </dd>
 </dl>
-<p>Additional kwargs will be forwarded to plt.hist() for plotting</p>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><a class="reference internal" href="#tracklib.analysis.chi2.chi2vsMSD" title="tracklib.analysis.chi2.chi2vsMSD"><code class="xref py py-func docutils literal notranslate"><span class="pre">chi2vsMSD()</span></code></a></p>
+</div>
 </dd></dl>
 
 </div>
 <div class="section" id="module-tracklib.analysis.kld">
 <span id="tracklib-analysis-kld-module"></span><h2>tracklib.analysis.kld module<a class="headerlink" href="#module-tracklib.analysis.kld" title="Permalink to this headline">¶</a></h2>
 <dl class="function">
-<dt id="tracklib.analysis.kld.KLD_PC">
-<code class="sig-prename descclassname">tracklib.analysis.kld.</code><code class="sig-name descname">KLD_PC</code><span class="sig-paren">(</span><em class="sig-param">dataset</em>, <em class="sig-param">n=10</em>, <em class="sig-param">k=20</em>, <em class="sig-param">dt=1</em><span class="sig-paren">)</span><a class="headerlink" href="#tracklib.analysis.kld.KLD_PC" title="Permalink to this definition">¶</a></dt>
-<dd><p>Apply the KLD estimator presented by (Perez-Cruz, 2008). We reduce the
-bias of the estimator by randomly choosing half the snippets for
-estimation of the densities and then sample at the other half.</p>
-<dl class="simple">
-<dt>dataset<span class="classifier">TaggedSet of Trajectory</span></dt><dd><p>the data to run the KLD estimation on</p>
-</dd>
-<dt>n<span class="classifier">integer</span></dt><dd><p>snippet length ( = window size)
-default: 10</p>
-</dd>
-<dt>k<span class="classifier">integer</span></dt><dd><p>order of nearest neighbor for the estimator
-default: 20</p>
-</dd>
-<dt>dt<span class="classifier">integer</span></dt><dd><p>number of frames between two data points in a snippet.
-default: 1</p>
-</dd>
-</dl>
-<p>Dest : estimated KLD in nats</p>
-<p class="rubric">Notes</p>
-<p>This function flattens snippets, i.e. if the trajectory has 2 loci and 3
-dimensions, the KLD estimation will be run in 6n-dimensional space. Since
-this might not be the desired behavior, the user might have to do some
-pre-processing.
-For more advanced use, refer to class KLDestimator.</p>
-</dd></dl>
-
-<dl class="class">
-<dt id="tracklib.analysis.kld.Estimator">
-<em class="property">class </em><code class="sig-prename descclassname">tracklib.analysis.kld.</code><code class="sig-name descname">Estimator</code><span class="sig-paren">(</span><em class="sig-param">dataset</em>, <em class="sig-param">copy=True</em><span class="sig-paren">)</span><a class="headerlink" href="#tracklib.analysis.kld.Estimator" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
-<p>A wrapper class for KLD estimation. Facilitates pre-processing,
-bootstrapping and (eventually) use of different estimators.</p>
-<p class="rubric">Notes</p>
-<dl class="simple">
-<dt>There are two ways of applying pre-processing to the data:</dt><dd><ul class="simple">
-<li><dl class="simple">
-<dt>either do the preprocessing upon initialization:</dt><dd><p>est = KLDestimator(dataset.process(&lt;preproc&gt;), copy=False)</p>
-</dd>
-</dl>
-</li>
-<li><p>or preprocess in an individual step, using the preprocess function.</p></li>
+<dt id="tracklib.analysis.kld.perezcruz">
+<code class="sig-prename descclassname">tracklib.analysis.kld.</code><code class="sig-name descname">perezcruz</code><span class="sig-paren">(</span><em class="sig-param">dataset</em>, <em class="sig-param">n=10</em>, <em class="sig-param">k=20</em>, <em class="sig-param">dt=1</em>, <em class="sig-param">parity='even'</em><span class="sig-paren">)</span><a class="headerlink" href="#tracklib.analysis.kld.perezcruz" title="Permalink to this definition">¶</a></dt>
+<dd><p>Apply the KLD estimator presented by (Perez-Cruz, 2008).</p>
+<p>We reduce the bias of the estimator by randomly choosing half the snippets
+for estimation of the densities and then sample at the other half.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>dataset</strong> (<a class="reference internal" href="tracklib.html#tracklib.taggedset.TaggedSet" title="tracklib.taggedset.TaggedSet"><code class="xref any py py-class docutils literal notranslate"><span class="pre">TaggedSet</span></code></a> of <a class="reference internal" href="tracklib.html#tracklib.trajectory.Trajectory" title="tracklib.trajectory.Trajectory"><code class="xref any py py-class docutils literal notranslate"><span class="pre">Trajectory</span></code></a>) – the data to run the KLD estimation on</p></li>
+<li><p><strong>n</strong> (<em>int</em><em>, </em><em>optional</em>) – snippet length ( = window size)</p></li>
+<li><p><strong>k</strong> (<em>int</em><em>, </em><em>optional</em>) – order of nearest neighbor for the estimator</p></li>
+<li><p><strong>dt</strong> (<em>int</em><em>, </em><em>optional</em>) – number of frames between two data points in a snippet.</p></li>
+<li><p><strong>parity</strong> (<em>{'even'</em><em>, </em><em>'odd'}</em><em>, </em><em>optional</em>) – the parity of the trajectories in <code class="xref any docutils literal notranslate"><span class="pre">dataset</span></code> under time reversal.</p></li>
 </ul>
 </dd>
-</dl>
-<p>As shown in the example, if preprocessing upon initialization, one can set
-the ‘copy’ argument to False to avoid unnecessary copying.</p>
-<p>For repeated evaluation on different parts of the same dataset: make sure
-to reset the selection in the dataset with a call to
-dataset.makeSelection() before initialization/preprocessing, such that all
-data will undergo preprocessing. Then you can subsequently call
-KLDestimator.dataset.makeSelection() to select parts of your dataset for
-estimation.</p>
-<dl class="method">
-<dt id="tracklib.analysis.kld.Estimator.setup">
-<code class="sig-name descname">setup</code><span class="sig-paren">(</span><em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#tracklib.analysis.kld.Estimator.setup" title="Permalink to this definition">¶</a></dt>
-<dd><p>Set up the environment/parameters for running the estimation.</p>
-<dl class="simple">
-<dt>KLDmethod<span class="classifier">callable</span></dt><dd><p>the method to use for KLD estimation.
-default: KLD_PC</p>
-</dd>
-<dt>bootstraprepeats<span class="classifier">integer</span></dt><dd><p>how often to repeat each run with a different partition of the data
-set.
-default: 20</p>
-</dd>
-<dt>processes<span class="classifier">integer</span></dt><dd><p>how many processes to use.
-default: 16</p>
-</dd>
-<dt>other keyword arguments :</dt><dd><p>the parameters for the estimation method. Anything given as a list
-will be sweeped.</p>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>Dest</strong> (<em>float</em>) – estimated KLD in nats</p>
 </dd>
 </dl>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><a class="reference internal" href="tracklib.util.html#tracklib.util.sweep.Sweeper" title="tracklib.util.sweep.Sweeper"><code class="xref py py-func docutils literal notranslate"><span class="pre">tracklib.util.sweep.Sweeper()</span></code></a></p>
+</div>
 <p class="rubric">Notes</p>
-<p>The default values for everything are set in __init__(), so you can
-call this method also to change specific values while keeping
-everything else the same.</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="tracklib.analysis.kld.Estimator.preprocess">
-<code class="sig-name descname">preprocess</code><span class="sig-paren">(</span><em class="sig-param">preproc</em><span class="sig-paren">)</span><a class="headerlink" href="#tracklib.analysis.kld.Estimator.preprocess" title="Permalink to this definition">¶</a></dt>
-<dd><p>Run some preprocessing on the data set.</p>
-<dl>
-<dt>preproc<span class="classifier">callable, taking a trajectory and returning a trajectory</span></dt><dd><p>the function to use for preprocessing. Will be applied to every
-trajectory individually via TaggedSet.apply().
-Examples:</p>
-<blockquote>
-<div><p>lambda traj : traj.relative().abs() # would give absolute distance for two-locus trajectory
-lambda traj : traj.relative().diff().abs() # would give absolute displacements</p>
-</div></blockquote>
-</dd>
-</dl>
-<p class="rubric">Notes</p>
-<p>If writing your own preproc function (i.e. not using the ones from
-Trajectory) remember to update the parity property of all trajectories.</p>
-<p>As of now, this function literally only calls self.dataset.apply(preproc).
-It serves more as a reminder that preprocessing might be necessary.</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="tracklib.analysis.kld.Estimator.run">
-<code class="sig-name descname">run</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#tracklib.analysis.kld.Estimator.run" title="Permalink to this definition">¶</a></dt>
-<dd><p>Run the estimation. Remember to setup() and possibly preprocess().</p>
-<p>A dict of argument lists and a corresponding np.ndarray for the
-computed KLDs.</p>
-<p class="rubric">Notes</p>
-<p>For reproducible results, set random.seed() before calling this function</p>
-<p>As of now, the data is copied to every child process. Maybe this could
-be improved</p>
-</dd></dl>
-
+<p>This function flattens snippets, i.e. if the trajectory has 2 loci and 3
+dimensions, the KLD estimation will be run in 6`!n`-dimensional space.
+Since this might not be the desired behavior, the user might have to do
+some pre-processing.</p>
 </dd></dl>
 
 </div>
 <div class="section" id="module-tracklib.analysis.kli">
 <span id="tracklib-analysis-kli-module"></span><h2>tracklib.analysis.kli module<a class="headerlink" href="#module-tracklib.analysis.kli" title="Permalink to this headline">¶</a></h2>
+<dl class="function">
+<dt id="tracklib.analysis.kli.traj_likelihood">
+<code class="sig-prename descclassname">tracklib.analysis.kli.</code><code class="sig-name descname">traj_likelihood</code><span class="sig-paren">(</span><em class="sig-param">traj</em>, <em class="sig-param">looptrace</em>, <em class="sig-param">model</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#tracklib.analysis.kli.traj_likelihood" title="Permalink to this definition">¶</a></dt>
+<dd><p>Apply <a class="reference internal" href="tracklib.models.html#tracklib.models.rouse.likelihood" title="tracklib.models.rouse.likelihood"><code class="xref any py py-func docutils literal notranslate"><span class="pre">rouse.likelihood</span></code></a> to a <a class="reference internal" href="tracklib.html#tracklib.trajectory.Trajectory" title="tracklib.trajectory.Trajectory"><code class="xref any py py-class docutils literal notranslate"><span class="pre">Trajectory</span></code></a></p>
+<p>Keyword arguments will be forwarded to <a class="reference internal" href="tracklib.models.html#tracklib.models.rouse.likelihood" title="tracklib.models.rouse.likelihood"><code class="xref any py py-func docutils literal notranslate"><span class="pre">tracklib.models.rouse.likelihood</span></code></a></p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>traj</strong> (<a class="reference internal" href="tracklib.html#tracklib.trajectory.Trajectory" title="tracklib.trajectory.Trajectory"><em>Trajectory</em></a>) – the trajectory to use</p></li>
+<li><p><strong>looptrace</strong> (<em>(</em><em>traj.T</em><em>,</em><em>) </em><em>np.ndarray</em><em>, </em><em>dtype=bool</em>) – the looptrace to use</p></li>
+<li><p><strong>model</strong> (<a class="reference internal" href="tracklib.models.html#tracklib.models.rouse.Model" title="tracklib.models.rouse.Model"><em>tracklib.models.rouse.Model</em></a>) – the model to use</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><em>float</em> – the log-likelihood (simply the sum over the spatial dimensions)</p>
+</dd>
+</dl>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><a class="reference internal" href="tracklib.models.html#module-tracklib.models.rouse" title="tracklib.models.rouse"><code class="xref py py-func docutils literal notranslate"><span class="pre">tracklib.models.rouse()</span></code></a></p>
+</div>
+<p class="rubric">Notes</p>
+<p>If <code class="docutils literal notranslate"><span class="pre">traj.N</span> <span class="pre">==</span> <span class="pre">2</span></code>, this will evaluate the likelihood for
+<code class="docutils literal notranslate"><span class="pre">traj.relative()</span></code>.</p>
+</dd></dl>
+
 <dl class="class">
 <dt id="tracklib.analysis.kli.LoopSequence">
 <em class="property">class </em><code class="sig-prename descclassname">tracklib.analysis.kli.</code><code class="sig-name descname">LoopSequence</code><span class="sig-paren">(</span><em class="sig-param">T</em>, <em class="sig-param">numInt</em><span class="sig-paren">)</span><a class="headerlink" href="#tracklib.analysis.kli.LoopSequence" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
-<p>Represent a sequence of looping intervals</p>
-<p>Attributes:
-t : (n-1,) float-array</p>
-<blockquote>
-<div><p>the boundaries of a loop/no-loop region
-the region t[i]—t[i+1] contains all trajectory indices ind with</p>
-<blockquote>
-<div><p>t[i]-0.5 &lt;= ind &lt; t[i+1]-0.5</p>
-</div></blockquote>
-</div></blockquote>
-<dl class="simple">
-<dt>isLoop<span class="classifier">(n,) bool-array</span></dt><dd><p>isLoop[i] tells us whether the interval ending at t[i] has a loop</p>
+<p>Represents a sequence of looping intervals</p>
+<p>The constructor initializes this as a sequence of intervals of equal
+length, with the looping indicator for each one being chosen randomly.</p>
+<dl class="attribute">
+<dt id="tracklib.analysis.kli.LoopSequence.t">
+<code class="sig-name descname">t</code><a class="headerlink" href="#tracklib.analysis.kli.LoopSequence.t" title="Permalink to this definition">¶</a></dt>
+<dd><p>the boundaries of a loop/no-loop region the region <code class="docutils literal notranslate"><span class="pre">t[i]---t[i+1]</span></code>
+contains all trajectory indices <code class="xref any docutils literal notranslate"><span class="pre">ind</span></code> with <code class="docutils literal notranslate"><span class="pre">t[i]-0.5</span> <span class="pre">&lt;=</span> <span class="pre">ind</span> <span class="pre">&lt;</span>
+<span class="pre">t[i+1]-0.5</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>(n-1,) np.ndarray</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="tracklib.analysis.kli.LoopSequence.isLoop">
+<code class="sig-name descname">isLoop</code><a class="headerlink" href="#tracklib.analysis.kli.LoopSequence.isLoop" title="Permalink to this definition">¶</a></dt>
+<dd><p><code class="docutils literal notranslate"><span class="pre">isLoop[i]</span></code> tells us whether the interval ending at <code class="docutils literal notranslate"><span class="pre">t[i]</span></code> has a
+loop</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>(n,) np.ndarray, dtype=bool</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>T</strong> (<em>int</em>) – maximum value for the <a class="reference internal" href="#tracklib.analysis.kli.LoopSequence.t" title="tracklib.analysis.kli.LoopSequence.t"><code class="xref any py py-attr docutils literal notranslate"><span class="pre">t</span></code></a> axis</p></li>
+<li><p><strong>numInt</strong> (<em>int</em>) – the number of looping intervals to initialize with</p></li>
+</ul>
 </dd>
 </dl>
 <dl class="method">
-<dt id="tracklib.analysis.kli.LoopSequence.toLooptrace">
-<code class="sig-name descname">toLooptrace</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#tracklib.analysis.kli.LoopSequence.toLooptrace" title="Permalink to this definition">¶</a></dt>
-<dd><p>give a list of True/False for each time point</p>
+<dt id="tracklib.analysis.kli.LoopSequence.fromLooptrace">
+<em class="property">classmethod </em><code class="sig-name descname">fromLooptrace</code><span class="sig-paren">(</span><em class="sig-param">looptrace</em><span class="sig-paren">)</span><a class="headerlink" href="#tracklib.analysis.kli.LoopSequence.fromLooptrace" title="Permalink to this definition">¶</a></dt>
+<dd><p>Initialize a new <a class="reference internal" href="#tracklib.analysis.kli.LoopSequence" title="tracklib.analysis.kli.LoopSequence"><code class="xref any py py-class docutils literal notranslate"><span class="pre">LoopSequence</span></code></a> from a looptrace.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>looptrace</strong> (<em>(</em><em>T</em><em>,</em><em>) </em><em>np.ndarray</em>) – the looptrace to convert</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><em>LoopSequence</em></p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="method">
-<dt id="tracklib.analysis.kli.LoopSequence.fromLooptrace">
-<em class="property">classmethod </em><code class="sig-name descname">fromLooptrace</code><span class="sig-paren">(</span><em class="sig-param">looptrace</em><span class="sig-paren">)</span><a class="headerlink" href="#tracklib.analysis.kli.LoopSequence.fromLooptrace" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<dt id="tracklib.analysis.kli.LoopSequence.toLooptrace">
+<code class="sig-name descname">toLooptrace</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#tracklib.analysis.kli.LoopSequence.toLooptrace" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convert to a looptrace.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p><em>(self.T,) np.ndarry, dtype=bool</em></p>
+</dd>
+</dl>
+</dd></dl>
 
 <dl class="method">
 <dt id="tracklib.analysis.kli.LoopSequence.numLoops">
 <code class="sig-name descname">numLoops</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#tracklib.analysis.kli.LoopSequence.numLoops" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>Count the number of loops in the sequence</p>
+<p>This counts adjacent intervals with <code class="docutils literal notranslate"><span class="pre">self.isLoop[i]</span> <span class="pre">==</span> <span class="pre">True</span></code> as a
+single loop. An efficient way to count this is to count loop breakings,
+i.e. where <code class="docutils literal notranslate"><span class="pre">isLoop[i-1]</span> <span class="pre">==</span> <span class="pre">True</span> <span class="pre">and</span> <span class="pre">isLoop[i]</span> <span class="pre">==</span> <span class="pre">False</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p><em>int</em> – the number of loops</p>
+</dd>
+</dl>
+</dd></dl>
 
 <dl class="method">
 <dt id="tracklib.analysis.kli.LoopSequence.plottable">
 <code class="sig-name descname">plottable</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#tracklib.analysis.kli.LoopSequence.plottable" title="Permalink to this definition">¶</a></dt>
-<dd><p>Return t, loop for plotting</p>
+<dd><p>Give arrays that can be used for plotting</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p><ul class="simple">
+<li><p><strong>t</strong> (<em>np.ndarray</em>) – the time points where the looping status changes, doubled</p></li>
+<li><p><strong>loop</strong> (<em>np.ndarray</em>) – the looping status at the corresponding time point</p></li>
+</ul>
+</p>
+</dd>
+</dl>
+<p class="rubric">Example</p>
+<p>For a <a class="reference internal" href="#tracklib.analysis.kli.LoopSequence" title="tracklib.analysis.kli.LoopSequence"><code class="xref any py py-class docutils literal notranslate"><span class="pre">LoopSequence</span></code></a> <code class="docutils literal notranslate"><span class="pre">seq</span></code>, use this as</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">matplotlib</span> <span class="k">import</span> <span class="n">pyplot</span> <span class="k">as</span> <span class="n">plt</span>
+<span class="gp">... </span><span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="o">*</span><span class="n">seq</span><span class="o">.</span><span class="n">plottable</span><span class="p">())</span>
+</pre></div>
+</div>
 </dd></dl>
 
 </dd></dl>
@@ -252,40 +277,112 @@ the region t[i]—t[i+1] contains all trajectory indices ind with</p>
 <dt id="tracklib.analysis.kli.LoopSequenceMCMC">
 <em class="property">class </em><code class="sig-prename descclassname">tracklib.analysis.kli.</code><code class="sig-name descname">LoopSequenceMCMC</code><a class="headerlink" href="#tracklib.analysis.kli.LoopSequenceMCMC" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="tracklib.util.html#tracklib.util.mcmc.Sampler" title="tracklib.util.mcmc.Sampler"><code class="xref py py-class docutils literal notranslate"><span class="pre">tracklib.util.mcmc.Sampler</span></code></a></p>
-<p>Here we will use LoopSequence objects as parameters</p>
+<p>An MCMC sampler that uses <a class="reference internal" href="#tracklib.analysis.kli.LoopSequence" title="tracklib.analysis.kli.LoopSequence"><code class="xref any py py-class docutils literal notranslate"><span class="pre">LoopSequence</span></code></a> objects as parametrization.</p>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><a class="reference internal" href="#tracklib.analysis.kli.LoopSequenceMCMC.setup" title="tracklib.analysis.kli.LoopSequenceMCMC.setup"><code class="xref py py-class docutils literal notranslate"><span class="pre">setup</span></code></a>, <a class="reference internal" href="#tracklib.analysis.kli.traj_likelihood" title="tracklib.analysis.kli.traj_likelihood"><code class="xref py py-class docutils literal notranslate"><span class="pre">traj_likelihood</span></code></a>, <a class="reference internal" href="tracklib.util.html#module-tracklib.util.mcmc" title="tracklib.util.mcmc"><code class="xref py py-class docutils literal notranslate"><span class="pre">tracklib.util.mcmc</span></code></a>, <a class="reference internal" href="tracklib.models.html#module-tracklib.models.rouse" title="tracklib.models.rouse"><code class="xref py py-class docutils literal notranslate"><span class="pre">tracklib.models.rouse</span></code></a></p>
+</div>
+<p class="rubric">Examples</p>
+<p>Assuming we have a <a class="reference internal" href="tracklib.html#tracklib.trajectory.Trajectory" title="tracklib.trajectory.Trajectory"><code class="xref any py py-class docutils literal notranslate"><span class="pre">Trajectory</span></code></a> <code class="docutils literal notranslate"><span class="pre">traj</span></code> and a <a class="reference internal" href="tracklib.models.html#tracklib.models.rouse.Model" title="tracklib.models.rouse.Model"><code class="xref any py py-class docutils literal notranslate"><span class="pre">rouse.Model</span></code></a> <code class="docutils literal notranslate"><span class="pre">model</span></code>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">MCMCconfig</span> <span class="o">=</span> <span class="p">{</span>
+<span class="gp">... </span>       <span class="s1">&#39;stepsize&#39;</span> <span class="p">:</span> <span class="mf">0.1</span><span class="p">,</span>
+<span class="gp">... </span>       <span class="s1">&#39;iterations&#39;</span> <span class="p">:</span> <span class="mi">100</span><span class="p">,</span>
+<span class="gp">... </span>       <span class="s1">&#39;burn_in&#39;</span> <span class="p">:</span> <span class="mi">50</span><span class="p">,</span>
+<span class="gp">... </span>       <span class="s1">&#39;log_every&#39;</span> <span class="p">:</span> <span class="mi">10</span><span class="p">,</span>
+<span class="gp">... </span>       <span class="s1">&#39;show_progress&#39;</span> <span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+<span class="gp">... </span>       <span class="p">}</span>
+<span class="gp">... </span><span class="n">mc</span> <span class="o">=</span> <span class="n">LoopSequenceMCMC</span><span class="p">()</span>
+<span class="gp">... </span><span class="n">mc</span><span class="o">.</span><span class="n">setup</span><span class="p">(</span><span class="n">traj</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">noise</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<span class="gp">... </span><span class="n">mc</span><span class="o">.</span><span class="n">configure</span><span class="p">(</span><span class="o">**</span><span class="n">MCMCconfig</span><span class="p">)</span>
+<span class="gp">... </span><span class="n">logL</span><span class="p">,</span> <span class="n">sequneces</span> <span class="o">=</span> <span class="n">mc</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">LoopSequence</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">traj</span><span class="p">),</span> <span class="mi">10</span><span class="p">))</span>
+</pre></div>
+</div>
 <dl class="method">
 <dt id="tracklib.analysis.kli.LoopSequenceMCMC.setup">
 <code class="sig-name descname">setup</code><span class="sig-paren">(</span><em class="sig-param">traj</em>, <em class="sig-param">model</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#tracklib.analysis.kli.LoopSequenceMCMC.setup" title="Permalink to this definition">¶</a></dt>
 <dd><p>Load the data for loop estimation</p>
-<dl class="simple">
-<dt>traj<span class="classifier">Trajectory</span></dt><dd><p>the trajectory to run on</p>
-</dd>
-<dt>model<span class="classifier">tracklib.models.rouse.Model</span></dt><dd><p>the model to use</p>
+<p>Keyword arguments will be forwared to
+<a class="reference internal" href="tracklib.models.html#tracklib.models.rouse.likelihood" title="tracklib.models.rouse.likelihood"><code class="xref any py py-func docutils literal notranslate"><span class="pre">tracklib.models.rouse.likelihood</span></code></a></p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>traj</strong> (<a class="reference internal" href="tracklib.html#tracklib.trajectory.Trajectory" title="tracklib.trajectory.Trajectory"><em>Trajectory</em></a>) – the trajectory to run on</p></li>
+<li><p><strong>model</strong> (<a class="reference internal" href="tracklib.models.html#tracklib.models.rouse.Model" title="tracklib.models.rouse.Model"><em>tracklib.models.rouse.Model</em></a>) – the model to use</p></li>
+</ul>
 </dd>
 </dl>
-<p>Remaining kwargs go to tracklib.models.rouse.likelihood()</p>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><a class="reference internal" href="#tracklib.analysis.kli.traj_likelihood" title="tracklib.analysis.kli.traj_likelihood"><code class="xref py py-meth docutils literal notranslate"><span class="pre">traj_likelihood()</span></code></a>, <a class="reference internal" href="tracklib.models.html#module-tracklib.models.rouse" title="tracklib.models.rouse"><code class="xref py py-meth docutils literal notranslate"><span class="pre">tracklib.models.rouse()</span></code></a></p>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="tracklib.analysis.kli.LoopSequenceMCMC.configure">
+<code class="sig-name descname">configure</code><span class="sig-paren">(</span><em class="sig-param">stepsize=0.1</em>, <em class="sig-param">iterations=100</em>, <em class="sig-param">burn_in=50</em>, <em class="sig-param">log_every=-1</em>, <em class="sig-param">best_only=False</em>, <em class="sig-param">show_progress=False</em>, <em class="sig-param">assume_notebook_for_progress_display=True</em><span class="sig-paren">)</span><a class="headerlink" href="#tracklib.analysis.kli.LoopSequenceMCMC.configure" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set the configuration of the sampler.</p>
+<p>Note that after calling this function once, you can also access single
+configuration entries via the attribute <a class="reference internal" href="tracklib.util.html#tracklib.util.mcmc.Sampler.config" title="tracklib.util.mcmc.Sampler.config"><code class="xref any py py-attr docutils literal notranslate"><span class="pre">config</span></code></a>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Keyword Arguments</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>stepsize</strong> (<em>float</em>) – this will be written to <a class="reference internal" href="tracklib.util.html#tracklib.util.mcmc.Sampler.stepsize" title="tracklib.util.mcmc.Sampler.stepsize"><code class="xref any py py-attr docutils literal notranslate"><span class="pre">stepsize</span></code></a> and can then be used e.g. in
+<a class="reference internal" href="#tracklib.analysis.kli.LoopSequenceMCMC.propose_update" title="tracklib.analysis.kli.LoopSequenceMCMC.propose_update"><code class="xref any py py-meth docutils literal notranslate"><span class="pre">propose_update</span></code></a>.</p></li>
+<li><p><strong>iterations</strong> (<em>int</em>) – how many MCMC iterations to run total</p></li>
+<li><p><strong>burn_in</strong> (<em>int</em>) – how many steps to discard at the beginning</p></li>
+<li><p><strong>log_every</strong> (<em>int</em>) – print a status line every … steps. Set to <code class="docutils literal notranslate"><span class="pre">-1</span></code> (default) to
+disable status lines.</p></li>
+<li><p><strong>best_only</strong> (<em>bool</em>) – instead of the whole sampling history, have <a class="reference internal" href="#tracklib.analysis.kli.LoopSequenceMCMC.run" title="tracklib.analysis.kli.LoopSequenceMCMC.run"><code class="xref any py py-meth docutils literal notranslate"><span class="pre">run</span></code></a> return only the
+best fit.</p></li>
+<li><p><strong>show_progress</strong> (<em>bool</em>) – whether to show a progress bar using <code class="xref any docutils literal notranslate"><span class="pre">tqdm</span></code></p></li>
+<li><p><strong>assume_notebook_for_progress_display</strong> (<em>bool</em>) – if <code class="docutils literal notranslate"><span class="pre">True</span></code>, use <code class="xref any docutils literal notranslate"><span class="pre">tqdm.notebook.tqdm</span></code> otherwise <code class="xref any docutils literal notranslate"><span class="pre">tqdm.tqdm</span></code>. The
+former displays the progress bar as a jupyter widget, the latter as
+ASCII.</p></li>
+</ul>
+</dd>
+</dl>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><a class="reference internal" href="#tracklib.analysis.kli.LoopSequenceMCMC.run" title="tracklib.analysis.kli.LoopSequenceMCMC.run"><code class="xref py py-meth docutils literal notranslate"><span class="pre">run()</span></code></a></p>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="tracklib.analysis.kli.LoopSequenceMCMC.run">
+<code class="sig-name descname">run</code><span class="sig-paren">(</span><em class="sig-param">initial_values</em><span class="sig-paren">)</span><a class="headerlink" href="#tracklib.analysis.kli.LoopSequenceMCMC.run" title="Permalink to this definition">¶</a></dt>
+<dd><p>Run the sampling scheme</p>
+<p>Remember to run <a class="reference internal" href="#tracklib.analysis.kli.LoopSequenceMCMC.configure" title="tracklib.analysis.kli.LoopSequenceMCMC.configure"><code class="xref any py py-meth docutils literal notranslate"><span class="pre">configure</span></code></a> before this.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>initial_values</strong> (<a class="reference internal" href="#tracklib.analysis.kli.LoopSequence" title="tracklib.analysis.kli.LoopSequence"><em>LoopSequence</em></a>) – the initial values for the sampling scheme</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><strong>logL</strong> (<em>np.ndarray</em>) – log-likelihood for the parameters at each step.</p></li>
+<li><p><strong>params</strong> (<em>list of LoopSequence</em>) – list of the sampled parameter sets, after the burn-in period</p></li>
+</ul>
+</p>
+</dd>
+</dl>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><a class="reference internal" href="#tracklib.analysis.kli.LoopSequenceMCMC.configure" title="tracklib.analysis.kli.LoopSequenceMCMC.configure"><code class="xref py py-meth docutils literal notranslate"><span class="pre">configure()</span></code></a></p>
+</div>
+<p class="rubric">Notes</p>
+<p>The returned list of log-likelihoods contains likelihoods for all steps
+starting at initialization, while the list of sampled parameters starts
+only after the burn-in period.</p>
 </dd></dl>
 
 <dl class="method">
 <dt id="tracklib.analysis.kli.LoopSequenceMCMC.propose_update">
 <code class="sig-name descname">propose_update</code><span class="sig-paren">(</span><em class="sig-param">current_sequence</em><span class="sig-paren">)</span><a class="headerlink" href="#tracklib.analysis.kli.LoopSequenceMCMC.propose_update" title="Permalink to this definition">¶</a></dt>
-<dd><p>Propose an update</p>
-<p>proposed_values : array of proposed values
-p_forward : probability of proposing these values from the current ones
-p_backward : probability of proposing the current values from the proposed ones</p>
-</dd></dl>
+<dd></dd></dl>
 
 <dl class="method">
 <dt id="tracklib.analysis.kli.LoopSequenceMCMC.logL">
 <code class="sig-name descname">logL</code><span class="sig-paren">(</span><em class="sig-param">sequence</em><span class="sig-paren">)</span><a class="headerlink" href="#tracklib.analysis.kli.LoopSequenceMCMC.logL" title="Permalink to this definition">¶</a></dt>
-<dd><p>Give the log-likelihood of the given set of parameters</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="tracklib.analysis.kli.LoopSequenceMCMC.callback_logging">
-<code class="sig-name descname">callback_logging</code><span class="sig-paren">(</span><em class="sig-param">current_sequence</em>, <em class="sig-param">best_sequence</em><span class="sig-paren">)</span><a class="headerlink" href="#tracklib.analysis.kli.LoopSequenceMCMC.callback_logging" title="Permalink to this definition">¶</a></dt>
-<dd><p>Callback upon logging</p>
-</dd></dl>
+<dd></dd></dl>
 
 </dd></dl>
 
@@ -294,20 +391,22 @@ p_backward : probability of proposing the current values from the proposed ones<
 <em class="property">class </em><code class="sig-prename descclassname">tracklib.analysis.kli.</code><code class="sig-name descname">LoopTraceMCMC</code><a class="headerlink" href="#tracklib.analysis.kli.LoopTraceMCMC" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#tracklib.analysis.kli.LoopSequenceMCMC" title="tracklib.analysis.kli.LoopSequenceMCMC"><code class="xref py py-class docutils literal notranslate"><span class="pre">tracklib.analysis.kli.LoopSequenceMCMC</span></code></a></p>
 <p>Run MCMC directly on the loop trace.</p>
+<p>See <a class="reference internal" href="#tracklib.analysis.kli.LoopSequenceMCMC" title="tracklib.analysis.kli.LoopSequenceMCMC"><code class="xref any py py-class docutils literal notranslate"><span class="pre">LoopSequenceMCMC</span></code></a> for usage (just that now of course the
+<code class="xref any docutils literal notranslate"><span class="pre">initial_values</span></code> argument to <a class="reference internal" href="tracklib.util.html#tracklib.util.mcmc.Sampler.run" title="tracklib.util.mcmc.Sampler.run"><code class="xref any py py-meth docutils literal notranslate"><span class="pre">run</span></code></a> should
+be a looptrace instead of a <a class="reference internal" href="#tracklib.analysis.kli.LoopSequence" title="tracklib.analysis.kli.LoopSequence"><code class="xref any py py-class docutils literal notranslate"><span class="pre">LoopSequence</span></code></a>.</p>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><a class="reference internal" href="#tracklib.analysis.kli.LoopSequenceMCMC" title="tracklib.analysis.kli.LoopSequenceMCMC"><code class="xref py py-class docutils literal notranslate"><span class="pre">LoopSequenceMCMC</span></code></a>, <a class="reference internal" href="tracklib.util.html#tracklib.util.mcmc.Sampler.run" title="tracklib.util.mcmc.Sampler.run"><code class="xref py py-class docutils literal notranslate"><span class="pre">tracklib.util.mcmc.Sampler.run</span></code></a></p>
+</div>
 <dl class="method">
 <dt id="tracklib.analysis.kli.LoopTraceMCMC.propose_update">
 <code class="sig-name descname">propose_update</code><span class="sig-paren">(</span><em class="sig-param">current_looptrace</em><span class="sig-paren">)</span><a class="headerlink" href="#tracklib.analysis.kli.LoopTraceMCMC.propose_update" title="Permalink to this definition">¶</a></dt>
-<dd><p>Propose an update</p>
-<p>proposed_values : array of proposed values
-p_forward : probability of proposing these values from the current ones
-p_backward : probability of proposing the current values from the proposed ones</p>
-</dd></dl>
+<dd></dd></dl>
 
 <dl class="method">
 <dt id="tracklib.analysis.kli.LoopTraceMCMC.logL">
 <code class="sig-name descname">logL</code><span class="sig-paren">(</span><em class="sig-param">looptrace</em><span class="sig-paren">)</span><a class="headerlink" href="#tracklib.analysis.kli.LoopTraceMCMC.logL" title="Permalink to this definition">¶</a></dt>
-<dd><p>Give the log-likelihood of the given set of parameters</p>
-</dd></dl>
+<dd></dd></dl>
 
 </dd></dl>
 
@@ -316,22 +415,20 @@ p_backward : probability of proposing the current values from the proposed ones<
 <span id="tracklib-analysis-msd-module"></span><h2>tracklib.analysis.msd module<a class="headerlink" href="#module-tracklib.analysis.msd" title="Permalink to this headline">¶</a></h2>
 <p>Everything to do with MSDs and calculating them.</p>
 <p>Apart from immediately returning the most relevant results, the functions in
-this module also store data in the Trajectory.meta dict. The fully populated
-structure looks as follows (for a Trajectory traj):</p>
+this module also store data in the <a class="reference internal" href="tracklib.html#tracklib.trajectory.Trajectory.meta" title="tracklib.trajectory.Trajectory.meta"><code class="xref any py py-attr docutils literal notranslate"><span class="pre">Trajectory.meta</span></code></a> dict. The fully populated
+structure looks as follows (for a <a class="reference internal" href="tracklib.html#tracklib.trajectory.Trajectory" title="tracklib.trajectory.Trajectory"><code class="xref any py py-class docutils literal notranslate"><span class="pre">Trajectory</span></code></a> <code class="docutils literal notranslate"><span class="pre">traj</span></code>):</p>
 <dl>
-<dt>traj.meta[‘MSD’]<span class="classifier">np.ndarray</span></dt><dd><p>the actual MSD of the trajectory</p>
+<dt><code class="docutils literal notranslate"><span class="pre">traj.meta['MSD']</span></code><span class="classifier"><code class="xref any docutils literal notranslate"><span class="pre">np.ndarray</span></code></span></dt><dd><p>the actual MSD of the trajectory</p>
 </dd>
-<dt>traj.meta[‘MSDmeta’]<span class="classifier">dict</span></dt><dd><p>some meta data for the MSD. Contains the following fields:
-‘N’ : np.ndarray</p>
-<blockquote>
-<div><p>the number of sample points for each point of the MSD</p>
-</div></blockquote>
+<dt><code class="docutils literal notranslate"><span class="pre">traj.meta['MSDmeta']</span></code><span class="classifier"><code class="xref any docutils literal notranslate"><span class="pre">dict</span></code></span></dt><dd><p>some meta data for the MSD. Contains the following fields:</p>
 <dl class="simple">
-<dt>‘alpha’<span class="classifier">float</span></dt><dd><p>the fitted powerlaw exponent at the beginning of the MSD</p>
+<dt><code class="xref any docutils literal notranslate"><span class="pre">'N'</span></code><span class="classifier">np.ndarray</span></dt><dd><p>the number of sample points for each point of the MSD</p>
 </dd>
-<dt>‘logG’<span class="classifier">float</span></dt><dd><p>logarithm of the prefactor from the same fit as ‘alpha’</p>
+<dt><code class="xref any docutils literal notranslate"><span class="pre">'alpha'</span></code><span class="classifier">float</span></dt><dd><p>the fitted powerlaw exponent at the beginning of the MSD</p>
 </dd>
-<dt>‘fit_covariance’<span class="classifier">(2, 2) np.ndarray</span></dt><dd><p>covariance matrix of (alpha, logG) from the fit</p>
+<dt><code class="xref any docutils literal notranslate"><span class="pre">'logG'</span></code><span class="classifier">float</span></dt><dd><p>logarithm of the prefactor from the same fit as <code class="xref any docutils literal notranslate"><span class="pre">'alpha'</span></code></p>
+</dd>
+<dt><code class="xref any docutils literal notranslate"><span class="pre">'fit_covariance'</span></code><span class="classifier">(2, 2) np.ndarray</span></dt><dd><p>covariance matrix of (<code class="xref any docutils literal notranslate"><span class="pre">alpha</span></code>, <code class="xref any docutils literal notranslate"><span class="pre">logG</span></code>) from the fit</p>
 </dd>
 </dl>
 </dd>
@@ -340,33 +437,28 @@ structure looks as follows (for a Trajectory traj):</p>
 <dt id="tracklib.analysis.msd.MSDtraj">
 <code class="sig-prename descclassname">tracklib.analysis.msd.</code><code class="sig-name descname">MSDtraj</code><span class="sig-paren">(</span><em class="sig-param">traj</em><span class="sig-paren">)</span><a class="headerlink" href="#tracklib.analysis.msd.MSDtraj" title="Permalink to this definition">¶</a></dt>
 <dd><p>Calculate/give MSD for a single trajectory.</p>
-<p>The result of the MSD calculation is stored in traj.meta[‘MSD’] and
-traj.meta[‘MSDmeta’]. This function checks whether the corresponding fields
-exist and if not calculates them, in any case returning their entries at
-the end. So you can either use the return value of this function for
-further processing, or access the corresponding fields in traj.meta.</p>
+<p>The result of the MSD calculation is stored in <code class="docutils literal notranslate"><span class="pre">traj.meta['MSD']</span></code> and
+<code class="docutils literal notranslate"><span class="pre">traj.meta['MSDmeta']</span></code>. This function checks whether the corresponding
+fields exist and if not calculates them. It then returns the value of the
+<code class="xref any docutils literal notranslate"><span class="pre">'MSD'</span></code> entry.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>traj</strong> (<em>tracklib.Trajectory</em>) – the trajectory for which to calculate the MSD</p>
+<dd class="field-odd"><p><strong>traj</strong> (<a class="reference internal" href="tracklib.html#tracklib.trajectory.Trajectory" title="tracklib.trajectory.Trajectory"><em>Trajectory</em></a>) – the trajectory for which to calculate the MSD</p>
 </dd>
 <dt class="field-even">Returns</dt>
-<dd class="field-even"><p><ul class="simple">
-<li><p><strong>MSD</strong> (<em>np.ndarray</em>) – the MSD of the trajectory, where MSD[0] = 0, MSD[1] is lag time of 1
-frame, etc.</p></li>
-<li><p><em>Writes</em></p></li>
-<li><p><em>——</em></p></li>
-<li><p><em>traj.meta[‘MSD’]</em> – the MSD that is also returned by the function</p></li>
-<li><p><em>traj.meta[‘MSDmeta’][‘N’]</em> – for each data point in the MSD, how many points it is averaged over.
-This is mostly important for correct calculation of ensemble means.</p></li>
-</ul>
-</p>
+<dd class="field-even"><p><strong>MSD</strong> (<em>np.ndarray</em>) – the MSD of the trajectory, where <code class="docutils literal notranslate"><span class="pre">MSD[0]</span> <span class="pre">=</span> <span class="pre">0</span></code>, <code class="docutils literal notranslate"><span class="pre">MSD[1]</span></code> is lag time
+of 1 frame, etc.</p>
 </dd>
 </dl>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><a class="reference internal" href="#tracklib.analysis.msd.MSDdataset" title="tracklib.analysis.msd.MSDdataset"><code class="xref py py-func docutils literal notranslate"><span class="pre">MSDdataset()</span></code></a>, <a class="reference internal" href="#tracklib.analysis.msd.MSD" title="tracklib.analysis.msd.MSD"><code class="xref py py-func docutils literal notranslate"><span class="pre">MSD()</span></code></a></p>
+</div>
 <p class="rubric">Notes</p>
-<p>This function expects a single-locus trajectory (N=1) and will raise a
-ValueError otherwise. Preprocess accordingly.</p>
+<p>This function expects a single-locus trajectory (<code class="docutils literal notranslate"><span class="pre">N=1</span></code>) and will raise a
+<code class="xref any docutils literal notranslate"><span class="pre">ValueError</span></code> otherwise. Preprocess accordingly.</p>
 <p>Usually this function should always be preferred to accessing
-traj.meta[‘MSD’] directly.</p>
+<code class="docutils literal notranslate"><span class="pre">traj.meta['MSD']</span></code> directly.</p>
 </dd></dl>
 
 <dl class="function">
@@ -376,32 +468,42 @@ traj.meta[‘MSD’] directly.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>dataset</strong> (<a class="reference internal" href="tracklib.html#tracklib.taggedset.TaggedSet" title="tracklib.taggedset.TaggedSet"><em>TaggedSet</em></a>) – a list of Trajectory for which to calculate an ensemble MSD</p></li>
+<li><p><strong>dataset</strong> (<a class="reference internal" href="tracklib.html#tracklib.taggedset.TaggedSet" title="tracklib.taggedset.TaggedSet"><em>TaggedSet</em></a>) – a list of <a class="reference internal" href="tracklib.html#tracklib.trajectory.Trajectory" title="tracklib.trajectory.Trajectory"><code class="xref any py py-class docutils literal notranslate"><span class="pre">Trajectory</span></code></a> for which to calculate an ensemble MSD</p></li>
 <li><p><strong>giveN</strong> (<em>bool</em><em>, </em><em>optional</em>) – whether to return the sample size for each MSD data point</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
-<dd class="field-even"><p><strong>msd / (msd, N)</strong> (np.ndarray / tuple of np.ndarray, see <cite>giveN</cite>) – either just the enseble MSD or the MSD and the number of samples for
+<dd class="field-even"><p><strong>msd / (msd, N)</strong> (np.ndarray / tuple of np.ndarray, see <code class="xref any docutils literal notranslate"><span class="pre">giveN</span></code>) – either just the enseble MSD or the MSD and the number of samples for
 each data point</p>
 </dd>
 </dl>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><a class="reference internal" href="#tracklib.analysis.msd.MSDtraj" title="tracklib.analysis.msd.MSDtraj"><code class="xref py py-func docutils literal notranslate"><span class="pre">MSDtraj()</span></code></a>, <a class="reference internal" href="#tracklib.analysis.msd.MSD" title="tracklib.analysis.msd.MSD"><code class="xref py py-func docutils literal notranslate"><span class="pre">MSD()</span></code></a></p>
+</div>
 <p class="rubric">Notes</p>
-<p>Corresponding to python’s 0-based indexing, msd[0] = 0, such that
-msd[dt] is the MSD at a time lag of dt frames.</p>
+<p>Corresponding to python’s 0-based indexing, <code class="docutils literal notranslate"><span class="pre">msd[0]</span> <span class="pre">=</span> <span class="pre">0</span></code>, such that
+<code class="docutils literal notranslate"><span class="pre">msd[dt]</span></code> is the MSD at a time lag of <code class="xref any docutils literal notranslate"><span class="pre">dt</span></code> frames.</p>
 </dd></dl>
 
 <dl class="function">
 <dt id="tracklib.analysis.msd.MSD">
 <code class="sig-prename descclassname">tracklib.analysis.msd.</code><code class="sig-name descname">MSD</code><span class="sig-paren">(</span><em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#tracklib.analysis.msd.MSD" title="Permalink to this definition">¶</a></dt>
 <dd><p>Shortcut function to calculate MSDs.</p>
-<p>Will select either MSDtraj or MSDdataset, depending on the type of the
-first argument. Everything is then forwarded to the appropriate function.</p>
+<p>Will select either <a class="reference internal" href="#tracklib.analysis.msd.MSDtraj" title="tracklib.analysis.msd.MSDtraj"><code class="xref any py py-func docutils literal notranslate"><span class="pre">MSDtraj</span></code></a> or <a class="reference internal" href="#tracklib.analysis.msd.MSDdataset" title="tracklib.analysis.msd.MSDdataset"><code class="xref any py py-func docutils literal notranslate"><span class="pre">MSDdataset</span></code></a>, depending on the type of the
+first argument. Everything is then forwarded to that function.</p>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><a class="reference internal" href="#tracklib.analysis.msd.MSDtraj" title="tracklib.analysis.msd.MSDtraj"><code class="xref py py-func docutils literal notranslate"><span class="pre">MSDtraj()</span></code></a>, <a class="reference internal" href="#tracklib.analysis.msd.MSDdataset" title="tracklib.analysis.msd.MSDdataset"><code class="xref py py-func docutils literal notranslate"><span class="pre">MSDdataset()</span></code></a></p>
+</div>
 </dd></dl>
 
 <dl class="function">
 <dt id="tracklib.analysis.msd.scaling">
 <code class="sig-prename descclassname">tracklib.analysis.msd.</code><code class="sig-name descname">scaling</code><span class="sig-paren">(</span><em class="sig-param">traj</em>, <em class="sig-param">n=5</em><span class="sig-paren">)</span><a class="headerlink" href="#tracklib.analysis.msd.scaling" title="Permalink to this definition">¶</a></dt>
-<dd><p>Fit a powerlaw scaling to the first n data points of the MSD.</p>
+<dd><p>Fit a powerlaw scaling to the first <code class="xref any docutils literal notranslate"><span class="pre">n</span></code> data points of the MSD.</p>
+<p>Results will be written to <code class="docutils literal notranslate"><span class="pre">traj.meta['MSDmeta']</span></code>, only the exponent
+<code class="xref any docutils literal notranslate"><span class="pre">alpha</span></code> will be returned.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
@@ -410,42 +512,42 @@ first argument. Everything is then forwarded to the appropriate function.</p>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
-<dd class="field-even"><p><ul class="simple">
-<li><p><strong>alpha</strong> (<em>float</em>) – the fitted powerlaw scaling. For more details refer to
-traj.meta[‘MSDmeta’]</p></li>
-<li><p><em>Writes</em></p></li>
-<li><p><em>——</em></p></li>
-<li><p><strong>traj.meta[‘MSDmeta’][‘alpha’]</strong> (<em>float</em>) – same as return value</p></li>
-<li><p><strong>traj.meta[‘MSDmeta’][‘logG’]</strong> (<em>float</em>) – logarithm of the MSD prefactor</p></li>
-<li><p><strong>traj.meta[‘MSDmeta’][‘fit_covariance’]</strong> (<em>(2, 2) np.ndarray</em>) – covariance matrix of (alpha, logG) from the fit</p></li>
-</ul>
-</p>
+<dd class="field-even"><p><strong>alpha</strong> (<em>float</em>) – the fitted powerlaw scaling. For more details check
+<code class="docutils literal notranslate"><span class="pre">traj.meta['MSDmeta']</span></code></p>
 </dd>
 </dl>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><a class="reference internal" href="#tracklib.analysis.msd.MSDtraj" title="tracklib.analysis.msd.MSDtraj"><code class="xref py py-func docutils literal notranslate"><span class="pre">MSDtraj()</span></code></a>, <a class="reference internal" href="#tracklib.analysis.msd.MSDdataset" title="tracklib.analysis.msd.MSDdataset"><code class="xref py py-func docutils literal notranslate"><span class="pre">MSDdataset()</span></code></a>, <a class="reference internal" href="#tracklib.analysis.msd.MSD" title="tracklib.analysis.msd.MSD"><code class="xref py py-func docutils literal notranslate"><span class="pre">MSD()</span></code></a></p>
+</div>
 <p class="rubric">Notes</p>
-<p>logG is known to be a bad estimator for diffusivities.</p>
-<p>“first n points of the MSD” means time lags 1 through n.</p>
+<p><code class="xref any docutils literal notranslate"><span class="pre">logG</span></code> is known to be a bad estimator for diffusivities.</p>
+<p>“first <code class="xref any docutils literal notranslate"><span class="pre">n</span></code> points of the MSD” means time lags 1 through <code class="xref any docutils literal notranslate"><span class="pre">n</span></code>.</p>
 </dd></dl>
 
 </div>
 <div class="section" id="module-tracklib.analysis.plots">
 <span id="tracklib-analysis-plots-module"></span><h2>tracklib.analysis.plots module<a class="headerlink" href="#module-tracklib.analysis.plots" title="Permalink to this headline">¶</a></h2>
+<p>A module to quickly produce some overview plots</p>
 <dl class="function">
 <dt id="tracklib.analysis.plots.length_distribution">
 <code class="sig-prename descclassname">tracklib.analysis.plots.</code><code class="sig-name descname">length_distribution</code><span class="sig-paren">(</span><em class="sig-param">dataset</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#tracklib.analysis.plots.length_distribution" title="Permalink to this definition">¶</a></dt>
 <dd><p>Plot a histogram of trajectory lengths for the given dataset</p>
-<dl class="simple">
-<dt>dataset<span class="classifier">TaggedSet (possibly with some selection set)</span></dt><dd><p>the dataset to use</p>
+<p>All keyword arguments will be forwarded to <code class="xref any docutils literal notranslate"><span class="pre">plt.hist()</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>dataset</strong> (<a class="reference internal" href="tracklib.html#tracklib.taggedset.TaggedSet" title="tracklib.taggedset.TaggedSet"><code class="xref any py py-class docutils literal notranslate"><span class="pre">TaggedSet</span></code></a> of <a class="reference internal" href="tracklib.html#tracklib.trajectory.Trajectory" title="tracklib.trajectory.Trajectory"><code class="xref any py py-class docutils literal notranslate"><span class="pre">Trajectory</span></code></a>) – the dataset to use</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><em>tuple</em> – the return value of <code class="xref any docutils literal notranslate"><span class="pre">plt.hist()</span></code>, i.e. a tuple <code class="docutils literal notranslate"><span class="pre">(n,</span> <span class="pre">bins,</span> <span class="pre">patches)</span></code></p>
 </dd>
 </dl>
-<p>All other keyword arguments will be forwarded to plt.hist().</p>
-<p>The return value of plt.hist(), i.e. a tuple (n, bins, patches)</p>
 <p class="rubric">Notes</p>
 <p>This should be thought of only as a quickshot way to take a look at the
 data. For more elaborate plotting, obtain the trajectory lengths as</p>
-<blockquote>
-<div><p>lengths = [len(traj) for traj in dataset]</p>
-</div></blockquote>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">lengths</span> <span class="o">=</span> <span class="p">[</span><span class="nb">len</span><span class="p">(</span><span class="n">traj</span><span class="p">)</span> <span class="k">for</span> <span class="n">traj</span> <span class="ow">in</span> <span class="n">dataset</span><span class="p">]</span>
+</pre></div>
+</div>
 <p>and produce a plot to your liking.</p>
 </dd></dl>
 
@@ -453,68 +555,77 @@ data. For more elaborate plotting, obtain the trajectory lengths as</p>
 <dt id="tracklib.analysis.plots.msd_overview">
 <code class="sig-prename descclassname">tracklib.analysis.plots.</code><code class="sig-name descname">msd_overview</code><span class="sig-paren">(</span><em class="sig-param">dataset</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#tracklib.analysis.plots.msd_overview" title="Permalink to this definition">¶</a></dt>
 <dd><p>Plot individual and ensemble MSDs of the given dataset</p>
-<dl class="simple">
-<dt>dataset<span class="classifier">TaggedSet (possibly with some selection set)</span></dt><dd><p>the dataset to use</p>
+<p>All keyword arguments are forwarded to <code class="xref any docutils literal notranslate"><span class="pre">plt.loglog()</span></code> for plotting of the
+individual trajectory MSDs</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>dataset</strong> (<a class="reference internal" href="tracklib.html#tracklib.taggedset.TaggedSet" title="tracklib.taggedset.TaggedSet"><code class="xref any py py-class docutils literal notranslate"><span class="pre">TaggedSet</span></code></a> of <a class="reference internal" href="tracklib.html#tracklib.trajectory.Trajectory" title="tracklib.trajectory.Trajectory"><code class="xref any py py-class docutils literal notranslate"><span class="pre">Trajectory</span></code></a>) – the dataset to use</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><em>list of lines</em> – aggregate of the <code class="docutils literal notranslate"><span class="pre">plt.plot()</span></code> outputs</p>
 </dd>
 </dl>
-<p>All further keyword arguments are forwarded to plt.loglog for plotting of
-the individual trajectory MSDs</p>
-<p>Aggregate of the plt.plot outputs, i.e. a list of lines</p>
 <p class="rubric">Notes</p>
 <p>Only intended as a quick overview plot, for more customization write your
-own plotting routine using analysis.MSD(dataset) and Trajectory.msd().</p>
+own plotting routine using <a class="reference internal" href="#tracklib.analysis.msd.MSD" title="tracklib.analysis.msd.MSD"><code class="xref any py py-func docutils literal notranslate"><span class="pre">analysis.MSD</span></code></a></p>
 </dd></dl>
 
 <dl class="function">
 <dt id="tracklib.analysis.plots.trajectories_spatial">
 <code class="sig-prename descclassname">tracklib.analysis.plots.</code><code class="sig-name descname">trajectories_spatial</code><span class="sig-paren">(</span><em class="sig-param">dataset</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#tracklib.analysis.plots.trajectories_spatial" title="Permalink to this definition">¶</a></dt>
-<dd><p>Plot the trajectories in the given dataset. The preset selection can be
-overridden manually to ensure proper coloring (see Notes).</p>
-<dl class="simple">
-<dt>dataset<span class="classifier">TaggedSet</span></dt><dd><p>the set of trajectories to plot</p>
+<dd><p>Plot the trajectories in the given dataset.</p>
+<p>Additional keyword arguments will be forwarded to
+<a class="reference internal" href="tracklib.html#tracklib.trajectory.Trajectory.plot_spatial" title="tracklib.trajectory.Trajectory.plot_spatial"><code class="xref any py py-meth docutils literal notranslate"><span class="pre">Trajectory.plot_spatial</span></code></a>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>dataset</strong> (<a class="reference internal" href="tracklib.html#tracklib.taggedset.TaggedSet" title="tracklib.taggedset.TaggedSet"><code class="xref any py py-class docutils literal notranslate"><span class="pre">TaggedSet</span></code></a> of <a class="reference internal" href="tracklib.html#tracklib.trajectory.Trajectory" title="tracklib.trajectory.Trajectory"><code class="xref any py py-class docutils literal notranslate"><span class="pre">Trajectory</span></code></a>) – the set of trajectories to plot</p>
 </dd>
-<dt>colordict<span class="classifier">dict</span></dt><dd><p>determines which tag is colored in which color. This should be a dict
+<dt class="field-even">Keyword Arguments</dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>colordict</strong> (<em>dict</em>) – determines which tag is colored in which color. This should be a dict
 whose keys are the tags in the dataset, while the entries are anything
-recognized by the ‘color’ kwarg of plt.plot.
-default: cycle through the default color cycle</p>
+recognized by the <code class="xref any docutils literal notranslate"><span class="pre">'color'</span></code> kwarg of <code class="xref any docutils literal notranslate"><span class="pre">plt.plot()</span></code>. If omitted, will
+cycle through the default color cycle.</p></li>
+<li><p><strong>fallback_color</strong> (<em>str</em><em>, or </em><em>RGB tuple</em>) – the color to use for anything not appearing in <code class="xref any docutils literal notranslate"><span class="pre">'colordict'</span></code></p></li>
+</ul>
+</dd>
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p><em>list of lines</em> – the aggregated output of <code class="xref any docutils literal notranslate"><span class="pre">plt.plot()</span></code></p>
 </dd>
 </dl>
-<p>All further keyword arguments will be forwarded to
-Trajectory.plot_spatial()</p>
-<p>A list of lines, as returned by plt.plot()</p>
 <p class="rubric">Notes</p>
 <p>Each tag will be associated with one color, and trajectories will be
 colored by one of the tags they’re associated with.  There is no way to
 determine which one.</p>
-<p>Similarly to the other analysis.plot_* and analysis.hist_* functions, this
-is mostly intended for use in a quick overview. It does provide some more
-functionality though, in the hope that the user will not see a necessity to
-start plotting trajectories themselves.</p>
 </dd></dl>
 
 <dl class="function">
 <dt id="tracklib.analysis.plots.distance_distribution">
 <code class="sig-prename descclassname">tracklib.analysis.plots.</code><code class="sig-name descname">distance_distribution</code><span class="sig-paren">(</span><em class="sig-param">dataset</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#tracklib.analysis.plots.distance_distribution" title="Permalink to this definition">¶</a></dt>
-<dd><p>Draw a histogram of distances. For two-locus trajectories, this is the
-absolute distance between the loci, for single locus trajectories it is
-simply the absolute value of the trajectory.</p>
-<dl class="simple">
-<dt>dataset<span class="classifier">TaggedSet (possibly with some selection set)</span></dt><dd><p>the trajectories to use</p>
+<dd><p>Draw a histogram of distances.</p>
+<p>For two-locus trajectories, this is the absolute distance between the loci,
+for single locus trajectories it is simply the absolute value of the
+trajectory.</p>
+<p>All keyword arguments will be forwarded to <code class="xref any docutils literal notranslate"><span class="pre">plt.hist()</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>dataset</strong> (<a class="reference internal" href="tracklib.html#tracklib.taggedset.TaggedSet" title="tracklib.taggedset.TaggedSet"><code class="xref any py py-class docutils literal notranslate"><span class="pre">TaggedSet</span></code></a> of <a class="reference internal" href="tracklib.html#tracklib.trajectory.Trajectory" title="tracklib.trajectory.Trajectory"><code class="xref any py py-class docutils literal notranslate"><span class="pre">Trajectory</span></code></a>) – the trajectories to use</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><em>tuple</em> – the output of <code class="xref any docutils literal notranslate"><span class="pre">plt.hist()</span></code>, i.e. a tuple <code class="docutils literal notranslate"><span class="pre">(n,</span> <span class="pre">bins,</span> <span class="pre">patches)</span></code>.</p>
 </dd>
 </dl>
-<p>All keyword arguments will be forwarded to plt.hist()</p>
-<p>The output of plt.hist(), i.e. a tuple (n, bins, patches).</p>
 <p class="rubric">Notes</p>
 <p>This is intended for gaining a quick overview. For more elaborate tasks,
 obtain the distances as</p>
-<blockquote>
-<div><p>dists = np.concatenate([traj[:].flatten() for traj in dataset.process(&lt;preproc&gt;)])</p>
-</div></blockquote>
-<p>where &lt;preproc&gt; is the preprocessing function appropriate for your dataset.
-For a two-locus trajectory, this would presumably be</p>
-<blockquote>
-<div><p>preproc = lambda traj : traj.relative().abs()</p>
-</div></blockquote>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">dists</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">([</span><span class="n">traj</span><span class="p">[:]</span><span class="o">.</span><span class="n">flatten</span><span class="p">()</span> <span class="k">for</span> <span class="n">traj</span> <span class="ow">in</span> <span class="n">dataset</span><span class="o">.</span><span class="n">process</span><span class="p">(</span><span class="o">&lt;</span><span class="n">preproc</span><span class="o">&gt;</span><span class="p">)])</span>
+</pre></div>
+</div>
+<p>where <code class="docutils literal notranslate"><span class="pre">&lt;preproc&gt;</span></code> is the preprocessing function appropriate for your
+dataset.  For a two-locus trajectory, this would presumably be</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">preproc</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">traj</span> <span class="p">:</span> <span class="n">traj</span><span class="o">.</span><span class="n">relative</span><span class="p">()</span><span class="o">.</span><span class="n">abs</span><span class="p">()</span>
+</pre></div>
+</div>
 </dd></dl>
 
 </div>
@@ -543,6 +654,12 @@ For a two-locus trajectory, this would presumably be</p>
 </li>
 </ul>
 
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="tracklib.html"
+                        title="previous chapter">tracklib package</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="tracklib.models.html"
+                        title="next chapter">tracklib.models package</a></p>
   <div role="note" aria-label="source link">
     <h3>This Page</h3>
     <ul class="this-page-menu">
@@ -573,7 +690,14 @@ For a two-locus trajectory, this would presumably be</p>
         <li class="right" >
           <a href="py-modindex.html" title="Python Module Index"
              >modules</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">tracklib 0.1 documentation</a> &#187;</li> 
+        <li class="right" >
+          <a href="tracklib.models.html" title="tracklib.models package"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="tracklib.html" title="tracklib package"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">tracklib 0.1 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="tracklib.html" >tracklib package</a> &#187;</li> 
       </ul>
     </div>
     <div class="footer" role="contentinfo">

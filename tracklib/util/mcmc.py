@@ -1,127 +1,237 @@
+"""
+A small module for running MCMC sampling. It provides the abstract base class
+`Sampler` that can be subclassed for concrete sampling schemes.
+"""
+
 from copy import deepcopy
 from abc import ABC, abstractmethod
 
 import numpy as np
-import scipy.stats
-
-def _fill_config(config):
-    """
-    Fill a given config dict with default values where nothing else is provided
-
-    Input
-    -----
-    config : dict
-        some dict, possibly containing configuration fields
-
-    Output
-    ------
-    config : dict
-        a copy of the input, augmented with default values for missing fields
-    """
-    default_config = {
-        'stepsize'      :   0.1,
-        'iterations'    :   100,
-        'burn-in'       :    50,
-        'log every'     :    -1,
-        'best only'     : False,
-        'show progress' : False,
-        'assume notebook for progress display' : True,
-        }
-    return default_config.update(config) or default_config
 
 class Sampler(ABC):
     """
     Abstract base class for MCMC sampling
     
     To implement a sampling scheme, subclass this and override
-     - propose_update(params) # may use self.stepsize
-         propose a step in parameter space. Should return the proposed
-         parameter values, forward, and backward probabilities.
-     - logL(params)
-         calculate log-likelihood for a given set of parameters
-     - (optional) callback_logging(current_values, best_values)
-         will be called whenever a logging line is printed. Can be
-         used to print additional info, plot stuff, etc.
 
-    The structure of 'params' is completely up to the user, this could be an
-    np.ndarray of some parameter values, a specific class containing some
-    configuration or anything else. All we have to be able to do is propose
-    updates and calculate likelihoods, and these are the user specified
-    functions.
+    - `propose_update`
+    - `logL`
+    - `callback_logging` (optional)
+    
+    See their documentations in this base class for more details.
 
-    Note: if config['show progress'] is True
+    The above methods take an argument `!params` that is supposed to represent
+    the parameters of the model. The structure of this representation (e.g. a
+    list of parameters, a `!np.ndarray`, or a custom class) is completely up to
+    the user. Since all explicit handling of the parameters happens in the
+    `propose_update` and `logL` methods, the code in this base class is
+    completely independent from the parameterization.
+
+    Attributes
+    ----------
+    stepsize : float
+        a generic stepsize variable that can be used in `propose_update`.
+    config : dict
+        some configuration values. See `configure`.
+
+    Example
+    -------
+
+    >>> import numpy as np
+    ... import scipy.stats
+
+    >>> class normMCMC(Sampler):
+    ...     def propose_update(self, current_value):
+    ...         proposed_value = current_value + np.random.normal(scale=self.stepsize)
+    ...         logp_forward = -0.5*(proposed_value - current_value)**2/self.stepsize**2 - 0.5*np.log(2*np.pi*self.stepsize**2)
+    ...         logp_backward = -0.5*(current_value - proposed_value)**2/self.stepsize**2 - 0.5*np.log(2*np.pi*self.stepsize**2)
+    ...         return proposed_value, logp_forward, logp_backward
+    ...         
+    ...     def logL(self, value):
+    ...         return -0.5*value**2 - 0.5*np.log(2*np.pi)
+    ...     
+    ...     def callback_logging(self, current_value, best_value):
+    ...         print("Current value: {}".format(current_value))
+
+    >>> mc = normMCMC()
+    ... mc.configure(iterations=100, burn_in=50, log_every=10, show_progress=True)
+    ... logL, vals = mc.run(1)
+
     """
+
     @abstractmethod
     def propose_update(self, params):
         """
-        Propose an update
+        Propose an update step.
+
+        You can use ``self.stepsize`` for the proposal.
         
-        Output
-        ------
-        proposed_values : array of proposed values
-        p_forward : probability of proposing these values from the current ones
-        p_backward : probability of proposing the current values from the proposed ones
+        Parameters
+        ----------
+        params : <user-specified parameter structure>
+            the current parameters
+
+        Returns
+        -------
+        proposed_values : <user-specified parameter structure>
+            the proposed new parameters
+        logp_forward : float
+            (log of the) probability of proposing these values from the current
+            ones
+        logp_backward : float
+            (log of the) probability of proposing the current values from the
+            proposed ones
+
+        See also
+        --------
+        logL, callback_logging
         """
         pass
         
     @abstractmethod
     def logL(self, params):
         """
-        Give the log-likelihood of the given set of parameters
+        Calculate log-likelihood of the given parameters.
+
+        Parameters
+        ----------
+        params : <user-specified parameter structure>
+            the parameters to use
+
+        Returns
+        -------
+        float
+            the log-likelihood for the given parameters.
+
+        See also
+        --------
+        propose_update, callback_logging
         """
         pass
     
-    def callback_logging(self, current_values, best_values):
+    def callback_logging(self, current_params, best_params):
         """
-        Callback upon logging
+        Callback upon logging.
+
+        This function will be called whenever a status line is printed. It can
+        thus be used to provide additional information about where the sampler
+        is, or how the current values compare to the best ones found so far,
+        etc.
+
+        Parameters
+        ----------
+        current_params : <user-specified parameter structure>
+            the current parameter set.
+        best_params : <user-specified parameter structure>
+            the best (i.e. highest likelihood) parameter set the sampler has
+            seen so far.
+
+        See also
+        --------
+        propose_update, logL
         """
         pass
     
-    def run(self, initial_values, config={}):
+    def configure(self,
+            stepsize=0.1,
+            iterations=100,
+            burn_in=50,
+            log_every=-1,
+            best_only=False,
+            show_progress=False,
+            assume_notebook_for_progress_display=True,
+            ):
+        """
+        Set the configuration of the sampler.
+
+        Note that after calling this function once, you can also access single
+        configuration entries via the attribute `config`.
+
+        Keyword arguments
+        -----------------
+        stepsize : float
+            this will be written to `stepsize` and can then be used e.g. in
+            `propose_update`.
+        iterations : int
+            how many MCMC iterations to run total
+        burn_in : int
+            how many steps to discard at the beginning
+        log_every : int
+            print a status line every ... steps. Set to ``-1`` (default) to
+            disable status lines.
+        best_only : bool
+            instead of the whole sampling history, have `run` return only the
+            best fit.
+        show_progress : bool
+            whether to show a progress bar using `!tqdm`
+        assume_notebook_for_progress_display : bool
+            if ``True``, use `!tqdm.notebook.tqdm` otherwise `!tqdm.tqdm`. The
+            former displays the progress bar as a jupyter widget, the latter as
+            ASCII.
+
+        See also
+        --------
+        run
+        """
+        self.config = {
+                'stepsize' : stepsize,
+                'iterations' : iterations,
+                'burn_in' : burn_in,
+                'log_every' : log_every,
+                'best_only' : best_only,
+                'show_progress' : show_progress,
+                'assume_notebook_for_progress_display' : assume_notebook_for_progress_display,
+                }
+
+    def run(self, initial_values):
         """
         Run the sampling scheme
-        
-        Input
-        -----
-        initial_values : whatever self.propose_update() / self.logL expect
-            the initial values for the sampling scheme
-        config : dict
-            See mcmc._fill_config()
-            
-        Output
-        ------
-        logL : (M,) array
-            list of log-likelihood at each iteration
-            EDIT: right now, returning full-length logL. We usually just use
-            this to check convergence, so it doesn't make sense to cut off
-            exactly that burn-in period.
-        params : (M, ...) array
-            list of the sampled parameter sets.
 
-        where M = 'iterations' - 'burn-in'
+        Remember to run `configure` before this.
+        
+        Parameters
+        ----------
+        initial_values : <user-specified parameter structure>
+            the initial values for the sampling scheme
+            
+        Returns
+        -------
+        logL : np.ndarray
+            log-likelihood for the parameters at each step.
+        params : list of <user-specified parameter structure>
+            list of the sampled parameter sets, after the burn-in period
+
+        See also
+        --------
+        configure
+
+        Notes
+        -----
+        The returned list of log-likelihoods contains likelihoods for all steps
+        starting at initialization, while the list of sampled parameters starts
+        only after the burn-in period.
         """
         # Input processing
-        current_values = initial_values
         try:
-            Nparams = len(current_values)
-        except TypeError:
-            Nparams = 1
-            
-        config = _fill_config(config)
-        config['_logging'] = config['log every'] > 0
+            config = self.config
+        except AttributeError:
+            raise RuntimeError("Trying to run MCMC sampler before calling configure()")
+        config['_logging'] = config['log_every'] > 0
         self.stepsize = config['stepsize']
         
+        current_values = initial_values
+            
         # Setup
         cur_logL = -np.inf
         max_logL = -np.inf
         cnt_accept = 0
-        if not config['best only']:
+        if not config['best_only']:
             logL = -np.inf*np.ones((config['iterations'],))
             params = []
         
         Mrange = range(config['iterations'])
-        if config['show progress']:
-            if config['assume notebook for progress display']:
+        if config['show_progress']:
+            if config['assume_notebook_for_progress_display']:
                 from tqdm.notebook import tqdm
             else:
                 from tqdm import tqdm
@@ -143,7 +253,7 @@ class Sampler(ABC):
             accept_rate = cnt_accept / (i+1)
             
             # Output
-            if not config['best only']:
+            if not config['best_only']:
                 params.append(current_values)
                 logL[i] = cur_logL
             
@@ -153,28 +263,13 @@ class Sampler(ABC):
                 best_values = deepcopy(current_values)
             
             # Logging
-            if config['_logging'] and ( (i+1) % config['log every'] == 0 or i+1 == config['iterations'] ):
+            if config['_logging'] and ( (i+1) % config['log_every'] == 0 or i+1 == config['iterations'] ):
                 logstring = "iteration {}: acceptance = {:.0f}%, logL = {}".format(i+1, accept_rate*100, cur_logL)
                 print(logstring)
                 self.callback_logging(current_values, best_values)
                 
-        if config['best only']:
+        if config['best_only']:
             return max_logL, best_values
         else:
-            s = slice(config['burn-in'], None)
-#             return logL[s], params[s]
+            s = slice(config['burn_in'], None)
             return logL, params[s]
-        
-# An example for sampling from a standard normal
-class normMCMC(Sampler):
-    def propose_update(self, current_value):
-        proposed_value = current_value + np.random.normal(scale=self.stepsize)
-        p_forward = scipy.stats.norm.pdf(proposed_value, loc=current_value, scale=self.stepsize)
-        p_backward = scipy.stats.norm.pdf(current_value, loc=proposed_value, scale=self.stepsize)
-        return proposed_value, p_forward, p_backward
-        
-    def logL(self, value):
-        return -0.5*value**2
-    
-    def callback_logging(self, current_values, best_values):
-        print("Current value: {}".format(current_value))

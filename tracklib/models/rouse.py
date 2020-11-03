@@ -1,28 +1,99 @@
+"""
+This module provides a Rouse model with a switchable extra bond.
+
+Notes
+-----
+**Nomenclature:** a 'trace' is a `!np.ndarray` of shape (T,). Consequently, a
+'looptrace' is a `!np.ndarray` with ``shape = (T,)`` and ``dtype = bool``,
+indicating at which points the extra bond is present.
+
+Similarly to `Model.propagate`, `likelihood` is just an alias for one of two
+methods of calculating the likelihood: `!_likelihood_filter` (default) uses a
+Kalman filter to run through the trajectory and calculate the likelihood
+iteratively, while `!_likelihood_direct` just evaluates the probability density
+over the space of all trajectories of a given length. These two methods, while
+not giving the exact same result, are equivalent in the sense that they differ
+by a constant offset. You can change which method is used by reassigning
+`rouse.likelihood`:
+
+>>> rouse.likelihood = rouse._likelihood_filter # use Kalman filter (default)
+... rouse.likelihood = rouse._likelihood_direct # use high-dimensional Rouse PDF
+
+"""
+
 import numpy as np
 import scipy.linalg
 import scipy.integrate
 
 class Model:
-    """
-    Note: if k_extra < -k/(N-1) the connectivity matrix will have a negative
+    r"""
+    The Rouse model with extra bond
+
+    Main capabilities of this class: `propagate` an ensemble, or `evolve` a
+    single conformation. In the first case, the PDF of the ensemble over
+    conformation space is Gaussian, so it is fully specified by a mean
+    conformation and a covariance matrix. These follow deterministic equations
+    (exponential relaxation towards steady state), whose initial value problem
+    has an explicit solution. In the second case, we start from an explicit
+    conformation and follow the Rouse evolution for a definite time. This is
+    also done by utilizing the explicit solution to these EOM.
+
+    Remember to call `setup_dynamics` if changing parameters after
+    initialization.
+
+    Attributes
+    ----------
+    N : int
+        number of monomers
+    D : float
+        diffusion constant of a single free monomer
+    k : float
+        strength of the backbone bonds
+    k_extra : float
+        strength of the extra bond
+
+    Other Parameters
+    ----------------
+    setup : bool, optional
+        whether to run `setup_dynamics` after initialization.
+    extrabond : 2-tuple of int, optional
+        the position of the extra bond. By default this is between the ends of
+        the chain.
+
+    Notes
+    -----
+    If ``k_extra < -k/(N-1)`` the connectivity matrix will have a negative
     eigenvalue. In this situation there is a repulsive bond between the ends
     that is stronger than the backbone, so it will tear the polymer apart. The
     model can still be useful in this limit, but if the extra bond is switched
     on too much, it will tear everything apart. This can also lead to negative
     covariance matrices.
+    
+    Relation between the Rouse model with physical constants and the parameters
+    used here: if we write the equation of motion as
+
+    .. math:: \gamma\dot{x} = \kappa Ax + \xi \,,\qquad \left\langle\xi(t)\xi(t')\right\rangle = 2\gamma k_\text{B}T\delta(t-t') \,,
+
+    then we have
+
+    .. math:: k = \frac{\kappa}{\gamma} \,,\qquad D = \frac{k_\text{B}T}{\gamma} \,.
+
+    For a Rouse `Model` ``model``, the following operations are defined:
+
+    ``model == other_model``
+        comparison. Gives ``True`` if all the parameters are equal.
+    ``repr(model)``
+        give a string representation.
+
+    There are two methods that can be used for propagation: solve the mean and
+    covariance equations numerically, or use the known analytical solutions.
+    The latter involves calculating matrix exponentials, but is a factor 8
+    faster in tests. Both are implemented, as `!_propagate_ode` and
+    `!_propagate_exp` respectively. `Model.propagate` is then simply assigned to
+    one of them, `!_propagate_exp` by default.
     """
+
     def __init__(self, N, D, k, k_extra, setup=True, extrabond=(0, -1)):
-        """
-        N : length of the chain
-        D : diffusion constant of a free monomer
-        k : spring constant of chain bonds
-        k_extra : spring constant of the additional bond
-        
-        Relation to the physical Rouse model:
-            γ*xdot = κ*A*x + ξ,   <ξ(t)ξ(t')> = 2*γ*k_B*T*δ(t-t')
-        Then:
-            k = κ/γ, D = k_B*T/γ
-        """
         self.N = N
         self.D = D
         self.k = k
@@ -30,36 +101,44 @@ class Model:
 
         self.bondpos = extrabond
         if setup:
-            self.setup_propagation()
-
+            self.setup_dynamics()
+    
     def __eq__(self, other):
-        """
-        Models are equal if all the parameters are equal.
-        """
-        for param in ['N', 'D', 'k', 'k_extra']:
+        for param in ['N', 'D', 'k', 'k_extra', 'bondpos']:
             if getattr(self, param) != getattr(other, param):
                 return False
         return True
         
     def __repr__(self):
-        return "Rouse_model(N={}, D={}, k={}, k_extra={})".format(self.N, self.D, self.k, self.k_extra)
+        if self.bondpos == (0, -1):
+            return "rouse.Model(N={}, D={}, k={}, k_extra={})".format(self.N, self.D, self.k, self.k_extra)
+        else:
+            return "rouse.Model(N={}, D={}, k={}, k_extra={}, extrabond={})".format(self.N, self.D, self.k, self.k_extra, str(self.bondpos))
         
     def give_matrices(self, bond, tethered=False):
         """
-        Assemble the matrices needed for evolution of the Rouse model
+        Assemble the Rouse matrices (connectivity and noise covariance).
         
-        Input
-        -----
+        Parameters
+        ----------
         bond : bool
             is the extra bond present?
-        tethered : bool
-            set to True to tether monomer 0 to the origin, i.e. get a non-singular A
-            default: False
+        tethered : bool, optional
+            set to True to tether monomer 0 to the origin, i.e. get a
+            non-singular connectivity. This is important if we want to sample
+            from steady state (an untethered chain has COM diffusion and thus
+            no steady state).
             
-        Output
-        ------
-        A : the transition matrix for the deterministic part of the equation
-        S : covariance of the noise
+        Returns
+        -------
+        A : (`N`, `N`) np.ndarray
+            the connectivity matrix
+        S : (`N`, `N`) np.ndarray
+            covariance of the noise
+
+        See also
+        --------
+        steady_state, conf_ss
         """
         A = np.diagflat(self.N*[-2.]) + np.diagflat((self.N-1)*[1.], k=1) + np.diagflat((self.N-1)*[1.], k=-1)
         A[ 0,  0] += 1
@@ -80,11 +159,19 @@ class Model:
         S = 2*self.D*np.eye(self.N)
         
         return A, S
-    
-    def setup_propagation(self, dt=1):
+
+    def setup_dynamics(self, dt=1.):
         """
-        Pre-calculate the matrices needed for propagation using the analytical
-        solution
+        Pre-calculate some matrices needed for propagation/evolution.
+
+        By default, this function is called by the constructor, so in most
+        cases it has only to be invoked by the user if they change parameters
+        in the model.
+        
+        Parameters
+        ----------
+        dt : float
+            the timestep that we use for propagtion
         """
         def integrand(tau, t, A, S):
             ettA = scipy.linalg.expm((t-tau)*A)
@@ -104,82 +191,73 @@ class Model:
                     'LSig' : scipy.linalg.cholesky(Sig, lower=True),
                     }
 
-    def check_propagation_memo_uptodate(self, dt=None):
+    def check_setup_called(self, dt=None, run_if_necessary=False):
         """
-        Check whether the internal storage variable _propagation_memo exists
-        and is up to date with the current parameters.
-        """
-        if not hasattr(self, '_propagation_memo'):
-            raise RuntimeError("Call setup_propagation before using propagate()")
-        elif not self == self._propagation_memo['model'] or (dt != self._propagation_memo['dt'] and dt is not None):
-            raise RuntimeError("Parameter values changed since last call to setup_propagation()")
+        Check whether `setup_dynamics` has been called.
 
-    ### Evolution of single conformations ###
-    
-    def conf_ss(self, bond=False, d=3):
-        """
-        Draw a conformation from steady state. To guarantee existence of a
-        steady state, we tether one end of the chain to the origin.
-        """
-        A, S = self.give_matrices(bond)
-        A[0, 0] -= self.k
-        J = -0.5*scipy.linalg.inv(A) @ S
-        L = scipy.linalg.cholesky(J, lower=True)
-        return L @ np.random.normal(size=(self.N, d))
+        Mostly internal use. Checks whether `setup_dynamics` has been called
+        and if so, whether parameters have changed since then.
 
-    def evolve(self, conf, bond=False):
+        This function does not have a return value, it simply raises a
+        `!RuntimeError` if something does not work out.
+
+        Parameters
+        ----------
+        dt : float
+            the time step that we need to be set up for. Set to ``None``
+            (default) to omit this check.
+        run_if_necessary : bool, optional
+            if True, instead of raising an error, just run the setup.
+
+        See also
+        --------
+        setup_dynamics
         """
-        Evolve the conformation conf for the timestep given to setup_propagation()
-
-        Input
-        -----
-        conf : (N, ...) np.ndarray
-            the conformation(s) to evolve
-        bond : bool
-            whether to use the bound or unbound model
-
-        Output
-        ------
-        the evolved conformation
-        """
-        self.check_propagation_memo_uptodate()
-        B = self._propagation_memo[bond]['etA']
-        L = self._propagation_memo[bond]['LSig']
-        return B @ conf + L @ np.random.normal(size=conf.shape)
-
-    def conformations_from_looptrace(self, looptrace, d=3):
-        """
-        A generator yielding conformations for a given looptrace. We start from
-        steady state with/without the extra bond according to looptrace[0] and
-        evolve from there. This means that looptrace[i] can be seen as the
-        indicator for whether or not there is a bond present between time
-        points i-1 and i.
-
-        Input
-        -----
-        looptrace : (T,) iterable of bool
-            the looptrace to simulate for
-        d : int
-            the dimensionality of the conformations to generate
-            default: 3
-
-        Output
-        ------
-        A generator yielding T conformations sampled according to looptrace.
-        """
-        conf = self.conf_ss(looptrace[0], d)
-        for bond in looptrace:
-            conf = self.evolve(conf, bond)
-            yield conf
+        try:
+            if not hasattr(self, '_propagation_memo'):
+                raise RuntimeError("Call setup_dynamics before using propagate()")
+            elif not self == self._propagation_memo['model'] or (dt != self._propagation_memo['dt'] and dt is not None):
+                raise RuntimeError("Parameter values changed since last call to setup_dynamics()")
+        except RuntimeError as err:
+            if run_if_necessary and dt is not None:
+                self.setup_dynamics(dt)
+            else:
+                raise err
 
     ### Propagation of ensemble mean + sem covariance ###
+
+    def steady_state(self, bond=False):
+        r"""
+        Return mean and covariance of the steady state.
+
+        Returns
+        -------
+        M : (`N`,) `!np.ndarray`
+            the mean for each monomer (which is zero, this is mostly for
+            convenience).
+        C : (`N`, `N`) `!np.ndarray`
+            the long run covariance
+
+        See also
+        --------
+        propagate, give_matrices
+
+        Notes
+        -----
+        The long run covariance :math:`C` is given by
+
+        .. math:: C = \frac{1}{2k}A^{-1}S \,.
+
+        To ensure invertibility of the connectivity matrix, we tether one end
+        of the chain to the origin.
+        """
+        A, S = self.give_matrices(bond, tethered=True)
+        C = -0.5*scipy.linalg.inv(A) @ S
+        return np.zeros(C.shape[0]), C
     
     def _propagate_ode(self, M0, C0, t, bond):
         """
-        Propagate the ensemble specified by mean M0 and covariance C0
-        for a time t and return the new mean and covariance
-
-        Note: sometimes this leads to C1 not being positive definite!
+        Propagation by numerically solving the ODEs
         """
         A, S = self.give_matrices(bond)
         
@@ -202,20 +280,140 @@ class Model:
 
     def _propagate_exp(self, M0, C0, t, bond):
         """
-        Propagate M0 and C0 using the analytical solution to the equations used
-        by _propagate_ode.
-
-        Note: call setup_propagation before using this. Failing to do so will
-        raise a RuntimeError.
-        Speedup over _propagate_ode is roughly 8x.
+        Propagation by using the analytical solutions
         """
-        self.check_propagation_memo_uptodate(t)
+        self.check_setup_called(t, run_if_necessary=True)
         etA = self._propagation_memo[bond]['etA']
         Sig = self._propagation_memo[bond]['Sig']
         return etA @ M0, etA @ C0 @ etA.T + Sig
         
     propagate = _propagate_exp
+    propagate.__doc__ = """
+        Propagate the ensemble ``(M0, C0)`` for a time t.
+
+        This is simply assigned to one of `!_propagate_ode` or `!_propagate_exp`
+        (default), which either solve the equations of motion numerically, or
+        use the known analytical solution. Users can reassign this attribute:
+
+        >>> model = Model(10, 1, 1, 1)
+        ... model.propagate = model._propagate_ode # for numerical solution
+        ... model.propagate = model._propagate_exp # for evaluation of analytical solution
+
+        Parameters
+        ----------
+        M0 : (`N`,) np.ndarray
+            the initial value for the mean conformation
+        C0 : (`N`, `N`) np.ndarray
+            the initial value for the covariance
+        t : float
+            the time to propagate for
+        bond : boool
+            whether the extra bond should be present or absent
+
+        Returns
+        -------
+        M1 : (`N`,) np.ndarray
+            the propagated mean
+        C1 : (`N`, `N`) np.ndarray
+            the propagated covariance
+
+        See also
+        --------
+        steady_state
+        """
     
+    ### Evolution of single conformations ###
+    
+    def conf_ss(self, bond=False, d=3):
+        """
+        Draw a conformation from steady state.
+        
+        Parameters
+        ----------
+        bond : bool, optional
+            whether the extra bond is present
+        d : int, optional
+            the number of spatial dimensions
+
+        Returns
+        -------
+        (`N`, d) np.ndarray
+            the sampled conformation
+
+        See also
+        --------
+        evolve, conformations_from_looptrace
+
+        Notes
+        -----
+        This uses the ``tethered`` keyword to `give_matrices` to ensure an
+        invertible connectivity matrix.
+        """
+        _, C = self.steady_state(bond)
+        L = scipy.linalg.cholesky(C, lower=True)
+        return L @ np.random.normal(size=(self.N, d))
+
+    def evolve(self, conf, bond=False, dt=None):
+        """
+        Evolve the conformation conf.
+
+        Parameters
+        ----------
+        conf : (`N`, ...) np.ndarray
+            the conformation(s) to evolve
+        bond : bool, optional
+            whether the extra bond should be present
+        dt : float, optional
+            the time step to take. Set this to ``None`` (the default) to use
+            the time step given to `setup_dynamics`. This should be
+            default usage, since recalculating the dynamic matrices at each
+            step is expensive.
+
+        Returns
+        -------
+        (`N`, ...) np.ndarray
+            the evolved conformation
+
+        See also
+        --------
+        conf_ss, conformations_from_looptrace, setup_dynamics
+        """
+        self.check_setup_called(dt=dt, run_if_necessary=True)
+
+        B = self._propagation_memo[bond]['etA']
+        L = self._propagation_memo[bond]['LSig']
+        return B @ conf + L @ np.random.normal(size=conf.shape)
+
+    def conformations_from_looptrace(self, looptrace, d=3):
+        """
+        A generator yielding conformations for a given looptrace.
+        
+        We start from steady state with/without the extra bond according to
+        ``looptrace[0]`` and `evolve` from there. This means that
+        ``looptrace[i]`` can be seen as the indicator for whether or not there
+        is a bond present between time points ``i-1`` and ``i``.
+
+        Parameters
+        ----------
+        looptrace : (T,) iterable of bool
+            the looptrace to simulate for
+        d : int, optional
+            the dimensionality of the conformations to generate
+
+        Yields
+        ------
+        (`N`, d) np.ndarray
+            the conformation at the corresponding time step.
+
+        See also
+        --------
+        conf_ss, evolve
+        """
+        conf = self.conf_ss(looptrace[0], d)
+        for bond in looptrace:
+            conf = self.evolve(conf, bond)
+            yield conf
+
 # We define the likelihood outside the Model class mainly for a conceptual
 # reason: the trace, looptrace, and model enter the likelihood on equal
 # footing, i.e. it is just as fair to talk about the likelihood of the model
@@ -223,37 +421,7 @@ class Model:
 # model, etc.
 def _likelihood_filter(trace, looptrace, model, *, noise, w=None, times=None):
     """
-    Calculate log likelihood for the given combination of
-    trace, looping sequence, and model.
-
-    Input
-    -----
-    trace : (T,) array
-        the distance trace
-    looptrace : (T,) array, dtype=bool
-        for which steps there is a loop. looptrace[i] indicates that
-        there is a loop during the evolution from trace[i-1] to trace[i]
-        and looptrace[0] is the value used for initialization.
-    model : Model
-        the model to use for likelihood calculation
-    noise : float
-        the localization error on each trace
-    w : (N,) array
-        the measurement vector
-        default: (1, 0, ..., 0, -1) (i.e. end-to-end distance)
-    times : (T,) array
-        the times at which the trace is evaluated
-        default: np.arange(T)
-
-    Output
-    ------
-    logL : float
-        the calculated log-likelihood
-
-    Notes
-    -----
-    We assume that the ensemble starts from steady state.
-    This is filterData in Christoph's / Hugo's code
+    Likelihood calculation using Kalman filter.
     """
     T = len(trace)
     if w is None:
@@ -263,9 +431,7 @@ def _likelihood_filter(trace, looptrace, model, *, noise, w=None, times=None):
     if times is None:
         times = np.arange(T)
 
-    A, S = model.give_matrices(bond=looptrace[0], tethered=True)
-    M0 = np.zeros((model.N,))
-    C0 = -0.5 * scipy.linalg.inv(A) @ S
+    M0, C0 = model.steady_state(looptrace[0])
 
     logL = np.empty((T,), dtype=float)
     logL[:] = np.nan
@@ -304,8 +470,7 @@ def _likelihood_filter(trace, looptrace, model, *, noise, w=None, times=None):
 
 def _likelihood_direct(trace, looptrace, model, *, noise, w=None, times=None):
     """
-    Calculate the likelihood for a trajectory using the Rouse solutions
-    TODO: explain this better
+    Likelihood calculation using the full Rouse PDF.
     """
     T = len(trace)
     if w is None:
@@ -314,11 +479,10 @@ def _likelihood_direct(trace, looptrace, model, *, noise, w=None, times=None):
         w[-1] = -1
     if times is not None:
         raise ValueError("Direct likelihood calculation does not work with custom times")
-    model.check_propagation_memo_uptodate()
+    model.check_setup_called()
 
     # Get steady state to start from
-    A, S = model.give_matrices(bond=looptrace[0], tethered=True)
-    J = -0.5 * scipy.linalg.inv(A) @ S
+    _, J = model.steady_state(looptrace[0])
 
     traceCov = np.zeros((len(trace), len(trace)))
     for i in range(len(trace)):
@@ -349,3 +513,39 @@ def _likelihood_direct(trace, looptrace, model, *, noise, w=None, times=None):
     return -0.5 * trace @ scipy.linalg.inv(traceCov) @ trace - 0.5*(np.log(2*np.pi) + logdet)
 
 likelihood = _likelihood_filter # faster
+likelihood.__doc__ = """
+    Calculate log likelihood for the given combination of
+    trace, looping sequence, and model.
+
+    Parameters
+    ----------
+    trace : (T,) array
+        the observed trace.
+    looptrace : (T,) array, dtype=bool
+        for which steps there is a loop. looptrace[i] indicates that
+        there is a loop during the evolution from trace[i-1] to trace[i]
+        and looptrace[0] is the value used for initialization.
+    model : Model
+        the model to use for likelihood calculation
+    noise : float
+        the localization error on each point in the trace
+
+    Other Parameters
+    ----------------
+    w : (N,) array
+        the measurement vector. Set to ``None`` (the default) to indicate
+        end-to-end measurement, i.e. ``w = np.array([1, 0, ..., 0, -1])``.
+
+    Returns
+    -------
+    logL : float
+        the calculated log-likelihood
+
+    See also
+    --------
+    Model
+
+    Notes
+    -----
+    We assume that the ensemble starts from steady state.
+    """
