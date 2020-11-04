@@ -1,4 +1,3 @@
- + write intro / overview
  + some examples?
 
  + parameter estimation in analysis.kli

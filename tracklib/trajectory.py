@@ -15,8 +15,8 @@ class Trajectory(ABC):
     `d`).  Besides the actual trajectory data, this class also contains a dict
     for meta data. This can be used by the end-user, is also intended for use
     within the library though. `tracklib.analysis.MSD
-    <tracklib.analysis.msd.MSD>` for example writes the 'MSD' and 'MSDmeta'
-    entries of this dict.
+    <tracklib.analysis.msd.MSD>` for example writes the ``'MSD'`` and
+    ``'MSDmeta'`` entries of this dict.
     
     TODO: write a list of all `meta` keys used by the library somewhere
 

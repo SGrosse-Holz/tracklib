@@ -9,7 +9,8 @@ Welcome to tracklib's documentation!
 .. toctree::
    :maxdepth: 5
 
-   modules
+   intro
+   tracklib
 
 .. .. include:: modules.rst
 

@@ -14,6 +14,7 @@ all : doc devguide tests
 
 doc :
 	sphinx-apidoc -f -o $(SPHINXSOURCE) $(MODULE)
+	@rm $(SPHINXSOURCE)/modules.rst
 	cd $(SPHINXDIR) && $(MAKE) html
 
 tests :

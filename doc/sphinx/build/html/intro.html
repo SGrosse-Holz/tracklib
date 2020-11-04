@@ -1,0 +1,213 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <title>Quickstart &#8212; tracklib 0.1 documentation</title>
+    <link rel="stylesheet" href="_static/nature.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="_static/language_data.js"></script>
+    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="tracklib package" href="tracklib.html" />
+    <link rel="prev" title="Welcome to tracklib’s documentation!" href="index.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="tracklib.html" title="tracklib package"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="index.html" title="Welcome to tracklib’s documentation!"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">tracklib 0.1 documentation</a> &#187;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="quickstart">
+<h1>Quickstart<a class="headerlink" href="#quickstart" title="Permalink to this headline">¶</a></h1>
+<p>This library is intended for downstream analysis of single particle tracking
+data. Downstream here means that we are not concerned with particle detection
+or the linking problem, instead our starting point are the linked particle
+trajectories. Consequently, the core of this library are the classes
+<a class="reference internal" href="tracklib.html#tracklib.trajectory.Trajectory" title="tracklib.trajectory.Trajectory"><code class="xref any py py-class docutils literal notranslate"><span class="pre">Trajectory</span></code></a>, representing a single trajectory, and <a class="reference internal" href="tracklib.html#tracklib.taggedset.TaggedSet" title="tracklib.taggedset.TaggedSet"><code class="xref any py py-class docutils literal notranslate"><span class="pre">TaggedSet</span></code></a>, which provides
+a useful way of organizing multiple (sets of) trajectories. Surrounding these
+core functionalities, we then have several tools for processing, modelling, and
+analysis, as illustrated in the figure below.</p>
+<img alt="_images/scheme.png" src="_images/scheme.png" />
+<p>This document will introduce the basic ideas behind the core functionalities.
+For further details, see the <a class="reference internal" href="tracklib.html"><span class="doc">documentation</span></a>.</p>
+<div class="section" id="trajectory">
+<h2>Trajectory<a class="headerlink" href="#trajectory" title="Permalink to this headline">¶</a></h2>
+<p>The <a class="reference internal" href="tracklib.html#tracklib.trajectory.Trajectory" title="tracklib.trajectory.Trajectory"><code class="xref any py py-class docutils literal notranslate"><span class="pre">Trajectory</span></code></a> is the “atom” of this library. Besides the actual <a class="reference internal" href="tracklib.html#tracklib.trajectory.Trajectory.data" title="tracklib.trajectory.Trajectory.data"><code class="xref any py py-attr docutils literal notranslate"><span class="pre">data</span></code></a>, it
+contains a dict for <a class="reference internal" href="tracklib.html#tracklib.trajectory.Trajectory.meta" title="tracklib.trajectory.Trajectory.meta"><code class="xref any py py-attr docutils literal notranslate"><span class="pre">meta</span></code></a> data. Users can store all sorts of information about
+the trajectory here (e.g. the time step, some auxiliary trajectory like a
+reporter lighting up, analysis results, any or all of those). The library will
+also make use of this occasionally, for example to store analysis results like
+the MSD of that trajectory.</p>
+<p><a class="reference internal" href="tracklib.html#tracklib.trajectory.Trajectory" title="tracklib.trajectory.Trajectory"><code class="xref any py py-class docutils literal notranslate"><span class="pre">Trajectory</span></code></a> objects themselves have relatively limited capabilities, mostly
+just some functions for simple geometric processing that we call “Modifiers”.
+The following example showcases how these can be used and combined:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="gp">... </span><span class="kn">import</span> <span class="nn">tracklib</span> <span class="k">as</span> <span class="nn">tl</span>
+<span class="gp">...</span>
+<span class="gp">... </span><span class="c1"># Generate some random trajectory with two loci in 3d</span>
+<span class="gp">... </span><span class="n">traj</span> <span class="o">=</span> <span class="n">tl</span><span class="o">.</span><span class="n">Trajectory</span><span class="o">.</span><span class="n">fromArray</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span><span class="n">size</span><span class="o">=</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">3</span><span class="p">)))</span>
+<span class="gp">... </span><span class="n">traj</span><span class="o">.</span><span class="n">meta</span><span class="p">[</span><span class="s1">&#39;info&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;some meta data&#39;</span>
+<span class="gp">...</span>
+<span class="gp">... </span><span class="c1"># &quot;Rephrase&quot; this a little bit:</span>
+<span class="gp">... </span><span class="n">rel</span> <span class="o">=</span> <span class="n">traj</span><span class="o">.</span><span class="n">relative</span><span class="p">()</span>                    <span class="c1"># trajectory of the vector between the two loci</span>
+<span class="gp">... </span><span class="nb">abs</span> <span class="o">=</span> <span class="n">traj</span><span class="o">.</span><span class="n">relative</span><span class="p">()</span><span class="o">.</span><span class="n">abs</span><span class="p">()</span>              <span class="c1"># trajectory of absolute distance</span>
+<span class="gp">... </span><span class="n">steps</span> <span class="o">=</span> <span class="n">traj</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="n">dt</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">abs</span><span class="p">()</span>            <span class="c1"># trajectory of stepsizes for both loci individually</span>
+<span class="gp">... </span><span class="n">rel_steps</span> <span class="o">=</span> <span class="n">traj</span><span class="o">.</span><span class="n">relative</span><span class="p">()</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="n">dt</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>   <span class="c1"># trajectory of steps in the relative trajectory</span>
+<span class="gp">... </span><span class="n">plane</span> <span class="o">=</span> <span class="n">traj</span><span class="o">.</span><span class="n">dims</span><span class="p">([</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">])</span>                <span class="c1"># restrict to only the first two dimensions</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="taggedset">
+<h2>TaggedSet<a class="headerlink" href="#taggedset" title="Permalink to this headline">¶</a></h2>
+<p>When working with tracking data, we often have a host of different “kinds” of
+trajectories (different experimental condition, different tracked objects, or
+simply trajectories that fall into different classes based on some analysis).
+Depending on the exact analysis we are doing, different aggregation schemes
+might make sense (e.g. run some analysis on all trajectories from a certain
+experimental condition, or on all trajectories with a frame rate of 10 seconds,
+etc). It thus seems useful to have a data structure that allows running
+analyses on arbitrary subsets of data.</p>
+<p>The centerpiece of the <a class="reference internal" href="tracklib.html#tracklib.taggedset.TaggedSet" title="tracklib.taggedset.TaggedSet"><code class="xref any py py-class docutils literal notranslate"><span class="pre">TaggedSet</span></code></a> is its selection mechanism. Consider the
+following minimal example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">tracklib</span> <span class="k">as</span> <span class="nn">tl</span>
+<span class="gp">... </span><span class="n">data</span> <span class="o">=</span> <span class="n">tl</span><span class="o">.</span><span class="n">TaggedSet</span><span class="p">()</span>
+<span class="gp">... </span><span class="n">data</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">tags</span><span class="o">=</span><span class="s1">&#39;a&#39;</span><span class="p">)</span>
+<span class="gp">... </span><span class="n">data</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="n">tags</span><span class="o">=</span><span class="s1">&#39;b&#39;</span><span class="p">)</span>
+<span class="gp">... </span><span class="n">data</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="n">tags</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;a&#39;</span><span class="p">,</span> <span class="s1">&#39;b&#39;</span><span class="p">])</span>
+<span class="gp">...</span>
+<span class="gp">... </span><span class="nb">print</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">))</span> <span class="c1"># prints: 3</span>
+<span class="gp">... </span><span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">data</span><span class="p">:</span>
+<span class="gp">... </span>    <span class="nb">print</span><span class="p">(</span><span class="n">i</span><span class="p">)</span>     <span class="c1"># prints: 1 2 3</span>
+<span class="gp">...</span>
+<span class="gp">... </span><span class="n">data</span><span class="o">.</span><span class="n">makeSelection</span><span class="p">(</span><span class="n">tags</span><span class="o">=</span><span class="s1">&#39;a&#39;</span><span class="p">)</span> <span class="c1"># select all entries tagged with &#39;a&#39;</span>
+<span class="gp">... </span><span class="nb">print</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">))</span> <span class="c1"># prints: 2</span>
+<span class="gp">... </span><span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">data</span><span class="p">:</span>
+<span class="gp">... </span>    <span class="nb">print</span><span class="p">(</span><span class="n">i</span><span class="p">)</span>     <span class="c1"># prints: 1 3</span>
+</pre></div>
+</div>
+<p>Note how, once we make a selection, the whole data set simply behaves as if it
+contained only those data. In addition to making selections by single tags, as
+shown in the example above, we can also select by combinations of tags, or even
+by properties of the data. Continuing from above:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">data</span><span class="o">.</span><span class="n">makeSelection</span><span class="p">(</span><span class="n">tags</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;a&#39;</span><span class="p">,</span> <span class="s1">&#39;b&#39;</span><span class="p">],</span> <span class="n">logic</span><span class="o">=</span><span class="nb">all</span><span class="p">)</span>
+<span class="gp">... </span><span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">data</span><span class="p">:</span>
+<span class="gp">... </span>    <span class="nb">print</span><span class="p">(</span><span class="n">i</span><span class="p">)</span>     <span class="c1"># prints: 3     (everything carrying all the mentioned tags)</span>
+<span class="gp">...</span>
+<span class="gp">... </span><span class="n">data</span><span class="o">.</span><span class="n">makeSelection</span><span class="p">(</span><span class="n">tags</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;a&#39;</span><span class="p">,</span> <span class="s1">&#39;b&#39;</span><span class="p">],</span> <span class="n">logic</span><span class="o">=</span><span class="nb">any</span><span class="p">)</span>
+<span class="gp">... </span><span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">data</span><span class="p">:</span>
+<span class="gp">... </span>    <span class="nb">print</span><span class="p">(</span><span class="n">i</span><span class="p">)</span>     <span class="c1"># prints: 1 2 3 (everything carrying any of the mentioned tags)</span>
+<span class="gp">...</span>
+<span class="gp">... </span><span class="n">data</span><span class="o">.</span><span class="n">makeSelection</span><span class="p">(</span><span class="n">selector</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">i</span><span class="p">,</span> <span class="n">tags</span> <span class="p">:</span> <span class="n">i</span> <span class="o">&gt;=</span> <span class="mi">2</span><span class="p">)</span>
+<span class="gp">... </span><span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">data</span><span class="p">:</span>
+<span class="gp">... </span>    <span class="nb">print</span><span class="p">(</span><span class="n">i</span><span class="p">)</span>     <span class="c1"># prints: 2 3</span>
+</pre></div>
+</div>
+<p>Refer to the documentation on <a class="reference internal" href="tracklib.html#tracklib.taggedset.TaggedSet.makeSelection" title="tracklib.taggedset.TaggedSet.makeSelection"><code class="xref any py py-meth docutils literal notranslate"><span class="pre">makeSelection</span></code></a> for more details.</p>
+<p>Finally, the <a class="reference internal" href="tracklib.html#tracklib.taggedset.TaggedSet" title="tracklib.taggedset.TaggedSet"><code class="xref any py py-class docutils literal notranslate"><span class="pre">TaggedSet</span></code></a> class provides some means of applying functions to all
+of the data (in the current selection). Note that since a <a class="reference internal" href="tracklib.html#tracklib.taggedset.TaggedSet" title="tracklib.taggedset.TaggedSet"><code class="xref any py py-class docutils literal notranslate"><span class="pre">TaggedSet</span></code></a> works as
+an iterator, the built-in <code class="xref any docutils literal notranslate"><span class="pre">map()</span></code> function will work for many cases:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">data</span><span class="o">.</span><span class="n">makeSelection</span><span class="p">()</span>
+<span class="gp">... </span><span class="n">times2</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">x</span> <span class="p">:</span> <span class="mi">2</span><span class="o">*</span><span class="n">x</span>
+<span class="gp">...</span>
+<span class="gp">... </span><span class="n">doubles</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="n">times2</span><span class="p">,</span> <span class="n">data</span><span class="p">))</span> <span class="c1"># a list: [2, 4, 6]</span>
+<span class="gp">... </span><span class="n">double_set</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">process</span><span class="p">(</span><span class="n">times2</span><span class="p">)</span> <span class="c1"># a new TaggedSet with the corresponding entries (and tags!)</span>
+<span class="gp">... </span><span class="n">data</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">times2</span><span class="p">)</span>               <span class="c1"># same as process(), but in-place</span>
+<span class="gp">... </span><span class="n">dtype</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">map_unique</span><span class="p">(</span><span class="nb">type</span><span class="p">)</span>     <span class="c1"># shortcut for functions that should return the same value on all data.</span>
+</pre></div>
+</div>
+<p>At the beginning of this example, we call <a class="reference internal" href="tracklib.html#tracklib.taggedset.TaggedSet.makeSelection" title="tracklib.taggedset.TaggedSet.makeSelection"><code class="xref any py py-meth docutils literal notranslate"><span class="pre">makeSelection</span></code></a> without arguments to
+reset the selection to the whole data set.</p>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Quickstart</a><ul>
+<li><a class="reference internal" href="#trajectory">Trajectory</a></li>
+<li><a class="reference internal" href="#taggedset">TaggedSet</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="index.html"
+                        title="previous chapter">Welcome to tracklib’s documentation!</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="tracklib.html"
+                        title="next chapter">tracklib package</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/intro.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="tracklib.html" title="tracklib package"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="index.html" title="Welcome to tracklib’s documentation!"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">tracklib 0.1 documentation</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2020, Simon Grosse-Holz.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.1.2.
+    </div>
+  </body>
+</html>
