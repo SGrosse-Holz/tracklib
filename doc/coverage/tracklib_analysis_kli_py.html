@@ -3,7 +3,7 @@
 <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=emulateIE7" />
-    <title>Coverage for tracklib/analysis/kli.py: 98%</title>
+    <title>Coverage for tracklib/analysis/kli.py: 96%</title>
     <link rel="stylesheet" href="style.css" type="text/css">
     <script type="text/javascript" src="jquery.min.js"></script>
     <script type="text/javascript" src="jquery.hotkeys.js"></script>
@@ -17,13 +17,13 @@
 <div id="header">
     <div class="content">
         <h1>Coverage for <b>tracklib/analysis/kli.py</b> :
-            <span class="pc_cov">98%</span>
+            <span class="pc_cov">96%</span>
         </h1>
         <img id="keyboard_icon" src="keybd_closed.png" alt="Show keyboard shortcuts" />
         <h2 class="stats">
             81 statements &nbsp;
-            <button type="button" class="run shortkey_r button_toggle_run" title="Toggle lines run">79 run</button>
-            <button type="button" class="mis show_mis shortkey_m button_toggle_mis" title="Toggle lines missing">2 missing</button>
+            <button type="button" class="run shortkey_r button_toggle_run" title="Toggle lines run">78 run</button>
+            <button type="button" class="mis show_mis shortkey_m button_toggle_mis" title="Toggle lines missing">3 missing</button>
             <button type="button" class="exc show_exc shortkey_x button_toggle_exc" title="Toggle lines excluded">0 excluded</button>
         </h2>
     </div>
@@ -310,7 +310,7 @@
     <p id="t257" class="pln"><span class="n"><a href="#t257">257</a></span><span class="t">        <span class="com"># Update a loop interval</span>&nbsp;</span><span class="r"></span></p>
     <p id="t258" class="run"><span class="n"><a href="#t258">258</a></span><span class="t">        <span class="nam">ind_up</span> <span class="op">=</span> <span class="nam">np</span><span class="op">.</span><span class="nam">random</span><span class="op">.</span><span class="nam">randint</span><span class="op">(</span><span class="nam">len</span><span class="op">(</span><span class="nam">current_sequence</span><span class="op">.</span><span class="nam">isLoop</span><span class="op">)</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p id="t259" class="run"><span class="n"><a href="#t259">259</a></span><span class="t">        <span class="key">if</span> <span class="nam">np</span><span class="op">.</span><span class="nam">random</span><span class="op">.</span><span class="nam">rand</span><span class="op">(</span><span class="op">)</span> <span class="op">&lt;</span> <span class="num">0.5</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
-    <p id="t260" class="run"><span class="n"><a href="#t260">260</a></span><span class="t">            <span class="nam">proposed_sequence</span><span class="op">.</span><span class="nam">isLoop</span><span class="op">[</span><span class="nam">ind_up</span><span class="op">]</span> <span class="op">=</span> <span class="key">not</span> <span class="nam">proposed_sequence</span><span class="op">.</span><span class="nam">isLoop</span><span class="op">[</span><span class="nam">ind_up</span><span class="op">]</span>&nbsp;</span><span class="r"></span></p>
+    <p id="t260" class="mis show_mis"><span class="n"><a href="#t260">260</a></span><span class="t">            <span class="nam">proposed_sequence</span><span class="op">.</span><span class="nam">isLoop</span><span class="op">[</span><span class="nam">ind_up</span><span class="op">]</span> <span class="op">=</span> <span class="key">not</span> <span class="nam">proposed_sequence</span><span class="op">.</span><span class="nam">isLoop</span><span class="op">[</span><span class="nam">ind_up</span><span class="op">]</span>&nbsp;</span><span class="r"></span></p>
     <p id="t261" class="pln"><span class="n"><a href="#t261">261</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
     <p id="t262" class="run"><span class="n"><a href="#t262">262</a></span><span class="t">        <span class="key">return</span> <span class="nam">proposed_sequence</span><span class="op">,</span> <span class="nam">p_forward</span><span class="op">,</span> <span class="nam">p_backward</span>&nbsp;</span><span class="r"></span></p>
     <p id="t263" class="pln"><span class="n"><a href="#t263">263</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
@@ -347,7 +347,7 @@
     <div class="content">
         <p>
             <a class="nav" href="index.html">&#xab; index</a> &nbsp; &nbsp; <a class="nav" href="https://coverage.readthedocs.io">coverage.py v5.2.1</a>,
-            created at 2020-11-04 12:57 -0500
+            created at 2020-11-04 13:28 -0500
         </p>
     </div>
 </div>
