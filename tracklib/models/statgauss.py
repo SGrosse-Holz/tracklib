@@ -112,6 +112,11 @@ def dataset(msd, N=1, Ts=None, d=3, **kwargs):
     See also
     --------
     sampleMSD, tracklib.trajectory.Trajectory, tracklib.taggedset.TaggedSet
+
+    Notes
+    -----
+    The input MSD is assumed to be the goal for the generated trajectories,
+    i.e. incorporate the prefactor ``N*d``.
     """
     if Ts is None:
         Ts = 100*[None]
@@ -128,7 +133,7 @@ def dataset(msd, N=1, Ts=None, d=3, **kwargs):
     # len(msd)), sampling all traces at the same time is faster, even though we
     # might generate a bunch of unused data.
     kwargs['n'] = len(Ts)*N*d
-    traces = sampleMSD(msd, **kwargs)
+    traces = sampleMSD(msd/(N*d), **kwargs)
 
     def gen():
         for iT, T in enumerate(Ts):

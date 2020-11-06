@@ -113,14 +113,16 @@ omitted.</p></li>
 <span id="tracklib-analysis-kld-module"></span><h2>tracklib.analysis.kld module<a class="headerlink" href="#module-tracklib.analysis.kld" title="Permalink to this headline">¶</a></h2>
 <dl class="function">
 <dt id="tracklib.analysis.kld.perezcruz">
-<code class="sig-prename descclassname">tracklib.analysis.kld.</code><code class="sig-name descname">perezcruz</code><span class="sig-paren">(</span><em class="sig-param">dataset</em>, <em class="sig-param">n=10</em>, <em class="sig-param">k=20</em>, <em class="sig-param">dt=1</em>, <em class="sig-param">parity='even'</em><span class="sig-paren">)</span><a class="headerlink" href="#tracklib.analysis.kld.perezcruz" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">tracklib.analysis.kld.</code><code class="sig-name descname">perezcruz</code><span class="sig-paren">(</span><em class="sig-param">dataset</em>, <em class="sig-param">n=10</em>, <em class="sig-param">k=20</em>, <em class="sig-param">dt=1</em><span class="sig-paren">)</span><a class="headerlink" href="#tracklib.analysis.kld.perezcruz" title="Permalink to this definition">¶</a></dt>
 <dd><p>Apply the KLD estimator presented by (Perez-Cruz, 2008).</p>
 <p>We reduce the bias of the estimator by randomly choosing half the snippets
 for estimation of the densities and then sample at the other half.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>dataset</strong> (<a class="reference internal" href="tracklib.html#tracklib.taggedset.TaggedSet" title="tracklib.taggedset.TaggedSet"><code class="xref any py py-class docutils literal notranslate"><span class="pre">TaggedSet</span></code></a> of <a class="reference internal" href="tracklib.html#tracklib.trajectory.Trajectory" title="tracklib.trajectory.Trajectory"><code class="xref any py py-class docutils literal notranslate"><span class="pre">Trajectory</span></code></a>) – the data to run the KLD estimation on</p></li>
+<li><p><strong>dataset</strong> (<a class="reference internal" href="tracklib.html#tracklib.taggedset.TaggedSet" title="tracklib.taggedset.TaggedSet"><code class="xref any py py-class docutils literal notranslate"><span class="pre">TaggedSet</span></code></a> of <a class="reference internal" href="tracklib.html#tracklib.trajectory.Trajectory" title="tracklib.trajectory.Trajectory"><code class="xref any py py-class docutils literal notranslate"><span class="pre">Trajectory</span></code></a>) – the data to run the KLD estimation on. Note that the trajectories
+should have the <code class="docutils literal notranslate"><span class="pre">meta['parity']</span></code> field set (to either <code class="docutils literal notranslate"><span class="pre">'even'</span></code> or
+<code class="docutils literal notranslate"><span class="pre">'odd'</span></code>)</p></li>
 <li><p><strong>n</strong> (<em>int</em><em>, </em><em>optional</em>) – snippet length ( = window size)</p></li>
 <li><p><strong>k</strong> (<em>int</em><em>, </em><em>optional</em>) – order of nearest neighbor for the estimator</p></li>
 <li><p><strong>dt</strong> (<em>int</em><em>, </em><em>optional</em>) – number of frames between two data points in a snippet.</p></li>
@@ -147,15 +149,17 @@ some pre-processing.</p>
 <span id="tracklib-analysis-kli-module"></span><h2>tracklib.analysis.kli module<a class="headerlink" href="#module-tracklib.analysis.kli" title="Permalink to this headline">¶</a></h2>
 <dl class="function">
 <dt id="tracklib.analysis.kli.traj_likelihood">
-<code class="sig-prename descclassname">tracklib.analysis.kli.</code><code class="sig-name descname">traj_likelihood</code><span class="sig-paren">(</span><em class="sig-param">traj</em>, <em class="sig-param">looptrace</em>, <em class="sig-param">model</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#tracklib.analysis.kli.traj_likelihood" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">tracklib.analysis.kli.</code><code class="sig-name descname">traj_likelihood</code><span class="sig-paren">(</span><em class="sig-param">traj</em>, <em class="sig-param">model</em>, <em class="sig-param">looptrace=None</em><span class="sig-paren">)</span><a class="headerlink" href="#tracklib.analysis.kli.traj_likelihood" title="Permalink to this definition">¶</a></dt>
 <dd><p>Apply <a class="reference internal" href="tracklib.models.html#tracklib.models.rouse.likelihood" title="tracklib.models.rouse.likelihood"><code class="xref any py py-func docutils literal notranslate"><span class="pre">rouse.likelihood</span></code></a> to a <a class="reference internal" href="tracklib.html#tracklib.trajectory.Trajectory" title="tracklib.trajectory.Trajectory"><code class="xref any py py-class docutils literal notranslate"><span class="pre">Trajectory</span></code></a></p>
-<p>Keyword arguments will be forwarded to <a class="reference internal" href="tracklib.models.html#tracklib.models.rouse.likelihood" title="tracklib.models.rouse.likelihood"><code class="xref any py py-func docutils literal notranslate"><span class="pre">tracklib.models.rouse.likelihood</span></code></a></p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>traj</strong> (<a class="reference internal" href="tracklib.html#tracklib.trajectory.Trajectory" title="tracklib.trajectory.Trajectory"><em>Trajectory</em></a>) – the trajectory to use</p></li>
-<li><p><strong>looptrace</strong> (<em>(</em><em>traj.T</em><em>,</em><em>) </em><em>np.ndarray</em><em>, </em><em>dtype=bool</em>) – the looptrace to use</p></li>
+<li><p><strong>traj</strong> (<a class="reference internal" href="tracklib.html#tracklib.trajectory.Trajectory" title="tracklib.trajectory.Trajectory"><em>Trajectory</em></a>) – the trajectory to use. Note that this should have
+<code class="docutils literal notranslate"><span class="pre">meta['localization_error']</span></code> set.</p></li>
 <li><p><strong>model</strong> (<a class="reference internal" href="tracklib.models.html#tracklib.models.rouse.Model" title="tracklib.models.rouse.Model"><em>tracklib.models.rouse.Model</em></a>) – the model to use</p></li>
+<li><p><strong>looptrace</strong> (<em>(</em><em>traj.T</em><em>,</em><em>) </em><em>np.ndarray</em><em>, </em><em>dtype=bool</em>) – the looptrace to use. Can be used to override
+<code class="docutils literal notranslate"><span class="pre">traj.meta['looptrace']</span></code>, which would be used by default (i.e. if
+<code class="docutils literal notranslate"><span class="pre">looptrace</span> <span class="pre">is</span> <span class="pre">None</span></code>). If neither is present, we assume no looping.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
@@ -169,6 +173,42 @@ some pre-processing.</p>
 <p class="rubric">Notes</p>
 <p>If <code class="docutils literal notranslate"><span class="pre">traj.N</span> <span class="pre">==</span> <span class="pre">2</span></code>, this will evaluate the likelihood for
 <code class="docutils literal notranslate"><span class="pre">traj.relative()</span></code>.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="tracklib.analysis.kli.fit_RouseParams">
+<code class="sig-prename descclassname">tracklib.analysis.kli.</code><code class="sig-name descname">fit_RouseParams</code><span class="sig-paren">(</span><em class="sig-param">data</em>, <em class="sig-param">model_init</em>, <em class="sig-param">unknown_params</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#tracklib.analysis.kli.fit_RouseParams" title="Permalink to this definition">¶</a></dt>
+<dd><p>Run gradient descent to find best fit for Rouse parameters</p>
+<p>All keyword arguments will be forwarded to <code class="xref any docutils literal notranslate"><span class="pre">scipy.minimize.optimize</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>data</strong> (<a class="reference internal" href="tracklib.html#tracklib.taggedset.TaggedSet" title="tracklib.taggedset.TaggedSet"><code class="xref any py py-class docutils literal notranslate"><span class="pre">TaggedSet</span></code></a> of <a class="reference internal" href="tracklib.html#tracklib.trajectory.Trajectory" title="tracklib.trajectory.Trajectory"><code class="xref any py py-class docutils literal notranslate"><span class="pre">Trajectory</span></code></a>) – the data to run on. If the ground truth looptrace for any trajectory
+<code class="xref any docutils literal notranslate"><span class="pre">traj</span></code> is known, it should be in <code class="docutils literal notranslate"><span class="pre">traj.meta['looptrace']</span></code>. If that
+field is absent, we will assume no looping. Furthermore, this method
+requires the metadata field <code class="docutils literal notranslate"><span class="pre">'localization_error'</span></code> for each
+trajectory.</p></li>
+<li><p><strong>model_init</strong> (<a class="reference internal" href="tracklib.models.html#tracklib.models.rouse.Model" title="tracklib.models.rouse.Model"><code class="xref any py py-class docutils literal notranslate"><span class="pre">rouse.Model</span></code></a>) – the model to use for fitting. Fixes the parameters that are not fit,
+and provides initial values for those that will be fit.</p></li>
+<li><p><strong>unknown_params</strong> (<em>str</em><em> or </em><em>list of str</em>) – the parameters of <code class="xref any docutils literal notranslate"><span class="pre">model_init</span></code> that should be fit. Should contain
+names of attributes of a <a class="reference internal" href="tracklib.models.html#tracklib.models.rouse.Model" title="tracklib.models.rouse.Model"><code class="xref any py py-class docutils literal notranslate"><span class="pre">rouse.Model</span></code></a>. Examples: <code class="docutils literal notranslate"><span class="pre">['D',</span> <span class="pre">'k']</span></code>,
+<code class="docutils literal notranslate"><span class="pre">['D',</span> <span class="pre">'k',</span> <span class="pre">'k_extra']</span></code>, <code class="docutils literal notranslate"><span class="pre">'k_extra'</span></code>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>res</strong> (<em>fitresult</em>) – the structure returned by <code class="xref any docutils literal notranslate"><span class="pre">scipy.optimize.minimize</span></code>. The best fit
+parameters are <code class="docutils literal notranslate"><span class="pre">res.x</span></code>, while their covariance matrix can be obtained
+as <code class="docutils literal notranslate"><span class="pre">res.hess_inv.todense()</span></code>.</p>
+</dd>
+</dl>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><a class="reference internal" href="#tracklib.analysis.kli.traj_likelihood" title="tracklib.analysis.kli.traj_likelihood"><code class="xref py py-func docutils literal notranslate"><span class="pre">traj_likelihood()</span></code></a></p>
+</div>
+<p class="rubric">Notes</p>
+<p>Default parameters for minimization: we use <code class="docutils literal notranslate"><span class="pre">method</span> <span class="pre">=</span> <span class="pre">'L-BFGS-B'</span></code>,
+constrain all parameters to be positive (&gt;1e-10) using the <code class="docutils literal notranslate"><span class="pre">bounds</span></code>
+keyword and set the options <code class="docutils literal notranslate"><span class="pre">maxfun</span> <span class="pre">=</span> <span class="pre">300</span></code>, and <code class="docutils literal notranslate"><span class="pre">ftol</span> <span class="pre">=</span> <span class="pre">1e-5</span></code>.</p>
 </dd></dl>
 
 <dl class="class">
@@ -299,10 +339,8 @@ i.e. where <code class="docutils literal notranslate"><span class="pre">isLoop[i
 </div>
 <dl class="method">
 <dt id="tracklib.analysis.kli.LoopSequenceMCMC.setup">
-<code class="sig-name descname">setup</code><span class="sig-paren">(</span><em class="sig-param">traj</em>, <em class="sig-param">model</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#tracklib.analysis.kli.LoopSequenceMCMC.setup" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">setup</code><span class="sig-paren">(</span><em class="sig-param">traj</em>, <em class="sig-param">model</em><span class="sig-paren">)</span><a class="headerlink" href="#tracklib.analysis.kli.LoopSequenceMCMC.setup" title="Permalink to this definition">¶</a></dt>
 <dd><p>Load the data for loop estimation</p>
-<p>Keyword arguments will be forwared to
-<a class="reference internal" href="tracklib.models.html#tracklib.models.rouse.likelihood" title="tracklib.models.rouse.likelihood"><code class="xref any py py-func docutils literal notranslate"><span class="pre">tracklib.models.rouse.likelihood</span></code></a></p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">

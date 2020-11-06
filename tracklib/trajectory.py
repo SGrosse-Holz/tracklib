@@ -190,7 +190,14 @@ class Trajectory(ABC):
         --------
         diff, dims, relative
         """
-        return Trajectory.fromArray(np.sqrt(np.sum(self.data**2, axis=2, keepdims=True)), **deepcopy(self.meta))
+        traj = Trajectory.fromArray(np.sqrt(np.sum(self.data**2, axis=2, keepdims=True)), **deepcopy(self.meta))
+
+        if 'localization_error' in traj.meta.keys():
+            traj.meta['localization_error'] = np.sqrt(np.mean(traj.meta['localization_error'], axis=-1, keepdims=True))
+        if 'parity' in traj.meta.keys():
+            traj.meta['parity'] == 'even'
+
+        return traj
 
     def diff(self, dt=1):
         """
@@ -212,7 +219,14 @@ class Trajectory(ABC):
         --------
         abs, dims, relative
         """
-        return Trajectory.fromArray(self.data[:, dt:, :] - self.data[:, :-dt, :], **deepcopy(self.meta))
+        traj =  Trajectory.fromArray(self.data[:, dt:, :] - self.data[:, :-dt, :], **deepcopy(self.meta))
+
+        if 'localization_error' in traj.meta.keys():
+            traj.meta['localization_error'] *= np.sqrt(2)
+        if 'parity' in traj.meta.keys():
+            traj.meta['parity'] == 'even' if self.meta['parity'] == 'odd' else 'odd'
+        
+        return traj
 
     def dims(self, key):
         """
@@ -232,7 +246,19 @@ class Trajectory(ABC):
         --------
         abs, diff, relative
         """
-        return Trajectory.fromArray(self.data[:, :, key], **deepcopy(self.meta))
+        traj = Trajectory.fromArray(self.data[:, :, key], **deepcopy(self.meta))
+
+        if 'localization_error' in traj.meta.keys():
+            if len(traj.meta['localization_error'].shape) == 2:
+                traj.meta['localization_error'] = traj.meta['localization_error'][:, key]
+            else:
+                traj.meta['localization_error'] = traj.meta['localization_error'][key]
+            # Note: if key is a single int, we already get an error above, so
+            # here we do not have to worry about vanishing dimensions.
+        if 'parity' in traj.meta.keys():
+            pass # Parity doesn't change
+
+        return traj
 
     def relative(self):
         """
@@ -357,7 +383,17 @@ class Trajectory_2N(Trajectory):
     Two-locus trajectory
     """
     def relative(self):
-        return Trajectory.fromArray(self.data[0] - self.data[1], **deepcopy(self.meta))
+        traj = Trajectory.fromArray(self.data[0] - self.data[1], **deepcopy(self.meta))
+
+        if 'localization_error' in traj.meta.keys():
+            if len(traj.meta['localization_error'].shape) == 2:
+                traj.meta['localization_error'] = np.sqrt(np.sum(traj.meta['localization_error']**2, axis=0))
+            else:
+                traj.meta['localization_error'] *= np.sqrt(2)
+        if 'parity' in traj.meta.keys():
+            pass # parity remains unchanged
+
+        return traj
 
     def plot_vstime(self, ax=None, **kwargs):
         """

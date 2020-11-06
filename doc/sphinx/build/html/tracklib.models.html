@@ -217,14 +217,24 @@ and if so, whether parameters have changed since then.</p>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>dt</strong> (<em>float</em>) – the time step that we need to be set up for. Set to <code class="docutils literal notranslate"><span class="pre">None</span></code>
 (default) to omit this check.</p></li>
-<li><p><strong>run_if_necessary</strong> (<em>bool</em><em>, </em><em>optional</em>) – if True, instead of raising an error, just run the setup.</p></li>
+<li><p><strong>run_if_necessary</strong> (<em>bool</em><em>, </em><em>optional</em>) – if <code class="docutils literal notranslate"><span class="pre">True</span></code>, instead of raising an error, just run the setup. If <code class="docutils literal notranslate"><span class="pre">dt</span>
+<span class="pre">is</span> <span class="pre">None</span></code>, will try to use the stored value from the last call to
+<a class="reference internal" href="#tracklib.models.rouse.Model.setup_dynamics" title="tracklib.models.rouse.Model.setup_dynamics"><code class="xref any py py-meth docutils literal notranslate"><span class="pre">setup_dynamics</span></code></a>, if there is one.</p></li>
 </ul>
+</dd>
+<dt class="field-even">Raises</dt>
+<dd class="field-even"><p><strong>RuntimeError</strong> – if anything changed and <code class="docutils literal notranslate"><span class="pre">run_if_necessary</span> <span class="pre">==</span> <span class="pre">False</span></code></p>
 </dd>
 </dl>
 <div class="admonition seealso">
 <p class="admonition-title">See also</p>
 <p><a class="reference internal" href="#tracklib.models.rouse.Model.setup_dynamics" title="tracklib.models.rouse.Model.setup_dynamics"><code class="xref py py-meth docutils literal notranslate"><span class="pre">setup_dynamics()</span></code></a></p>
 </div>
+<p class="rubric">Notes</p>
+<p>This can be used instead of directly calling <a class="reference internal" href="#tracklib.models.rouse.Model.setup_dynamics" title="tracklib.models.rouse.Model.setup_dynamics"><code class="xref any py py-meth docutils literal notranslate"><span class="pre">setup_dynamics</span></code></a> in cases
+where we are operating on a user specified model and might want to
+change some parameters, then call <a class="reference internal" href="#tracklib.models.rouse.Model.setup_dynamics" title="tracklib.models.rouse.Model.setup_dynamics"><code class="xref any py py-meth docutils literal notranslate"><span class="pre">setup_dynamics</span></code></a>, but don’t
+necessarily know the timestep the user used in the setup.</p>
 </dd></dl>
 
 <dl class="method">
@@ -366,26 +376,22 @@ is a bond present between time points <code class="docutils literal notranslate"
 
 <dl class="function">
 <dt id="tracklib.models.rouse.likelihood">
-<code class="sig-prename descclassname">tracklib.models.rouse.</code><code class="sig-name descname">likelihood</code><span class="sig-paren">(</span><em class="sig-param">trace</em>, <em class="sig-param">looptrace</em>, <em class="sig-param">model</em>, <em class="sig-param">*</em>, <em class="sig-param">noise</em>, <em class="sig-param">w=None</em>, <em class="sig-param">times=None</em><span class="sig-paren">)</span><a class="headerlink" href="#tracklib.models.rouse.likelihood" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">tracklib.models.rouse.</code><code class="sig-name descname">likelihood</code><span class="sig-paren">(</span><em class="sig-param">trace</em>, <em class="sig-param">model</em>, <em class="sig-param">looptrace</em>, <em class="sig-param">noise</em><span class="sig-paren">)</span><a class="headerlink" href="#tracklib.models.rouse.likelihood" title="Permalink to this definition">¶</a></dt>
 <dd><p>Calculate log likelihood for the given combination of
 trace, looping sequence, and model.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>trace</strong> (<em>(</em><em>T</em><em>,</em><em>) </em><em>array</em>) – the observed trace.</p></li>
-<li><p><strong>looptrace</strong> (<em>(</em><em>T</em><em>,</em><em>) </em><em>array</em><em>, </em><em>dtype=bool</em>) – for which steps there is a loop. looptrace[i] indicates that
-there is a loop during the evolution from trace[i-1] to trace[i]
-and looptrace[0] is the value used for initialization.</p></li>
 <li><p><strong>model</strong> (<a class="reference internal" href="#tracklib.models.rouse.Model" title="tracklib.models.rouse.Model"><em>Model</em></a>) – the model to use for likelihood calculation</p></li>
+<li><p><strong>looptrace</strong> (<em>(</em><em>T</em><em>,</em><em>) </em><em>array</em><em>, </em><em>dtype=bool</em>) – for which steps there is a loop. <code class="docutils literal notranslate"><span class="pre">looptrace[i]</span></code> indicates that there
+is a loop during the evolution from <code class="docutils literal notranslate"><span class="pre">trace[i-1]</span></code> to <code class="docutils literal notranslate"><span class="pre">trace[i]</span></code> and
+<code class="docutils literal notranslate"><span class="pre">looptrace[0]</span></code> is the value used for initialization.</p></li>
 <li><p><strong>noise</strong> (<em>float</em>) – the localization error on each point in the trace</p></li>
 </ul>
 </dd>
-<dt class="field-even">Other Parameters</dt>
-<dd class="field-even"><p><strong>w</strong> (<em>(N,) array</em>) – the measurement vector. Set to <code class="docutils literal notranslate"><span class="pre">None</span></code> (the default) to indicate
-end-to-end measurement, i.e. <code class="docutils literal notranslate"><span class="pre">w</span> <span class="pre">=</span> <span class="pre">np.array([1,</span> <span class="pre">0,</span> <span class="pre">...,</span> <span class="pre">0,</span> <span class="pre">-1])</span></code>.</p>
-</dd>
-<dt class="field-odd">Returns</dt>
-<dd class="field-odd"><p><strong>logL</strong> (<em>float</em>) – the calculated log-likelihood</p>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>logL</strong> (<em>float</em>) – the calculated log-likelihood</p>
 </dd>
 </dl>
 <div class="admonition seealso">
@@ -394,6 +400,10 @@ end-to-end measurement, i.e. <code class="docutils literal notranslate"><span cl
 </div>
 <p class="rubric">Notes</p>
 <p>We assume that the ensemble starts from steady state.</p>
+<p>By default, we assume that the input trace is the relative coordinate of
+the two ends of the chain. To change this behavior, set
+<code class="xref any docutils literal notranslate"><span class="pre">model.measurement</span></code> to some <code class="xref any docutils literal notranslate"><span class="pre">model.N</span></code>-dimensional measurement vector. For
+the default behavior, this would be <code class="docutils literal notranslate"><span class="pre">np.array([1,</span> <span class="pre">0,</span> <span class="pre">...,</span> <span class="pre">0,</span> <span class="pre">-1])</span></code>.</p>
 </dd></dl>
 
 </div>
@@ -475,6 +485,9 @@ maximum length.</p></li>
 <p class="admonition-title">See also</p>
 <p><a class="reference internal" href="#tracklib.models.statgauss.sampleMSD" title="tracklib.models.statgauss.sampleMSD"><code class="xref py py-func docutils literal notranslate"><span class="pre">sampleMSD()</span></code></a>, <a class="reference internal" href="tracklib.html#tracklib.trajectory.Trajectory" title="tracklib.trajectory.Trajectory"><code class="xref py py-func docutils literal notranslate"><span class="pre">tracklib.trajectory.Trajectory()</span></code></a>, <a class="reference internal" href="tracklib.html#tracklib.taggedset.TaggedSet" title="tracklib.taggedset.TaggedSet"><code class="xref py py-func docutils literal notranslate"><span class="pre">tracklib.taggedset.TaggedSet()</span></code></a></p>
 </div>
+<p class="rubric">Notes</p>
+<p>The input MSD is assumed to be the goal for the generated trajectories,
+i.e. incorporate the prefactor <code class="docutils literal notranslate"><span class="pre">N*d</span></code>.</p>
 </dd></dl>
 
 <dl class="function">

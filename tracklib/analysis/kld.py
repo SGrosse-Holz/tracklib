@@ -7,7 +7,7 @@ import scipy.fftpack
 
 from tracklib import Trajectory, TaggedSet
 
-def perezcruz(dataset, n=10, k=20, dt=1, parity='even'):
+def perezcruz(dataset, n=10, k=20, dt=1):
     """
     Apply the KLD estimator presented by (Perez-Cruz, 2008).
     
@@ -17,7 +17,9 @@ def perezcruz(dataset, n=10, k=20, dt=1, parity='even'):
     Parameters
     ----------
     dataset : `TaggedSet` of `Trajectory`
-        the data to run the KLD estimation on
+        the data to run the KLD estimation on. Note that the trajectories
+        should have the ``meta['parity']`` field set (to either ``'even'`` or
+        ``'odd'``)
     n : int, optional
         snippet length ( = window size)
     k : int, optional
@@ -43,6 +45,7 @@ def perezcruz(dataset, n=10, k=20, dt=1, parity='even'):
     Since this might not be the desired behavior, the user might have to do
     some pre-processing.
     """
+    parity = dataset.map_unique(lambda traj : traj.meta['parity'])
     assert parity in {'even', 'odd'}
 
     # Generate snippets

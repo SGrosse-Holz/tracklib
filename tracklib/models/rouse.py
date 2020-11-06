@@ -207,22 +207,38 @@ class Model:
             the time step that we need to be set up for. Set to ``None``
             (default) to omit this check.
         run_if_necessary : bool, optional
-            if True, instead of raising an error, just run the setup.
+            if ``True``, instead of raising an error, just run the setup. If ``dt
+            is None``, will try to use the stored value from the last call to
+            `setup_dynamics`, if there is one.
+
+        Raises
+        ------
+        RuntimeError
+            if anything changed and ``run_if_necessary == False``
 
         See also
         --------
         setup_dynamics
+
+        Notes
+        -----
+        This can be used instead of directly calling `setup_dynamics` in cases
+        where we are operating on a user specified model and might want to
+        change some parameters, then call `setup_dynamics`, but don't
+        necessarily know the timestep the user used in the setup.
         """
-        try:
-            if not hasattr(self, '_propagation_memo'):
-                raise RuntimeError("Call setup_dynamics before using propagate()")
-            elif not self == self._propagation_memo['model'] or (dt != self._propagation_memo['dt'] and dt is not None):
-                raise RuntimeError("Parameter values changed since last call to setup_dynamics()")
-        except RuntimeError as err:
+        if not hasattr(self, '_propagation_memo'):
             if run_if_necessary and dt is not None:
                 self.setup_dynamics(dt)
             else:
-                raise err
+                raise RuntimeError("Did not call setup_dynamics before trying to evaluate dynamics")
+        elif not self == self._propagation_memo['model'] or (dt != self._propagation_memo['dt'] and dt is not None):
+            if dt is None:
+                dt = self._propagation_memo['dt']
+            if run_if_necessary:
+                self.setup_dynamics(dt)
+            else:
+                raise RuntimeError("Parameter values changed since last call to setup_dynamics()")
 
     ### Propagation of ensemble mean + sem covariance ###
 
@@ -419,29 +435,30 @@ class Model:
 # footing, i.e. it is just as fair to talk about the likelihood of the model
 # given the trace as vice versa. Or likelihood of looptrace given trace and
 # model, etc.
-def _likelihood_filter(trace, looptrace, model, *, noise, w=None, times=None):
+def _likelihood_filter(trace, model, looptrace, noise):
     """
     Likelihood calculation using Kalman filter.
     """
     T = len(trace)
-    if w is None:
+    try:
+        w = model.measurement
+    except AttributeError:
         w = np.zeros((model.N,))
         w[ 0] =  1
         w[-1] = -1
-    if times is None:
-        times = np.arange(T)
+
+    model.check_setup_called()
+    dt = model._propagation_memo['dt']
 
     M0, C0 = model.steady_state(looptrace[0])
 
     logL = np.empty((T,), dtype=float)
     logL[:] = np.nan
-    curtime = 2*times[0] - times[1] # we have steady state "before" the trace starts
-    for i, nexttime in enumerate(times):
-        M1, C1 = model.propagate(M0, C0, nexttime-curtime, bond=looptrace[i])
+    for i, bond in enumerate(looptrace):
+        M1, C1 = model.propagate(M0, C0, dt, bond)
         if np.isnan(trace[i]):
             M0 = M1
             C0 = C1
-            curtime = nexttime
             continue
         
         # Update step copied from Christoph
@@ -464,36 +481,36 @@ def _likelihood_filter(trace, looptrace, model, *, noise, w=None, times=None):
         
         M0 = MuPosterior
         C0 = SigmaPosterior
-        curtime = nexttime
         
     return np.nansum(logL)
 
-def _likelihood_direct(trace, looptrace, model, *, noise, w=None, times=None):
+def _likelihood_direct(trace, model, looptrace, noise):
     """
     Likelihood calculation using the full Rouse PDF.
     """
     T = len(trace)
-    if w is None:
+    try:
+        w = model.measurement
+    except AttributeError:
         w = np.zeros((model.N,))
         w[ 0] =  1
         w[-1] = -1
-    if times is not None:
-        raise ValueError("Direct likelihood calculation does not work with custom times")
+
     model.check_setup_called()
 
     # Get steady state to start from
     _, J = model.steady_state(looptrace[0])
 
     traceCov = np.zeros((len(trace), len(trace)))
-    for i in range(len(trace)):
+    for i, bond in enumerate(looptrace):
         if i > 0:
-            etA = model._propagation_memo[looptrace[i]]['etA']
-            Sig = model._propagation_memo[looptrace[i]]['Sig']
+            etA = model._propagation_memo[bond]['etA']
+            Sig = model._propagation_memo[bond]['Sig']
             J = etA @ J @ etA.T + Sig
 
         AJw = J @ w
         traceCov[i, i] = w @ AJw
-        for j in range(i+1, len(trace)):
+        for j in range(i+1, len(looptrace)):
             AJw = model._propagation_memo[looptrace[j]]['etA'] @ AJw
             traceCov[j, i] = w @ AJw
 
@@ -521,20 +538,14 @@ likelihood.__doc__ = """
     ----------
     trace : (T,) array
         the observed trace.
-    looptrace : (T,) array, dtype=bool
-        for which steps there is a loop. looptrace[i] indicates that
-        there is a loop during the evolution from trace[i-1] to trace[i]
-        and looptrace[0] is the value used for initialization.
     model : Model
         the model to use for likelihood calculation
+    looptrace : (T,) array, dtype=bool
+        for which steps there is a loop. ``looptrace[i]`` indicates that there
+        is a loop during the evolution from ``trace[i-1]`` to ``trace[i]`` and
+        ``looptrace[0]`` is the value used for initialization.
     noise : float
         the localization error on each point in the trace
-
-    Other Parameters
-    ----------------
-    w : (N,) array
-        the measurement vector. Set to ``None`` (the default) to indicate
-        end-to-end measurement, i.e. ``w = np.array([1, 0, ..., 0, -1])``.
 
     Returns
     -------
@@ -548,4 +559,9 @@ likelihood.__doc__ = """
     Notes
     -----
     We assume that the ensemble starts from steady state.
+
+    By default, we assume that the input trace is the relative coordinate of
+    the two ends of the chain. To change this behavior, set
+    `!model.measurement` to some `!model.N`-dimensional measurement vector. For
+    the default behavior, this would be ``np.array([1, 0, ..., 0, -1])``.
     """

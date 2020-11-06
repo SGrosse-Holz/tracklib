@@ -9,20 +9,21 @@ from tracklib.models import rouse
 
 ### Utility stuff ###
 
-def traj_likelihood(traj, looptrace, model, **kwargs):
+def traj_likelihood(traj, model, looptrace=None):
     """
     Apply `rouse.likelihood` to a `Trajectory`
-
-    Keyword arguments will be forwarded to `tracklib.models.rouse.likelihood`
 
     Parameters
     ----------
     traj : Trajectory
-        the trajectory to use
-    looptrace : (traj.T,) np.ndarray, dtype=bool
-        the looptrace to use
+        the trajectory to use. Note that this should have
+        ``meta['localization_error']`` set.
     model : tracklib.models.rouse.Model
         the model to use
+    looptrace : (traj.T,) np.ndarray, dtype=bool
+        the looptrace to use. Can be used to override
+        ``traj.meta['looptrace']``, which would be used by default (i.e. if
+        ``looptrace is None``). If neither is present, we assume no looping.
 
     Returns
     -------
@@ -38,14 +39,92 @@ def traj_likelihood(traj, looptrace, model, **kwargs):
     If ``traj.N == 2``, this will evaluate the likelihood for
     ``traj.relative()``.
     """
-    try:
+    if traj.N == 2:
         traj = traj.relative()
-    except NotImplementedError:
-        pass
+
+    if looptrace is None:
+        try:
+            looptrace = traj.meta['looptrace']
+        except KeyError:
+            looptrace = len(traj)*[False]
 
     return np.sum([
-        rouse.likelihood(traj[:][:, i], looptrace, model, **kwargs) \
+        rouse.likelihood(traj[:][:, i], model, looptrace, traj.meta['localization_error'][i]) \
                 for i in range(traj.d)])
+
+### Fitting Rouse parameters to a dataset ###
+
+def fit_RouseParams(data, model_init, unknown_params, **kwargs):
+    """
+    Run gradient descent to find best fit for Rouse parameters
+
+    All keyword arguments will be forwarded to `!scipy.minimize.optimize`.
+
+    Parameters
+    ----------
+    data : `TaggedSet` of `Trajectory`
+        the data to run on. If the ground truth looptrace for any trajectory
+        `!traj` is known, it should be in ``traj.meta['looptrace']``. If that
+        field is absent, we will assume no looping. Furthermore, this method
+        requires the metadata field ``'localization_error'`` for each
+        trajectory.
+    model_init : `rouse.Model`
+        the model to use for fitting. Fixes the parameters that are not fit,
+        and provides initial values for those that will be fit.
+    unknown_params : str or list of str
+        the parameters of `!model_init` that should be fit. Should contain
+        names of attributes of a `rouse.Model`. Examples: ``['D', 'k']``,
+        ``['D', 'k', 'k_extra']``, ``'k_extra'``.
+
+    Returns
+    -------
+    res : fitresult
+        the structure returned by `!scipy.optimize.minimize`. The best fit
+        parameters are ``res.x``, while their covariance matrix can be obtained
+        as ``res.hess_inv.todense()``.
+
+    See also
+    --------
+    traj_likelihood
+
+    Notes
+    -----
+    Default parameters for minimization: we use ``method = 'L-BFGS-B'``,
+    constrain all parameters to be positive (>1e-10) using the ``bounds``
+    keyword and set the options ``maxfun = 300``, and ``ftol = 1e-5``.
+    """
+    model = deepcopy(model_init)
+
+    if isinstance(unknown_params, str):
+        unknown_params = [unknown_params]
+    elif not isinstance(unknown_params, list):
+        raise ValueError("Did not understand type of 'unknown_params' : {} (should be str or list)".format(type(unknown_params)))
+    init_params = [getattr(model, pname) for pname in unknown_params]
+
+    def neg_logL_ds(params):
+        for pname, pval in zip(unknown_params, params):
+            setattr(model, pname, pval)
+        model.check_setup_called(run_if_necessary=True)
+
+        def neg_logL_traj(traj):
+            return -traj_likelihood(traj, model)
+
+        # Parallelization?
+        return np.sum(list(map(neg_logL_traj, data)))
+
+    minimize_kwargs = {
+            'method' : 'L-BFGS-B',
+            'bounds' : tuple((1e-10, None) for _ in range(len(init_params))), # all parameters should be positive
+            'options' : {'maxfun' : 300, 'ftol' : 1e-5},
+            }
+    # 'People' might try to override the defaults individually
+    for key in ['maxfun', 'ftol']:
+        if key in kwargs.keys():
+            minimize_kwargs['options'][key] = kwargs[key]
+            del kwargs[key]
+
+    minimize_kwargs.update(kwargs)
+    return scipy.optimize.minimize(neg_logL_ds, init_params, **minimize_kwargs)
 
 class LoopSequence:
     """
@@ -155,16 +234,6 @@ class LoopSequence:
         loop = np.array([float(isLoop) for isLoop in self.isLoop for _ in range(2)])
         return t, loop
 
-### Fitting Rouse parameters to a dataset ###
-
-# def fit_RouseParams(traces, looptraces, model_init, unknown_params):
-#     """
-#     Run gradient descent on trace(s) to find best fit for Rouse parameters
-# 
-#     Input
-#     -----
-#     traces : (T,) or (N, T) array
-
 ### The MCMC samplers ###
 
 class LoopSequenceMCMC(mcmc.Sampler):
@@ -192,12 +261,9 @@ class LoopSequenceMCMC(mcmc.Sampler):
     ... logL, sequneces = mc.run(LoopSequence(len(traj), 10))
 
     """
-    def setup(self, traj, model, **kwargs):
+    def setup(self, traj, model):
         """
         Load the data for loop estimation
-
-        Keyword arguments will be forwared to
-        `tracklib.models.rouse.likelihood`
 
         Parameters
         ----------
@@ -212,7 +278,6 @@ class LoopSequenceMCMC(mcmc.Sampler):
         """
         self.traj = traj
         self.model = model
-        self.logL_kwargs = kwargs
 
     # Get documentation for these
     # Does this hack have drawbacks?
@@ -264,7 +329,7 @@ class LoopSequenceMCMC(mcmc.Sampler):
     def logL(self, sequence):
         "" # Remove the default docstring from mcmc.Sampler; this is an internal function now
 
-        return traj_likelihood(self.traj, sequence.toLooptrace(), self.model, **self.logL_kwargs) \
+        return traj_likelihood(self.traj, self.model, sequence.toLooptrace()) \
                 + (sequence.numLoops() - 1)*np.log(1-0.3) # from Christoph's code
     
 class LoopTraceMCMC(LoopSequenceMCMC):
@@ -288,4 +353,4 @@ class LoopTraceMCMC(LoopSequenceMCMC):
     def logL(self, looptrace):
         # Could also do this by reusing LoopSequenceMCMC's logL, but maybe
         # better to have separate control (for example over loop counting)
-        return traj_likelihood(self.traj, looptrace, self.model, **self.logL_kwargs)
+        return traj_likelihood(self.traj, self.model, looptrace)

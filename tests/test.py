@@ -51,7 +51,9 @@ class Test1Trajectory(myTestCase):
         self.T = 10
         self.Ns = [1, 1, 1, 2, 2, 2]
         self.ds = [1, 2, 3, 1, 2, 3]
-        self.trajs = [tl.Trajectory.fromArray(np.zeros((N, self.T, d))) for N, d in zip(self.Ns, self.ds)]
+        self.trajs = [tl.Trajectory.fromArray(np.zeros((N, self.T, d)), localization_error=np.ones((d,)), parity='even') \
+                      for N, d in zip(self.Ns, self.ds)]
+        self.trajs[5].meta['localization_error'] = np.ones((2, 3)) # To check that shape
 
     def test_interface(self):
         """
@@ -388,6 +390,9 @@ class TestModelsRouse(myTestCase):
         self.model.check_setup_called(dt=1)
 
         mod = tl.models.Rouse(5, 1, 1, 1, setup=False)
+        with self.assertRaises(RuntimeError):
+            mod.check_setup_called()
+
         mod.check_setup_called(dt=1, run_if_necessary=True)
         mod.k = 2
         with self.assertRaises(RuntimeError):
@@ -421,11 +426,11 @@ class TestModelsRouse(myTestCase):
         trace = np.array([conf[-1][0] - conf[0][0] for conf in self.model.conformations_from_looptrace(looptrace)])
         trace[2] = np.nan
 
-        logL = tl.models.rouse.likelihood(trace, looptrace, self.model, noise=1)
+        logL = tl.models.rouse.likelihood(trace, self.model, looptrace, noise=1)
         self.assertIsInstance(logL, float)
-        logL = tl.models.rouse._likelihood_filter(trace, looptrace, self.model, noise=1)
+        logL = tl.models.rouse._likelihood_filter(trace, self.model, looptrace, noise=1)
         self.assertIsInstance(logL, float)
-        logL = tl.models.rouse._likelihood_direct(trace, looptrace, self.model, noise=1)
+        logL = tl.models.rouse._likelihood_direct(trace, self.model, looptrace, noise=1)
         self.assertIsInstance(logL, float)
 
 class TestModelsStatgauss(myTestCase):
@@ -469,18 +474,25 @@ class TestAnalysisKLILoopSequence(myTestCase):
 
 class TestAnalysisKLI(myTestCase):
     def setUp(self):
-        self.traj = tl.Trajectory.fromArray([[1, 0], [2, 0.5], [3, 0.2], [4, 0.7]])
+        self.traj = tl.Trajectory.fromArray([[1, 0], [2, 0.5], [3, 0.2], [4, 0.7]], localization_error=np.array([1, 1]))
         self.model = tl.models.Rouse(5, 1, 1, 1)
     
     def test_traj_likelihood(self):
-        logL = tl.analysis.kli.traj_likelihood(self.traj, len(self.traj)*[False], self.model, noise=1)
+        logL = tl.analysis.kli.traj_likelihood(self.traj, self.model)
         self.assertIsInstance(logL, float)
+
+    def test_fit_RouseParams(self):
+        ds = tl.TaggedSet([self.traj], hasTags=False)
+        fitres = tl.analysis.kli.fit_RouseParams(ds, self.model, unknown_params=['D'])
+        self.assertTrue(fitres.success)
+        fitres = tl.analysis.kli.fit_RouseParams(ds, self.model, unknown_params=['k'])
+        self.assertTrue(fitres.success)
 
     def test_LoopSequenceMCMC(self):
         # Note: the actual sampling is tested on mcmc.Sampler directly. Here we
         # only check that the overridden methods work
         mc = tl.analysis.kli.LoopSequenceMCMC()
-        mc.setup(self.traj, self.model, noise=1)
+        mc.setup(self.traj, self.model)
         mc.stepsize = 0.1 # Workaround: usually this is set in mc.run()
         seq = tl.analysis.kli.LoopSequence(T=len(self.traj), numInt=2)
 
@@ -496,7 +508,7 @@ class TestAnalysisKLI(myTestCase):
         # Note: the actual sampling is tested on mcmc.Sampler directly. Here we
         # only check that the overridden methods work
         mc = tl.analysis.kli.LoopTraceMCMC()
-        mc.setup(self.traj, self.model, noise=1)
+        mc.setup(self.traj, self.model)
         mc.stepsize = 0.1 # Workaround: usually this is set in mc.run()
         ltrace = tl.analysis.kli.LoopSequence(T=len(self.traj), numInt=2).toLooptrace()
 
@@ -552,11 +564,16 @@ class TestAnalysisMSD(myTestCase):
 class TestAnalysisKLD(myTestCase):
     def setUp(self):
         self.ds = tl.models.statgauss.dataset(msd=np.linspace(0, 5, 10), Ts=10*[None])
+        for traj in self.ds:
+            traj.meta['parity'] = 'even'
 
     def test_perezcruz(self):
-        Dest = tl.analysis.kld.perezcruz(self.ds, n=2, k=5, dt=1, parity='even')
+        Dest = tl.analysis.kld.perezcruz(self.ds, n=2, k=5, dt=1)
         self.assertIsInstance(Dest, float)
-        Dest = tl.analysis.kld.perezcruz(self.ds, n=2, k=5, dt=1, parity='odd')
+
+        for traj in self.ds:
+            traj.meta['parity'] = 'odd'
+        Dest = tl.analysis.kld.perezcruz(self.ds, n=2, k=5, dt=1)
         self.assertIsInstance(Dest, float)
 
 class TestAnalysisPlots(myTestCase):

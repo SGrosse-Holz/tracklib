@@ -243,6 +243,11 @@ fastest.
 
 likelihood
 ----------
+It is a bit unclear, where the parameters for the measurement process should be
+stored. For now, we decided to shove the measurement vector into the model,
+while the localization error stays separate / goes into Trajectory.meta. There
+might be better solutions.
+
 ### \_likelihood_filter()
 The ``if noise == 0`` block is nonsense. I haven't found a good way of dealing
 with zero noise in this method yet.
