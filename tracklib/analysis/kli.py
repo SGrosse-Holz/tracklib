@@ -1,3 +1,8 @@
+"""
+This module uses the Rouse model to infer looping probabilities from two-locus
+trajectories. Most of the conceptual work is due to Christoph Zechner.
+"""
+
 from copy import deepcopy
 
 import numpy as np
