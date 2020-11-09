@@ -6,7 +6,7 @@ $ pip install git+https://github.com/SGrosse-Holz/tracklib
 ```
 
 Comprehensive documentation is available, but currently not web-hosted. Refer
-to `doc/sphinx/build/html/index.html`.
+to ``doc/sphinx/build/html/index.html``.
 
 For contributors, there is a developer's guide outlining style and
-implementation choices in `doc/dev_guide`.
+implementation choices in ``doc/dev_guide``.

@@ -1,0 +1,8 @@
+Supplement
+==========
+
+.. toctree::
+   :titlesonly:
+   :glob:
+
+   supplement/*

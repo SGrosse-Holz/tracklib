@@ -1,0 +1,160 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <title>Fields in Trajectory.meta dict that are used by tracklib &#8212; tracklib 0.1 documentation</title>
+    <link rel="stylesheet" href="../_static/nature.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/language_data.js"></script>
+    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="prev" title="Project README" href="readme_link.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="readme_link.html" title="Project README"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">tracklib 0.1 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../supplement.html" accesskey="U">Supplement</a> &#187;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="fields-in-trajectory-meta-dict-that-are-used-by-tracklib">
+<h1>Fields in <a class="reference internal" href="../tracklib.html#tracklib.trajectory.Trajectory.meta" title="tracklib.trajectory.Trajectory.meta"><code class="xref any py py-attr docutils literal notranslate"><span class="pre">Trajectory.meta</span></code></a> dict that are used by tracklib<a class="headerlink" href="#fields-in-trajectory-meta-dict-that-are-used-by-tracklib" title="Permalink to this headline">¶</a></h1>
+<p>Modifiers try to respect the following fields:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">localization_error</span><span class="p">,</span> <span class="n">parity</span>
+</pre></div>
+</div>
+<div class="section" id="general">
+<h2>General<a class="headerlink" href="#general" title="Permalink to this headline">¶</a></h2>
+<dl class="simple">
+<dt>localization_error<span class="classifier">(d,) or (2, d) np.ndarray</span></dt><dd><p>the localization error for each particle and spatial dimension. Use the
+<code class="docutils literal notranslate"><span class="pre">(2,</span> <span class="pre">d)</span></code> shape to give different errors for a two-locus trajectory.</p>
+</dd>
+</dl>
+</div>
+<div class="section" id="used-by-analysis-msd">
+<h2>Used by analysis.msd<a class="headerlink" href="#used-by-analysis-msd" title="Permalink to this headline">¶</a></h2>
+<dl class="simple">
+<dt>MSD<span class="classifier">np.ndarray</span></dt><dd><p>the MSD of the trajectory. See <a class="reference internal" href="../tracklib.analysis.html#module-tracklib.analysis.msd" title="tracklib.analysis.msd"><code class="xref any py py-mod docutils literal notranslate"><span class="pre">tracklib.analysis.msd</span></code></a>.</p>
+</dd>
+<dt>MSDmeta<span class="classifier">dict</span></dt><dd><dl class="simple">
+<dt>N<span class="classifier">np.ndarray</span></dt><dd><p>the number of sample points for each MSD data point</p>
+</dd>
+<dt>alpha<span class="classifier">float</span></dt><dd><p>scaling at the beginning</p>
+</dd>
+<dt>logG<span class="classifier">float</span></dt><dd><p>y-intercept of log(MSD)</p>
+</dd>
+<dt>fit_covariance<span class="classifier">(2, 2) np.ndarray</span></dt><dd><p>covariance of (alpha, logG) from the fit</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</div>
+<div class="section" id="used-by-analysis-kli">
+<h2>Used by analysis.kli<a class="headerlink" href="#used-by-analysis-kli" title="Permalink to this headline">¶</a></h2>
+<dl class="simple">
+<dt>looptrace<span class="classifier">(T,) np.ndarray, dtype=bool, or list of bool</span></dt><dd><p>the ground truth looptrace associated with this trajectory</p>
+</dd>
+</dl>
+</div>
+<div class="section" id="used-by-analysis-kld">
+<h2>Used by analysis.kld<a class="headerlink" href="#used-by-analysis-kld" title="Permalink to this headline">¶</a></h2>
+<dl class="simple">
+<dt>parity<span class="classifier">one of {‘even’, ‘odd’}</span></dt><dd><p>parity of the trajectory under time reversal</p>
+</dd>
+</dl>
+</div>
+<div class="section" id="used-by-analysis-chi2">
+<h2>Used by analysis.chi2<a class="headerlink" href="#used-by-analysis-chi2" title="Permalink to this headline">¶</a></h2>
+<dl class="simple">
+<dt>chi2scores<span class="classifier">np.ndarray</span></dt><dd><p>chi2 scores for trajectory snippets</p>
+</dd>
+</dl>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="../index.html">Table of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Fields in <code class="xref any docutils literal notranslate"><span class="pre">Trajectory.meta</span></code> dict that are used by tracklib</a><ul>
+<li><a class="reference internal" href="#general">General</a></li>
+<li><a class="reference internal" href="#used-by-analysis-msd">Used by analysis.msd</a></li>
+<li><a class="reference internal" href="#used-by-analysis-kli">Used by analysis.kli</a></li>
+<li><a class="reference internal" href="#used-by-analysis-kld">Used by analysis.kld</a></li>
+<li><a class="reference internal" href="#used-by-analysis-chi2">Used by analysis.chi2</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="readme_link.html"
+                        title="previous chapter">Project README</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/supplement/traj_meta_fields.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="readme_link.html" title="Project README"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">tracklib 0.1 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../supplement.html" >Supplement</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2020, Simon Grosse-Holz.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.1.2.
+    </div>
+  </body>
+</html>

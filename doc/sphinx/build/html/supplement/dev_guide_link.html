@@ -1,0 +1,386 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <title>Developer’s guide &#8212; tracklib 0.1 documentation</title>
+    <link rel="stylesheet" href="../_static/nature.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/language_data.js"></script>
+    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Project README" href="readme_link.html" />
+    <link rel="prev" title="Supplement" href="../supplement.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="readme_link.html" title="Project README"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="../supplement.html" title="Supplement"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">tracklib 0.1 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../supplement.html" accesskey="U">Supplement</a> &#187;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="developer-s-guide">
+<h1>Developer’s guide<a class="headerlink" href="#developer-s-guide" title="Permalink to this headline">¶</a></h1>
+<p>This document is intended to explain and document style and implementation
+choices made in the library. Before deciding that stupid design choices were
+made, consult the corresponding section here. (Though there might of course be
+explicitly made decisions that nevertheless turn out to be stupid).</p>
+<p>This document is organized like the library, with individual
+modules/sub-modules/functions each having their own section. For completeness,
+everything in the library should have a section here, even if that section is
+empty. Since ideally the reasoning behind most things would be clear from
+documentation/code, this document serves merely as a “last resort” of kinds.
+For all those things that the user doesn’t get to have an opinion on, but where
+it might be relevant for devs to know the reasoning.</p>
+<p>### Side note: workflow
+While python of course does not have to be compiled, there is a Makefile for
+this library. This can be used to run the tests and check for code coverage,
+compile this Developer’s guide into a pdf, and build the documentation.
+Recommended use is to either run <code class="docutils literal notranslate"><span class="pre">make</span> <span class="pre">all</span></code> whenever you change anything, or,
+if you need the output some other place, adapt the <code class="docutils literal notranslate"><span class="pre">DUMPPATH</span></code> in the Makefile
+and run <code class="docutils literal notranslate"><span class="pre">make</span> <span class="pre">myall</span></code>.</p>
+<div class="section" id="tracklib">
+<h2>tracklib<a class="headerlink" href="#tracklib" title="Permalink to this headline">¶</a></h2>
+<p>Docstring notation: use double backticks (``) around code expressions (actual
+examples go into doctest blocks!), single backticks (`) around any single
+identifier (module names, functions, attributes, …), and the construction
+`!var` for identifiers that Sphinx should not attempt to generate links for
+(such as np.ndarray, keyword arguments, etc.)</p>
+</div>
+<div class="section" id="trajectory">
+<h2>trajectory<a class="headerlink" href="#trajectory" title="Permalink to this headline">¶</a></h2>
+<p>### Trajectory
+The main purpose of this class is to provide a common type for trajectories of
+all kinds, with differing spatial dimension or number of loci. The main
+functionality of the base class are the modifier functions (abs, diff,
+relative, …) that can be used to perform standard processing tasks.</p>
+<p>Any specific trajectory will be of a subclass of Trajectory, such that
+functionality that is specific to say two-locus trajectories in three
+dimensions can be implemented. It is unlikely that this will find use, but the
+specializations depending on either number of loci or spatial dimensions prove
+to be useful.</p>
+<p>The plotting functions might undergo review at some point.</p>
+<p>We chose to base this library on constant framerate trajectories, because some
+analysis methods (e.g. MSD) do not work as well with freely spaced
+trajectories.</p>
+<p>&gt; Currently the paradigm concerning the actual data is to try and avoid ever
+&gt; having to directly access it from outside the class. This leads to
+&gt; complications (see []-operator), so maybe we should move away from it? It is
+&gt; mostly a style question…</p>
+<p>EDIT: Resorted to accepting some direct access to the data. The new paradigm:
+for everything that requires the (N, T, d) shape, you can just as well access
+Trajectory.data directly. Most of the time, the []-operator will probably be
+preferred anyways.</p>
+<p>#### fromArray()</p>
+<p>#### N, T, d</p>
+<p>#### __len__()</p>
+<p>#### __getitem__()
+When providing element access, do we return a three dimensional array, or do we
+squeeze it (remove single entry dimensions)? There are arguments for both: on
+the one hand, keeping dimensionality definite means that we know exactly what
+to expect from the []-operator. On the other hand, it is annoying to have a
+bunch of single entry dimensions around; consider accessing one time point of a
+single locus trajectory: non-squeezed this would give a (1, 1, d) array, so
+we’d have to write something like <code class="docutils literal notranslate"><span class="pre">traj[t][0,</span> <span class="pre">0,</span> <span class="pre">:]</span></code>, which is ugly.</p>
+<p>After some deliberation, the best solution seems to be to squeeze the N and T
+dimensions, but leave d as it is. When processing trajectories we usually will
+know (or check) N, and what happens to T is determined by the user-provided
+slice. We do for the most part want to write analysis methods that are agnostic
+to d, so polymorphism seems useful here. The only problem with this solution is
+that for some “naturally 1d” trajectories (such as absolute distances between
+loci) it might be annoying to carry that extra dimension. I deem the
+polymorphism argument to be stronger though.</p>
+<p>#### Modifiers: abs, diff, relative, dims
+Note that fromArray() already copies the array passed to it, so there’s no need
+to do that explicity. Otherwise, the key for these functions is that they’re
+chainable:
+<code class="docutils literal notranslate"><span class="pre">`</span>
+<span class="pre">traj_processd</span> <span class="pre">=</span> <span class="pre">traj.relative().abs().diff()</span>
+<span class="pre">`</span></code>
+(or something like that).</p>
+<p>#### #yield_dims()
+More of a sketch of an idea. Would it be useful to have something like this?</p>
+<p>#### plot_vstime()</p>
+<p>#### plot_spatial()
+What exactly to do here depends on N and d, but independently. This is thus
+implemented in Trajectory_?d, calling the ‘raw’ plotting function in
+Trajectory_?N.</p>
+<p>### N12Error
+This special exception might be useful if there were more use cases for it,
+which might happen as the library grows. Right now it’s a bit pointless.</p>
+</div>
+<div class="section" id="taggedset">
+<h2>taggedset<a class="headerlink" href="#taggedset" title="Permalink to this headline">¶</a></h2>
+<p>### TaggedSet
+The idea here is a many-to-many dict: have a bunch of data that can belong to
+one or more subsets of the whole data set. Of course one subset will usually
+also contain more than one datum, thus many-to-many. It is very natural to then
+select some of these subsets for processing. For practically all purposes the
+class will then behave as if it contained only those data in the current
+selection. The idea for usage is thus: load all data whatsoever into one
+TaggedSet object, then work with subsets of this.</p>
+<p>Interfaces: this class actually does implement the Sequence interface,
+implicitly. We do not implement the Set/MutableSet interface though, because
+dealing with copy operations would be tricky: we want <code class="docutils literal notranslate"><span class="pre">__iter__</span></code> to return just
+the data, no tags, but the Set functions assume that iterating through the Set
+gives full information. Apart from that the functionality added by
+Set/MutableSet (comparisons and set operations) is not particularly relevant to
+this class, so we resort to implementing just the &amp;= operator by hand, because
+it’s useful. Note that <code class="docutils literal notranslate"><span class="pre">mergein()</span></code> has slightly more functionality though.</p>
+<p>#### makeTagsSet()</p>
+<p>#### add()</p>
+<p>#### __iter__(), __call__()</p>
+<p>#### __len__()</p>
+<p>#### __getitem__()</p>
+<p>#### makeSelection(), refineSelection()
+The default value for <code class="docutils literal notranslate"><span class="pre">logic</span></code> is debatable. Depending on how the class is used,
+<code class="docutils literal notranslate"><span class="pre">any</span></code> or <code class="docutils literal notranslate"><span class="pre">all</span></code> can make more sense.</p>
+<p>#### saveSelection(), restoreSelection()
+Need the copying to prevent accidentally giving away access to
+<code class="docutils literal notranslate"><span class="pre">self._selection</span></code>.</p>
+<p>#### copySelection()
+Should be mostly unnecessary (see the paradigm about using just one data set
+above), but who knows.</p>
+<p>#### mergein(), __iand__()</p>
+<p>#### addTags(), tagset()</p>
+<p>#### filter(), process()</p>
+<p>#### map_unique()</p>
+</div>
+<div class="section" id="clean">
+<h2>clean<a class="headerlink" href="#clean" title="Permalink to this headline">¶</a></h2>
+<p>#### split_trajectory_at_big_steps()
+It might make sense to expand the capabilities of this function to N=2 (TODO)</p>
+<p>#### split_dataset_at_big_steps()</p>
+</div>
+<div class="section" id="load">
+<h2>load<a class="headerlink" href="#load" title="Permalink to this headline">¶</a></h2>
+<p>#### evalSPT()
+Maybe generalize this to generic text files? Though having this module
+organized by file type should be very handy.</p>
+</div>
+<div class="section" id="util-mcmc">
+<h2>util.mcmc<a class="headerlink" href="#util-mcmc" title="Permalink to this headline">¶</a></h2>
+<p>### Sampler</p>
+<p>#### propose_update(), logL(), callback_logging()
+Note that <code class="docutils literal notranslate"><span class="pre">self.stepsize</span></code> will only be set in <code class="docutils literal notranslate"><span class="pre">run()</span></code>. That means that if it is
+used in these overridden methods, they won’t run outside of the sampler. This
+seems to be reasonable, so is not considered a bug.</p>
+<p>#### configure()
+We choose this implementation over e.g. passing a dict to run(), because it is
+clearer / easier to document. While this might sound like a non-reason, it does
+imply that this way usage will be clearer. For example it makes it a bit harder
+to reuse this config dict somewhere else (because we do not allow additional
+entries), such that we avoid giant, undocumentable config messes.</p>
+<p>#### run()
+Returns logL at all steps (not just after burn in), because we mostly need the
+likelihood history to check convergence, which ideally happens during burn in.</p>
+</div>
+<div class="section" id="util-util">
+<h2>util.util<a class="headerlink" href="#util-util" title="Permalink to this headline">¶</a></h2>
+<p>Currently just a graveyard, might be deprecated.</p>
+</div>
+<div class="section" id="models-rouse">
+<h2>models.rouse<a class="headerlink" href="#models-rouse" title="Permalink to this headline">¶</a></h2>
+<p>Likelihood is implemented as an individual function instead of a method mainly
+for a conceptual reason: the likelihood gives a “score” for a combination of
+(trace, looptrace, model). There is no reason why one of these should be
+preferred, so it makes more sense to have the likelihood separately, rather
+than integrating it into Model.</p>
+<p>### Model
+Note the two different modes for dynamics: propagate() propagates an ensemble
+(mean + covariance/sem), while evolve() evolves an explicit conformation.</p>
+<p>#### __eq__, __repr__</p>
+<p>#### give_matrices()</p>
+<p>#### setup_dynamics()</p>
+<p>#### check_setup_called()</p>
+<p>#### _propagate_ode()
+Careful with integrators: the three Runge-Kutta integrators ‘RK45’, ‘RK23’, and
+‘DOP853’ were seen to give covariance matrices with negative eigenvalues. This
+was not observed for ‘Radau’, ‘BDF’, ‘LSODA’, of which ‘LSODA’ seemed to be the
+fastest.</p>
+<p>#### _propagate_exp()</p>
+<p>#### propagate()</p>
+<p>#### conf_ss()</p>
+<p>#### evolve()</p>
+<p>#### conformations_from_looptrace()</p>
+<p>### likelihood
+It is a bit unclear, where the parameters for the measurement process should be
+stored. For now, we decided to shove the measurement vector into the model,
+while the localization error stays separate / goes into Trajectory.meta. There
+might be better solutions.</p>
+<p>#### _likelihood_filter()
+The <code class="docutils literal notranslate"><span class="pre">if</span> <span class="pre">noise</span> <span class="pre">==</span> <span class="pre">0</span></code> block is nonsense. I haven’t found a good way of dealing
+with zero noise in this method yet.</p>
+<p>#### _likelihood_direct()</p>
+</div>
+<div class="section" id="models-statgauss">
+<h2>models.statgauss<a class="headerlink" href="#models-statgauss" title="Permalink to this headline">¶</a></h2>
+<p>#### sampleMSD
+subtractMean: is it possible to incorporate finite-size effects here? (for a
+finite trajectory, the mean actually shouldn’t be zero exactly, but follow some
+distribution that is tightly peaked around zero; is this independent of the
+displacements?)</p>
+<p>#### dataset</p>
+<p>#### control
+Should this be merged with dataset somehow? They perform very similar tasks.</p>
+</div>
+<div class="section" id="analysis-chi2">
+<h2>analysis.chi2<a class="headerlink" href="#analysis-chi2" title="Permalink to this headline">¶</a></h2>
+<p>#### chi2vsMSD()</p>
+<p>#### summary_plot()</p>
+</div>
+<div class="section" id="analysis-kld">
+<h2>analysis.kld<a class="headerlink" href="#analysis-kld" title="Permalink to this headline">¶</a></h2>
+<p>#### perezcruz()
+Need to update: incorporate parity (due to library restructuring)</p>
+</div>
+<div class="section" id="analysis-kli">
+<h2>analysis.kli<a class="headerlink" href="#analysis-kli" title="Permalink to this headline">¶</a></h2>
+<p>#### traj_likelihood()</p>
+<p>### LoopSequence</p>
+<p>#### toLooptrace(), fromLooptrace()</p>
+<p>#### numLoops()</p>
+<p>#### plottable()</p>
+<p>### LoopSequenceMCMC
+The trick with copying attributes from the parent class is supposed to make
+Sphinx recognize these and print the docstring. Should be removed if it screws
+up anything important.</p>
+<p>In the other direction, we do not want propopse_update() and logL() to show up
+in the documentation, because the user should not interact with them. Thus we
+simply set the docstring to the empty string.</p>
+<p>#### setup()</p>
+<p>#### propose_update()</p>
+<p>#### logL()</p>
+<p>### LoopTraceMCMC</p>
+<p>#### propose_update</p>
+<p>#### logL</p>
+</div>
+<div class="section" id="analysis-msd">
+<h2>analysis.msd<a class="headerlink" href="#analysis-msd" title="Permalink to this headline">¶</a></h2>
+<p>#### MSDtraj</p>
+<p>#### MSDdataset</p>
+<p>#### MSD
+Does this aggregate make sense?</p>
+<p>#### scaling</p>
+</div>
+<div class="section" id="analysis-plots">
+<h2>analysis.plots<a class="headerlink" href="#analysis-plots" title="Permalink to this headline">¶</a></h2>
+<p>#### length_distribution()</p>
+<p>#### msd_overview()</p>
+<p>#### trajectories_spatial()</p>
+<p>#### distance_distribution()</p>
+</div>
+<div class="section" id="tests">
+<h2>tests<a class="headerlink" href="#tests" title="Permalink to this headline">¶</a></h2>
+<p>Not strictly part of the library, but here are notes on the tests/test.py
+script:</p>
+<p>For analysis methods it is difficult to check quantitative correctness (will
+maybe come at some point, with example data). For now, we mostly just check
+that all the code runs and passes some basic consistency checks.</p>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="../index.html">Table of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Developer’s guide</a><ul>
+<li><a class="reference internal" href="#tracklib">tracklib</a></li>
+<li><a class="reference internal" href="#trajectory">trajectory</a></li>
+<li><a class="reference internal" href="#taggedset">taggedset</a></li>
+<li><a class="reference internal" href="#clean">clean</a></li>
+<li><a class="reference internal" href="#load">load</a></li>
+<li><a class="reference internal" href="#util-mcmc">util.mcmc</a></li>
+<li><a class="reference internal" href="#util-util">util.util</a></li>
+<li><a class="reference internal" href="#models-rouse">models.rouse</a></li>
+<li><a class="reference internal" href="#models-statgauss">models.statgauss</a></li>
+<li><a class="reference internal" href="#analysis-chi2">analysis.chi2</a></li>
+<li><a class="reference internal" href="#analysis-kld">analysis.kld</a></li>
+<li><a class="reference internal" href="#analysis-kli">analysis.kli</a></li>
+<li><a class="reference internal" href="#analysis-msd">analysis.msd</a></li>
+<li><a class="reference internal" href="#analysis-plots">analysis.plots</a></li>
+<li><a class="reference internal" href="#tests">tests</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="../supplement.html"
+                        title="previous chapter">Supplement</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="readme_link.html"
+                        title="next chapter">Project README</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/supplement/dev_guide_link.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="readme_link.html" title="Project README"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="../supplement.html" title="Supplement"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">tracklib 0.1 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../supplement.html" >Supplement</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2020, Simon Grosse-Holz.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.1.2.
+    </div>
+  </body>
+</html>

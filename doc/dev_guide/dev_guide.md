@@ -174,9 +174,12 @@ It might make sense to expand the capabilities of this function to N=2 (TODO)
 load
 ====
 
+### csv
+
 ### evalSPT()
-Maybe generalize this to generic text files? Though having this module
-organized by file type should be very handy.
+Basically a legacy function, since now this job is done by `csv()`. However, it
+might still be nice to have this module organized by file type, let's see how
+this develops as we add more supported file types.
 
 util.mcmc
 =========
@@ -249,7 +252,7 @@ while the localization error stays separate / goes into Trajectory.meta. There
 might be better solutions.
 
 ### \_likelihood_filter()
-The ``if noise == 0`` block is nonsense. I haven't found a good way of dealing
+The `if noise == 0` block is nonsense. I haven't found a good way of dealing
 with zero noise in this method yet.
 
 ### \_likelihood_direct()

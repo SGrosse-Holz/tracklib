@@ -260,7 +260,7 @@ class TestClean(myTestCase):
         split_ds = tl.clean.split_dataset_at_big_steps(self.ds, 3)
         self.assert_array_equal(np.sort([len(traj) for traj in split_ds]), np.array([4, 5, 6]))
 
-class TestLoad(myTestCase):
+class TestIOLoad(myTestCase):
     def test_evalSPT(self):
         filename = "testdata/evalSPT.csv"
         # file contents:
@@ -272,13 +272,55 @@ class TestLoad(myTestCase):
         # 0.4	8.5	-4	10	
         # 1.2	9.1	-6	10	
 
-        ds = tl.load.evalSPT(filename, tags={'test'})
+        ds = tl.io.load.evalSPT(filename, tags={'test'})
 
         ds.makeSelection(selector = lambda traj, _ : len(traj) <= 3)
         self.assert_array_equal(ds[0][:], np.array([[1.2, 9.1], [0.5, 9.3], [0.4, 8.5]]))
 
         ds.makeSelection(selector = lambda traj, _ : len(traj) > 3)
         self.assert_array_equal(ds[0][:], np.array([[1.0, 2.3], [1.5, 2.1], [2.1, 1.5], [np.nan, np.nan], [1.9, 1.7]]))
+
+    def test_csv(self):
+        filename = "testdata/twoLocus.csv"
+        # file contents:
+        # line,id,noise,x,y,frame,x2,y2,meta_mean,meta_unique
+        # 1,32,10,0.6,0.8,10,0.5,1.0,1,5
+        # 2,32,1.5,0.7,0.5,9,0.7,0.8,2,5
+        # 3,20,5.3,1.2,1.3,11,-0.8,-1.2,3,6
+
+        ds = tl.io.load.csv(
+                filename, [None, 'id', 'noise', 'x', 'y', 't', 'x2', 'y2', 'meta_mean', 'meta_unique'],
+                meta_post={'meta_mean' : 'mean', 'meta_unique' : 'unique'}, delimiter=',', skip_header=1)
+
+        ds.makeSelection(selector = lambda traj, _ : len(traj) >= 2)
+        self.assert_array_equal(ds[0][:], np.array([[[0.7, 0.5], [0.6, 0.8]], [[0.7, 0.8], [0.5, 1.0]]]))
+        self.assert_array_equal(ds[0].meta['noise'], np.array([1.5, 10]))
+        self.assertEqual(ds[0].meta['meta_mean'], 1.5)
+        self.assertEqual(ds[0].meta['meta_unique'], 5)
+
+        ds.makeSelection(selector = lambda traj, _ : len(traj) < 2)
+        self.assert_array_equal(ds[0][:], np.array([[[1.2, 1.3]], [[-0.8, -1.2]]]))
+        self.assert_array_equal(ds[0].meta['noise'], np.array([5.3]))
+        self.assertEqual(ds[0].meta['meta_mean'], 3)
+        self.assertEqual(ds[0].meta['meta_unique'], 6)
+
+        with self.assertRaises(RuntimeError):
+            ds = tl.io.load.csv(
+                    filename, [None, 'id', 'noise', 'x', 'y', 't', 'x2', 'y2', 'meta_mean', 'meta_unique'],
+                    meta_post={'meta_mean' : 'unique', 'meta_unique' : 'unique'}, delimiter=',', skip_header=1)
+
+class TestIOWrite(myTestCase):
+    def setUp(self):
+        self.ds = tl.TaggedSet()
+        self.ds.add(tl.Trajectory.fromArray([0, 0.75, 0.5, 0.3, 5.4, 5.5, 5.3, -2.0, 5.4]))
+        self.ds.add(tl.Trajectory.fromArray([1.2, 1.4, np.nan, np.nan, 10.0, 10.2]))
+
+    def test_csv(self):
+        filename = "testdata/test_write.csv"
+        tl.io.write.csv(self.ds, filename)
+
+        with open(filename, 'r') as f:
+            self.assertTrue(f.read() == 'id\tframe\tx\n0\t0\t0.0\n0\t1\t0.75\n0\t2\t0.5\n0\t3\t0.3\n0\t4\t5.4\n0\t5\t5.5\n0\t6\t5.3\n0\t7\t-2.0\n0\t8\t5.4\n1\t0\t1.2\n1\t1\t1.4\n1\t4\t10.0\n1\t5\t10.2\n')
 
 class TestUtilSweep(myTestCase):
     @staticmethod

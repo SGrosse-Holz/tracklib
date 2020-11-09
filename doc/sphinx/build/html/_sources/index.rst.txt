@@ -7,7 +7,7 @@ Welcome to tracklib's documentation!
 ====================================
 
 .. toctree::
-   :maxdepth: 5
+   :includehidden:
 
    intro
    tracklib

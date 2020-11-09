@@ -1,0 +1,203 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <title>tracklib.io package &#8212; tracklib 0.1 documentation</title>
+    <link rel="stylesheet" href="_static/nature.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="_static/language_data.js"></script>
+    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="tracklib.models package" href="tracklib.models.html" />
+    <link rel="prev" title="tracklib.analysis package" href="tracklib.analysis.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="tracklib.models.html" title="tracklib.models package"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="tracklib.analysis.html" title="tracklib.analysis package"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">tracklib 0.1 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="tracklib.html" accesskey="U">tracklib package</a> &#187;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="tracklib-io-package">
+<h1>tracklib.io package<a class="headerlink" href="#tracklib-io-package" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="module-tracklib.io.load">
+<span id="tracklib-io-load-module"></span><h2>tracklib.io.load module<a class="headerlink" href="#module-tracklib.io.load" title="Permalink to this headline">¶</a></h2>
+<p>Loading data from common formats into the Trajectory and TaggedSet structures
+used throughout the library</p>
+<dl class="function">
+<dt id="tracklib.io.load.csv">
+<code class="sig-prename descclassname">tracklib.io.load.</code><code class="sig-name descname">csv</code><span class="sig-paren">(</span><em class="sig-param">filename, columns=['x', 'y', 't', 'id'], tags={}, meta_post={}, **kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#tracklib.io.load.csv" title="Permalink to this definition">¶</a></dt>
+<dd><p>Load data from a .csv file.</p>
+<p>This uses <code class="xref any docutils literal notranslate"><span class="pre">np.genfromtxt</span></code>, and all kwargs are forwarded to it. The most
+important ones are <code class="docutils literal notranslate"><span class="pre">'delimiter'</span></code> and <code class="docutils literal notranslate"><span class="pre">'skip_header'</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>filename</strong> (<em>string</em>) – the file to be read</p></li>
+<li><p><strong>columns</strong> (<em>list</em>) – how to interpret the columns in the file. Use any of these identifiers:
+<code class="docutils literal notranslate"><span class="pre">{'x',</span> <span class="pre">'y',</span> <span class="pre">'z',</span> <span class="pre">'x2',</span> <span class="pre">'y2',</span> <span class="pre">'z2',</span> <span class="pre">'t',</span> <span class="pre">'id',</span> <span class="pre">None}</span></code>, where <code class="docutils literal notranslate"><span class="pre">'t'</span></code>
+(mandatory) is the frame number, <code class="docutils literal notranslate"><span class="pre">'id'</span></code> (mandatory) the trajectory
+id, and the remaining ones can be used to indicate spatial components
+of single or double-locus trajectories. Use <code class="docutils literal notranslate"><span class="pre">None</span></code> to indicate a
+column that should be ignored.  Columns beyond the list given here will
+be ignored in any case. Finally, the data for any str identifier not
+matching one of the above will be written to a corresponding entry in
+the trajectory’s <a class="reference internal" href="tracklib.html#tracklib.trajectory.Trajectory.meta" title="tracklib.trajectory.Trajectory.meta"><code class="xref any py py-attr docutils literal notranslate"><span class="pre">meta</span></code></a> dict.</p></li>
+<li><p><strong>tags</strong> (<em>str</em><em>, </em><em>list of str</em><em> or </em><em>set of str</em><em>, </em><em>optional</em>) – the tag(s) to be associated with trajectories from this file</p></li>
+<li><p><strong>meta_post</strong> (<em>dict</em><em>, </em><em>optional</em>) – post-processing options for the <a class="reference internal" href="tracklib.html#tracklib.trajectory.Trajectory.meta" title="tracklib.trajectory.Trajectory.meta"><code class="xref any py py-attr docutils literal notranslate"><span class="pre">meta</span></code></a> data. Keys should be <a class="reference internal" href="tracklib.html#tracklib.trajectory.Trajectory.meta" title="tracklib.trajectory.Trajectory.meta"><code class="xref any py py-attr docutils literal notranslate"><span class="pre">meta</span></code></a>
+field names, values can be “unique” or “mean”. With the former, all the
+values in the corresponding column should be the same, and only that
+value (instead of the whole array) will be written into the meta field.
+With the latter we simply take the mean of the array.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><em>TaggedSet</em> – the loaded data set</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="tracklib.io.load.evalSPT">
+<code class="sig-prename descclassname">tracklib.io.load.</code><code class="sig-name descname">evalSPT</code><span class="sig-paren">(</span><em class="sig-param">filename</em>, <em class="sig-param">tags={}</em><span class="sig-paren">)</span><a class="headerlink" href="#tracklib.io.load.evalSPT" title="Permalink to this definition">¶</a></dt>
+<dd><p>Load data in the format used by evalSPT</p>
+<p>This is a shortcut for <code class="docutils literal notranslate"><span class="pre">csv(filename,</span> <span class="pre">['x',</span> <span class="pre">'y',</span> <span class="pre">'t',</span> <span class="pre">'id'],</span> <span class="pre">tags)</span></code>.</p>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><a class="reference internal" href="#tracklib.io.load.csv" title="tracklib.io.load.csv"><code class="xref py py-func docutils literal notranslate"><span class="pre">csv()</span></code></a></p>
+</div>
+</dd></dl>
+
+</div>
+<div class="section" id="module-tracklib.io.write">
+<span id="tracklib-io-write-module"></span><h2>tracklib.io.write module<a class="headerlink" href="#module-tracklib.io.write" title="Permalink to this headline">¶</a></h2>
+<p>Some functions for writing trajectories / data sets to file</p>
+<dl class="function">
+<dt id="tracklib.io.write.csv">
+<code class="sig-prename descclassname">tracklib.io.write.</code><code class="sig-name descname">csv</code><span class="sig-paren">(</span><em class="sig-param">data</em>, <em class="sig-param">filename</em>, <em class="sig-param">header=True</em>, <em class="sig-param">delimiter='\t'</em><span class="sig-paren">)</span><a class="headerlink" href="#tracklib.io.write.csv" title="Permalink to this definition">¶</a></dt>
+<dd><p>A quick-and-dirty csv-writer. Might be updated eventually.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>data</strong> (<a class="reference internal" href="tracklib.html#tracklib.taggedset.TaggedSet" title="tracklib.taggedset.TaggedSet"><code class="xref any py py-class docutils literal notranslate"><span class="pre">TaggedSet</span></code></a> of <a class="reference internal" href="tracklib.html#tracklib.trajectory.Trajectory" title="tracklib.trajectory.Trajectory"><code class="xref any py py-class docutils literal notranslate"><span class="pre">Trajectory</span></code></a>) – the data set to write to file</p></li>
+<li><p><strong>filename</strong> (<em>str</em>) – the file to write to</p></li>
+<li><p><strong>header</strong> (<em>bool</em><em>, </em><em>optional</em>) – whether to write a header line with column names</p></li>
+<li><p><strong>delimiter</strong> (<em>chr</em><em>, </em><em>optional</em>) – which character to use as delimiter</p></li>
+</ul>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<p>The columns in the file will be <code class="docutils literal notranslate"><span class="pre">['id',</span> <span class="pre">'frame',</span> <span class="pre">'x',</span> <span class="pre">'y',</span> <span class="pre">'z',</span> <span class="pre">'x2',</span>
+<span class="pre">'y2',</span> <span class="pre">'z2']</span></code>, where of course only those coordinates present in the data
+set will be written.</p>
+<p>Missing frames, i.e. those where all of the coordinates are <code class="xref any docutils literal notranslate"><span class="pre">np.nan</span></code> will
+simply be omitted.</p>
+<p>Since <a class="reference internal" href="tracklib.html#tracklib.taggedset.TaggedSet" title="tracklib.taggedset.TaggedSet"><code class="xref any py py-class docutils literal notranslate"><span class="pre">TaggedSet</span></code></a> and <a class="reference internal" href="tracklib.html#tracklib.trajectory.Trajectory" title="tracklib.trajectory.Trajectory"><code class="xref any py py-class docutils literal notranslate"><span class="pre">Trajectory</span></code></a> have more structure than can reasonably
+represented in <code class="docutils literal notranslate"><span class="pre">.csv</span></code> files, this function has no aspirations of writing
+the whole structure to file. It can write only the “core” data, i.e. the
+actual trajectories.</p>
+</dd></dl>
+
+</div>
+<div class="section" id="module-tracklib.io">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-tracklib.io" title="Permalink to this headline">¶</a></h2>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">tracklib.io package</a><ul>
+<li><a class="reference internal" href="#submodules">Submodules</a></li>
+<li><a class="reference internal" href="#module-tracklib.io.load">tracklib.io.load module</a></li>
+<li><a class="reference internal" href="#module-tracklib.io.write">tracklib.io.write module</a></li>
+<li><a class="reference internal" href="#module-tracklib.io">Module contents</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="tracklib.analysis.html"
+                        title="previous chapter">tracklib.analysis package</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="tracklib.models.html"
+                        title="next chapter">tracklib.models package</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/tracklib.io.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="tracklib.models.html" title="tracklib.models package"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="tracklib.analysis.html" title="tracklib.analysis package"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">tracklib 0.1 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="tracklib.html" >tracklib package</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2020, Simon Grosse-Holz.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.1.2.
+    </div>
+  </body>
+</html>

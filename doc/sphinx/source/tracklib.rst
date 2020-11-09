@@ -7,6 +7,7 @@ Subpackages
 .. toctree::
 
    tracklib.analysis
+   tracklib.io
    tracklib.models
    tracklib.util
 
@@ -17,14 +18,6 @@ tracklib.clean module
 ---------------------
 
 .. automodule:: tracklib.clean
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-tracklib.load module
---------------------
-
-.. automodule:: tracklib.load
    :members:
    :undoc-members:
    :show-inheritance:
