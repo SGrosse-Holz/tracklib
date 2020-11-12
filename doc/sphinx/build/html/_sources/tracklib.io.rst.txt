@@ -1,19 +1,19 @@
-tracklib.io package
-===================
+tracklib.io
+===========
 
-Submodules
-----------
+.. contents::
+   :local:
 
-tracklib.io.load module
------------------------
+tracklib.io.load
+----------------
 
 .. automodule:: tracklib.io.load
    :members:
    :undoc-members:
    :show-inheritance:
 
-tracklib.io.write module
-------------------------
+tracklib.io.write
+-----------------
 
 .. automodule:: tracklib.io.write
    :members:
@@ -21,10 +21,3 @@ tracklib.io.write module
    :show-inheritance:
 
 
-Module contents
----------------
-
-.. automodule:: tracklib.io
-   :members:
-   :undoc-members:
-   :show-inheritance:

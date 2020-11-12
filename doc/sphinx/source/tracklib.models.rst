@@ -1,19 +1,19 @@
-tracklib.models package
-=======================
+tracklib.models
+===============
 
-Submodules
-----------
+.. contents::
+   :local:
 
-tracklib.models.rouse module
-----------------------------
+tracklib.models.rouse
+---------------------
 
 .. automodule:: tracklib.models.rouse
    :members:
    :undoc-members:
    :show-inheritance:
 
-tracklib.models.statgauss module
---------------------------------
+tracklib.models.statgauss
+-------------------------
 
 .. automodule:: tracklib.models.statgauss
    :members:
@@ -21,10 +21,3 @@ tracklib.models.statgauss module
    :show-inheritance:
 
 
-Module contents
----------------
-
-.. automodule:: tracklib.models
-   :members:
-   :undoc-members:
-   :show-inheritance:

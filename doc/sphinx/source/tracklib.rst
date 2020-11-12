@@ -1,8 +1,6 @@
-tracklib package
-================
+tracklib
+========
 
-Subpackages
------------
 
 .. toctree::
 
@@ -11,38 +9,30 @@ Subpackages
    tracklib.models
    tracklib.util
 
-Submodules
-----------
 
-tracklib.clean module
----------------------
+tracklib.clean
+--------------
 
 .. automodule:: tracklib.clean
    :members:
    :undoc-members:
    :show-inheritance:
 
-tracklib.taggedset module
--------------------------
+tracklib.taggedset
+------------------
 
 .. automodule:: tracklib.taggedset
    :members:
    :undoc-members:
    :show-inheritance:
 
-tracklib.trajectory module
---------------------------
+tracklib.trajectory
+-------------------
 
 .. automodule:: tracklib.trajectory
+   :exclude-members: Trajectory_1N, Trajectory_2N, Trajectory_1d, Trajectory_2d, Trajectory_3d, Trajectory_1N1d, Trajectory_1N2d, Trajectory_1N3d, Trajectory_2N1d, Trajectory_2N2d, Trajectory_2N3d
    :members:
    :undoc-members:
    :show-inheritance:
 
 
-Module contents
----------------
-
-.. automodule:: tracklib
-   :members:
-   :undoc-members:
-   :show-inheritance:

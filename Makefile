@@ -15,6 +15,7 @@ all : doc devguide tests
 doc :
 	sphinx-apidoc -f -o $(SPHINXSOURCE) $(MODULE)
 	@rm $(SPHINXSOURCE)/modules.rst
+	@cd $(SPHINXSOURCE) && vim -n -S post-apidoc.vim
 	cd $(SPHINXDIR) && $(MAKE) html
 
 tests :

@@ -1,43 +1,43 @@
-tracklib.analysis package
-=========================
+tracklib.analysis
+=================
 
-Submodules
-----------
+.. contents::
+   :local:
 
-tracklib.analysis.chi2 module
------------------------------
+tracklib.analysis.chi2
+----------------------
 
 .. automodule:: tracklib.analysis.chi2
    :members:
    :undoc-members:
    :show-inheritance:
 
-tracklib.analysis.kld module
-----------------------------
+tracklib.analysis.kld
+---------------------
 
 .. automodule:: tracklib.analysis.kld
    :members:
    :undoc-members:
    :show-inheritance:
 
-tracklib.analysis.kli module
-----------------------------
+tracklib.analysis.kli
+---------------------
 
 .. automodule:: tracklib.analysis.kli
    :members:
    :undoc-members:
    :show-inheritance:
 
-tracklib.analysis.msd module
-----------------------------
+tracklib.analysis.msd
+---------------------
 
 .. automodule:: tracklib.analysis.msd
    :members:
    :undoc-members:
    :show-inheritance:
 
-tracklib.analysis.plots module
-------------------------------
+tracklib.analysis.plots
+-----------------------
 
 .. automodule:: tracklib.analysis.plots
    :members:
@@ -45,10 +45,3 @@ tracklib.analysis.plots module
    :show-inheritance:
 
 
-Module contents
----------------
-
-.. automodule:: tracklib.analysis
-   :members:
-   :undoc-members:
-   :show-inheritance:

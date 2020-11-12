@@ -7,12 +7,21 @@ Welcome to tracklib's documentation!
 ====================================
 
 .. toctree::
-   :includehidden:
+   :maxdepth: 1
 
    intro
+
+.. toctree::
+
    tracklib
 
-.. .. include:: modules.rst
+Notes
+-----
+
+.. toctree::
+   :maxdepth: 1
+
+   traj_meta_fields
 
 
 Indices and tables

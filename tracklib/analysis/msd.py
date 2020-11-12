@@ -1,23 +1,8 @@
 """
 Everything to do with MSDs and calculating them.
 
-Apart from immediately returning the most relevant results, the functions in
-this module also store data in the `Trajectory.meta` dict. The fully populated
-structure looks as follows (for a `Trajectory` ``traj``):
-
-``traj.meta['MSD']`` : `!np.ndarray`
-    the actual MSD of the trajectory
-``traj.meta['MSDmeta']`` : `!dict`
-    some meta data for the MSD. Contains the following fields:
-
-    `!'N'` : np.ndarray
-        the number of sample points for each point of the MSD
-    `!'alpha'` : float
-        the fitted powerlaw exponent at the beginning of the MSD
-    `!'logG'` : float
-        logarithm of the prefactor from the same fit as `!'alpha'`
-    `!'fit_covariance'` : (2, 2) np.ndarray
-        covariance matrix of (`!alpha`, `!logG`) from the fit
+Many results of this module will be stored in `Trajectory.meta` for further
+use. For an overview, see :ref:`here <traj_meta_fields_msd>`.
 """
 
 import warnings

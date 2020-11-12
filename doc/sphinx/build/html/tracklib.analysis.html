@@ -4,7 +4,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
     <meta charset="utf-8" />
-    <title>tracklib.analysis package &#8212; tracklib 0.1 documentation</title>
+    <title>tracklib.analysis &#8212; tracklib 0.1 documentation</title>
     <link rel="stylesheet" href="_static/nature.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
@@ -15,8 +15,8 @@
     <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="tracklib.models package" href="tracklib.models.html" />
-    <link rel="prev" title="tracklib package" href="tracklib.html" /> 
+    <link rel="next" title="tracklib.io" href="tracklib.io.html" />
+    <link rel="prev" title="tracklib" href="tracklib.html" /> 
   </head><body>
     <div class="related" role="navigation" aria-label="related navigation">
       <h3>Navigation</h3>
@@ -28,13 +28,13 @@
           <a href="py-modindex.html" title="Python Module Index"
              >modules</a> |</li>
         <li class="right" >
-          <a href="tracklib.models.html" title="tracklib.models package"
+          <a href="tracklib.io.html" title="tracklib.io"
              accesskey="N">next</a> |</li>
         <li class="right" >
-          <a href="tracklib.html" title="tracklib package"
+          <a href="tracklib.html" title="tracklib"
              accesskey="P">previous</a> |</li>
         <li class="nav-item nav-item-0"><a href="index.html">tracklib 0.1 documentation</a> &#187;</li>
-          <li class="nav-item nav-item-1"><a href="tracklib.html" accesskey="U">tracklib package</a> &#187;</li> 
+          <li class="nav-item nav-item-1"><a href="tracklib.html" accesskey="U">tracklib</a> &#187;</li> 
       </ul>
     </div>  
 
@@ -43,13 +43,19 @@
         <div class="bodywrapper">
           <div class="body" role="main">
             
-  <div class="section" id="tracklib-analysis-package">
-<h1>tracklib.analysis package<a class="headerlink" href="#tracklib-analysis-package" title="Permalink to this headline">¶</a></h1>
-<div class="section" id="submodules">
-<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline">¶</a></h2>
+  <div class="section" id="tracklib-analysis">
+<h1>tracklib.analysis<a class="headerlink" href="#tracklib-analysis" title="Permalink to this headline">¶</a></h1>
+<div class="contents local topic" id="contents">
+<ul class="simple">
+<li><p><a class="reference internal" href="#module-tracklib.analysis.chi2" id="id1">tracklib.analysis.chi2</a></p></li>
+<li><p><a class="reference internal" href="#module-tracklib.analysis.kld" id="id2">tracklib.analysis.kld</a></p></li>
+<li><p><a class="reference internal" href="#module-tracklib.analysis.kli" id="id3">tracklib.analysis.kli</a></p></li>
+<li><p><a class="reference internal" href="#module-tracklib.analysis.msd" id="id4">tracklib.analysis.msd</a></p></li>
+<li><p><a class="reference internal" href="#module-tracklib.analysis.plots" id="id5">tracklib.analysis.plots</a></p></li>
+</ul>
 </div>
 <div class="section" id="module-tracklib.analysis.chi2">
-<span id="tracklib-analysis-chi2-module"></span><h2>tracklib.analysis.chi2 module<a class="headerlink" href="#module-tracklib.analysis.chi2" title="Permalink to this headline">¶</a></h2>
+<span id="tracklib-analysis-chi2"></span><h2><a class="toc-backref" href="#id1">tracklib.analysis.chi2</a><a class="headerlink" href="#module-tracklib.analysis.chi2" title="Permalink to this headline">¶</a></h2>
 <p>This module implements an analysis method to check stationarity.</p>
 <p>Still under construction.</p>
 <p>The basic idea is to test the null hypothesis “the trajectories are generated
@@ -110,7 +116,7 @@ omitted.</p></li>
 
 </div>
 <div class="section" id="module-tracklib.analysis.kld">
-<span id="tracklib-analysis-kld-module"></span><h2>tracklib.analysis.kld module<a class="headerlink" href="#module-tracklib.analysis.kld" title="Permalink to this headline">¶</a></h2>
+<span id="tracklib-analysis-kld"></span><h2><a class="toc-backref" href="#id2">tracklib.analysis.kld</a><a class="headerlink" href="#module-tracklib.analysis.kld" title="Permalink to this headline">¶</a></h2>
 <dl class="function">
 <dt id="tracklib.analysis.kld.perezcruz">
 <code class="sig-prename descclassname">tracklib.analysis.kld.</code><code class="sig-name descname">perezcruz</code><span class="sig-paren">(</span><em class="sig-param">dataset</em>, <em class="sig-param">n=10</em>, <em class="sig-param">k=20</em>, <em class="sig-param">dt=1</em><span class="sig-paren">)</span><a class="headerlink" href="#tracklib.analysis.kld.perezcruz" title="Permalink to this definition">¶</a></dt>
@@ -146,7 +152,7 @@ some pre-processing.</p>
 
 </div>
 <div class="section" id="module-tracklib.analysis.kli">
-<span id="tracklib-analysis-kli-module"></span><h2>tracklib.analysis.kli module<a class="headerlink" href="#module-tracklib.analysis.kli" title="Permalink to this headline">¶</a></h2>
+<span id="tracklib-analysis-kli"></span><h2><a class="toc-backref" href="#id3">tracklib.analysis.kli</a><a class="headerlink" href="#module-tracklib.analysis.kli" title="Permalink to this headline">¶</a></h2>
 <p>This module uses the Rouse model to infer looping probabilities from two-locus
 trajectories. Most of the conceptual work is due to Christoph Zechner.</p>
 <dl class="function">
@@ -452,27 +458,10 @@ be a looptrace instead of a <a class="reference internal" href="#tracklib.analys
 
 </div>
 <div class="section" id="module-tracklib.analysis.msd">
-<span id="tracklib-analysis-msd-module"></span><h2>tracklib.analysis.msd module<a class="headerlink" href="#module-tracklib.analysis.msd" title="Permalink to this headline">¶</a></h2>
+<span id="tracklib-analysis-msd"></span><h2><a class="toc-backref" href="#id4">tracklib.analysis.msd</a><a class="headerlink" href="#module-tracklib.analysis.msd" title="Permalink to this headline">¶</a></h2>
 <p>Everything to do with MSDs and calculating them.</p>
-<p>Apart from immediately returning the most relevant results, the functions in
-this module also store data in the <a class="reference internal" href="tracklib.html#tracklib.trajectory.Trajectory.meta" title="tracklib.trajectory.Trajectory.meta"><code class="xref any py py-attr docutils literal notranslate"><span class="pre">Trajectory.meta</span></code></a> dict. The fully populated
-structure looks as follows (for a <a class="reference internal" href="tracklib.html#tracklib.trajectory.Trajectory" title="tracklib.trajectory.Trajectory"><code class="xref any py py-class docutils literal notranslate"><span class="pre">Trajectory</span></code></a> <code class="docutils literal notranslate"><span class="pre">traj</span></code>):</p>
-<dl>
-<dt><code class="docutils literal notranslate"><span class="pre">traj.meta['MSD']</span></code><span class="classifier"><code class="xref any docutils literal notranslate"><span class="pre">np.ndarray</span></code></span></dt><dd><p>the actual MSD of the trajectory</p>
-</dd>
-<dt><code class="docutils literal notranslate"><span class="pre">traj.meta['MSDmeta']</span></code><span class="classifier"><code class="xref any docutils literal notranslate"><span class="pre">dict</span></code></span></dt><dd><p>some meta data for the MSD. Contains the following fields:</p>
-<dl class="simple">
-<dt><code class="xref any docutils literal notranslate"><span class="pre">'N'</span></code><span class="classifier">np.ndarray</span></dt><dd><p>the number of sample points for each point of the MSD</p>
-</dd>
-<dt><code class="xref any docutils literal notranslate"><span class="pre">'alpha'</span></code><span class="classifier">float</span></dt><dd><p>the fitted powerlaw exponent at the beginning of the MSD</p>
-</dd>
-<dt><code class="xref any docutils literal notranslate"><span class="pre">'logG'</span></code><span class="classifier">float</span></dt><dd><p>logarithm of the prefactor from the same fit as <code class="xref any docutils literal notranslate"><span class="pre">'alpha'</span></code></p>
-</dd>
-<dt><code class="xref any docutils literal notranslate"><span class="pre">'fit_covariance'</span></code><span class="classifier">(2, 2) np.ndarray</span></dt><dd><p>covariance matrix of (<code class="xref any docutils literal notranslate"><span class="pre">alpha</span></code>, <code class="xref any docutils literal notranslate"><span class="pre">logG</span></code>) from the fit</p>
-</dd>
-</dl>
-</dd>
-</dl>
+<p>Many results of this module will be stored in <a class="reference internal" href="tracklib.html#tracklib.trajectory.Trajectory.meta" title="tracklib.trajectory.Trajectory.meta"><code class="xref any py py-attr docutils literal notranslate"><span class="pre">Trajectory.meta</span></code></a> for further
+use. For an overview, see <a class="reference internal" href="traj_meta_fields.html#traj-meta-fields-msd"><span class="std std-ref">here</span></a>.</p>
 <dl class="function">
 <dt id="tracklib.analysis.msd.MSDtraj">
 <code class="sig-prename descclassname">tracklib.analysis.msd.</code><code class="sig-name descname">MSDtraj</code><span class="sig-paren">(</span><em class="sig-param">traj</em><span class="sig-paren">)</span><a class="headerlink" href="#tracklib.analysis.msd.MSDtraj" title="Permalink to this definition">¶</a></dt>
@@ -567,7 +556,7 @@ first argument. Everything is then forwarded to that function.</p>
 
 </div>
 <div class="section" id="module-tracklib.analysis.plots">
-<span id="tracklib-analysis-plots-module"></span><h2>tracklib.analysis.plots module<a class="headerlink" href="#module-tracklib.analysis.plots" title="Permalink to this headline">¶</a></h2>
+<span id="tracklib-analysis-plots"></span><h2><a class="toc-backref" href="#id5">tracklib.analysis.plots</a><a class="headerlink" href="#module-tracklib.analysis.plots" title="Permalink to this headline">¶</a></h2>
 <p>A module to quickly produce some overview plots</p>
 <dl class="function">
 <dt id="tracklib.analysis.plots.length_distribution">
@@ -669,9 +658,6 @@ dataset.  For a two-locus trajectory, this would presumably be</p>
 </dd></dl>
 
 </div>
-<div class="section" id="module-tracklib.analysis">
-<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-tracklib.analysis" title="Permalink to this headline">¶</a></h2>
-</div>
 </div>
 
 
@@ -682,24 +668,22 @@ dataset.  For a two-locus trajectory, this would presumably be</p>
         <div class="sphinxsidebarwrapper">
   <h3><a href="index.html">Table of Contents</a></h3>
   <ul>
-<li><a class="reference internal" href="#">tracklib.analysis package</a><ul>
-<li><a class="reference internal" href="#submodules">Submodules</a></li>
-<li><a class="reference internal" href="#module-tracklib.analysis.chi2">tracklib.analysis.chi2 module</a></li>
-<li><a class="reference internal" href="#module-tracklib.analysis.kld">tracklib.analysis.kld module</a></li>
-<li><a class="reference internal" href="#module-tracklib.analysis.kli">tracklib.analysis.kli module</a></li>
-<li><a class="reference internal" href="#module-tracklib.analysis.msd">tracklib.analysis.msd module</a></li>
-<li><a class="reference internal" href="#module-tracklib.analysis.plots">tracklib.analysis.plots module</a></li>
-<li><a class="reference internal" href="#module-tracklib.analysis">Module contents</a></li>
+<li><a class="reference internal" href="#">tracklib.analysis</a><ul>
+<li><a class="reference internal" href="#module-tracklib.analysis.chi2">tracklib.analysis.chi2</a></li>
+<li><a class="reference internal" href="#module-tracklib.analysis.kld">tracklib.analysis.kld</a></li>
+<li><a class="reference internal" href="#module-tracklib.analysis.kli">tracklib.analysis.kli</a></li>
+<li><a class="reference internal" href="#module-tracklib.analysis.msd">tracklib.analysis.msd</a></li>
+<li><a class="reference internal" href="#module-tracklib.analysis.plots">tracklib.analysis.plots</a></li>
 </ul>
 </li>
 </ul>
 
   <h4>Previous topic</h4>
   <p class="topless"><a href="tracklib.html"
-                        title="previous chapter">tracklib package</a></p>
+                        title="previous chapter">tracklib</a></p>
   <h4>Next topic</h4>
-  <p class="topless"><a href="tracklib.models.html"
-                        title="next chapter">tracklib.models package</a></p>
+  <p class="topless"><a href="tracklib.io.html"
+                        title="next chapter">tracklib.io</a></p>
   <div role="note" aria-label="source link">
     <h3>This Page</h3>
     <ul class="this-page-menu">
@@ -731,13 +715,13 @@ dataset.  For a two-locus trajectory, this would presumably be</p>
           <a href="py-modindex.html" title="Python Module Index"
              >modules</a> |</li>
         <li class="right" >
-          <a href="tracklib.models.html" title="tracklib.models package"
+          <a href="tracklib.io.html" title="tracklib.io"
              >next</a> |</li>
         <li class="right" >
-          <a href="tracklib.html" title="tracklib package"
+          <a href="tracklib.html" title="tracklib"
              >previous</a> |</li>
         <li class="nav-item nav-item-0"><a href="index.html">tracklib 0.1 documentation</a> &#187;</li>
-          <li class="nav-item nav-item-1"><a href="tracklib.html" >tracklib package</a> &#187;</li> 
+          <li class="nav-item nav-item-1"><a href="tracklib.html" >tracklib</a> &#187;</li> 
       </ul>
     </div>
     <div class="footer" role="contentinfo">

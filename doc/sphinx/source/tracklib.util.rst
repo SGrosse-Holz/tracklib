@@ -1,27 +1,27 @@
-tracklib.util package
-=====================
+tracklib.util
+=============
 
-Submodules
-----------
+.. contents::
+   :local:
 
-tracklib.util.mcmc module
--------------------------
+tracklib.util.mcmc
+------------------
 
 .. automodule:: tracklib.util.mcmc
    :members:
    :undoc-members:
    :show-inheritance:
 
-tracklib.util.sweep module
---------------------------
+tracklib.util.sweep
+-------------------
 
 .. automodule:: tracklib.util.sweep
    :members:
    :undoc-members:
    :show-inheritance:
 
-tracklib.util.util module
--------------------------
+tracklib.util.util
+------------------
 
 .. automodule:: tracklib.util.util
    :members:
@@ -29,10 +29,3 @@ tracklib.util.util module
    :show-inheritance:
 
 
-Module contents
----------------
-
-.. automodule:: tracklib.util
-   :members:
-   :undoc-members:
-   :show-inheritance:

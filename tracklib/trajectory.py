@@ -14,11 +14,7 @@ class Trajectory(ABC):
     dimensions. Consequently, the internal `!np.ndarray` has shape (`N`, `T`,
     `d`).  Besides the actual trajectory data, this class also contains a dict
     for meta data. This can be used by the end-user, is also intended for use
-    within the library though. `tracklib.analysis.MSD
-    <tracklib.analysis.msd.MSD>` for example writes the ``'MSD'`` and
-    ``'MSDmeta'`` entries of this dict.
-    
-    TODO: write a list of all `meta` keys used by the library somewhere
+    within the library though. For reference, see :ref:`traj_meta_fields`
 
     For creation of actual `Trajectory` objects, use `fromArray`. This will
     select and instantiate the appropriate subclass based on the shape of the

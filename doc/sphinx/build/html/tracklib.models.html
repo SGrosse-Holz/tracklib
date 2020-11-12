@@ -4,7 +4,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
     <meta charset="utf-8" />
-    <title>tracklib.models package &#8212; tracklib 0.1 documentation</title>
+    <title>tracklib.models &#8212; tracklib 0.1 documentation</title>
     <link rel="stylesheet" href="_static/nature.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
@@ -15,8 +15,8 @@
     <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="tracklib.util package" href="tracklib.util.html" />
-    <link rel="prev" title="tracklib.analysis package" href="tracklib.analysis.html" /> 
+    <link rel="next" title="tracklib.util" href="tracklib.util.html" />
+    <link rel="prev" title="tracklib.io" href="tracklib.io.html" /> 
   </head><body>
     <div class="related" role="navigation" aria-label="related navigation">
       <h3>Navigation</h3>
@@ -28,13 +28,13 @@
           <a href="py-modindex.html" title="Python Module Index"
              >modules</a> |</li>
         <li class="right" >
-          <a href="tracklib.util.html" title="tracklib.util package"
+          <a href="tracklib.util.html" title="tracklib.util"
              accesskey="N">next</a> |</li>
         <li class="right" >
-          <a href="tracklib.analysis.html" title="tracklib.analysis package"
+          <a href="tracklib.io.html" title="tracklib.io"
              accesskey="P">previous</a> |</li>
         <li class="nav-item nav-item-0"><a href="index.html">tracklib 0.1 documentation</a> &#187;</li>
-          <li class="nav-item nav-item-1"><a href="tracklib.html" accesskey="U">tracklib package</a> &#187;</li> 
+          <li class="nav-item nav-item-1"><a href="tracklib.html" accesskey="U">tracklib</a> &#187;</li> 
       </ul>
     </div>  
 
@@ -43,13 +43,16 @@
         <div class="bodywrapper">
           <div class="body" role="main">
             
-  <div class="section" id="tracklib-models-package">
-<h1>tracklib.models package<a class="headerlink" href="#tracklib-models-package" title="Permalink to this headline">¶</a></h1>
-<div class="section" id="submodules">
-<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline">¶</a></h2>
+  <div class="section" id="tracklib-models">
+<h1>tracklib.models<a class="headerlink" href="#tracklib-models" title="Permalink to this headline">¶</a></h1>
+<div class="contents local topic" id="contents">
+<ul class="simple">
+<li><p><a class="reference internal" href="#module-tracklib.models.rouse" id="id1">tracklib.models.rouse</a></p></li>
+<li><p><a class="reference internal" href="#module-tracklib.models.statgauss" id="id2">tracklib.models.statgauss</a></p></li>
+</ul>
 </div>
 <div class="section" id="module-tracklib.models.rouse">
-<span id="tracklib-models-rouse-module"></span><h2>tracklib.models.rouse module<a class="headerlink" href="#module-tracklib.models.rouse" title="Permalink to this headline">¶</a></h2>
+<span id="tracklib-models-rouse"></span><h2><a class="toc-backref" href="#id1">tracklib.models.rouse</a><a class="headerlink" href="#module-tracklib.models.rouse" title="Permalink to this headline">¶</a></h2>
 <p>This module provides a Rouse model with a switchable extra bond.</p>
 <p class="rubric">Notes</p>
 <p><strong>Nomenclature:</strong> a ‘trace’ is a <code class="xref any docutils literal notranslate"><span class="pre">np.ndarray</span></code> of shape (T,). Consequently, a
@@ -408,7 +411,7 @@ the default behavior, this would be <code class="docutils literal notranslate"><
 
 </div>
 <div class="section" id="module-tracklib.models.statgauss">
-<span id="tracklib-models-statgauss-module"></span><h2>tracklib.models.statgauss module<a class="headerlink" href="#module-tracklib.models.statgauss" title="Permalink to this headline">¶</a></h2>
+<span id="tracklib-models-statgauss"></span><h2><a class="toc-backref" href="#id2">tracklib.models.statgauss</a><a class="headerlink" href="#module-tracklib.models.statgauss" title="Permalink to this headline">¶</a></h2>
 <p>This module provides a useful way to sample from a stationary Gaussian process.</p>
 <p>By assuming stationary, Gaussian, mean-zero increments, the process is uniquely
 defined by its MSD. Here we use that observation to generate sample traces from
@@ -519,9 +522,6 @@ noisy. In that case, provide a smoothed version as <code class="xref any docutil
 </dd></dl>
 
 </div>
-<div class="section" id="module-tracklib.models">
-<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-tracklib.models" title="Permalink to this headline">¶</a></h2>
-</div>
 </div>
 
 
@@ -532,21 +532,19 @@ noisy. In that case, provide a smoothed version as <code class="xref any docutil
         <div class="sphinxsidebarwrapper">
   <h3><a href="index.html">Table of Contents</a></h3>
   <ul>
-<li><a class="reference internal" href="#">tracklib.models package</a><ul>
-<li><a class="reference internal" href="#submodules">Submodules</a></li>
-<li><a class="reference internal" href="#module-tracklib.models.rouse">tracklib.models.rouse module</a></li>
-<li><a class="reference internal" href="#module-tracklib.models.statgauss">tracklib.models.statgauss module</a></li>
-<li><a class="reference internal" href="#module-tracklib.models">Module contents</a></li>
+<li><a class="reference internal" href="#">tracklib.models</a><ul>
+<li><a class="reference internal" href="#module-tracklib.models.rouse">tracklib.models.rouse</a></li>
+<li><a class="reference internal" href="#module-tracklib.models.statgauss">tracklib.models.statgauss</a></li>
 </ul>
 </li>
 </ul>
 
   <h4>Previous topic</h4>
-  <p class="topless"><a href="tracklib.analysis.html"
-                        title="previous chapter">tracklib.analysis package</a></p>
+  <p class="topless"><a href="tracklib.io.html"
+                        title="previous chapter">tracklib.io</a></p>
   <h4>Next topic</h4>
   <p class="topless"><a href="tracklib.util.html"
-                        title="next chapter">tracklib.util package</a></p>
+                        title="next chapter">tracklib.util</a></p>
   <div role="note" aria-label="source link">
     <h3>This Page</h3>
     <ul class="this-page-menu">
@@ -578,13 +576,13 @@ noisy. In that case, provide a smoothed version as <code class="xref any docutil
           <a href="py-modindex.html" title="Python Module Index"
              >modules</a> |</li>
         <li class="right" >
-          <a href="tracklib.util.html" title="tracklib.util package"
+          <a href="tracklib.util.html" title="tracklib.util"
              >next</a> |</li>
         <li class="right" >
-          <a href="tracklib.analysis.html" title="tracklib.analysis package"
+          <a href="tracklib.io.html" title="tracklib.io"
              >previous</a> |</li>
         <li class="nav-item nav-item-0"><a href="index.html">tracklib 0.1 documentation</a> &#187;</li>
-          <li class="nav-item nav-item-1"><a href="tracklib.html" >tracklib package</a> &#187;</li> 
+          <li class="nav-item nav-item-1"><a href="tracklib.html" >tracklib</a> &#187;</li> 
       </ul>
     </div>
     <div class="footer" role="contentinfo">
