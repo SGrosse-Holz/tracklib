@@ -51,7 +51,7 @@ class Trajectory(ABC):
         self.meta = kwargs
 
     @classmethod
-    def fromArray(cls, array, **kwargs):
+    def fromArray(cls, array, t=None, **kwargs):
         """
         Create a new `Trajectory` from an array.
 
@@ -59,10 +59,13 @@ class Trajectory(ABC):
 
         Parameters
         ----------
-        array : array-like with shape (N, T, d)
-            the data for the new trajectory. We expect `N` in {1, 2}, `d` in
-            {1, 2, 3}. Arrays with less than three dimensions will be
-            interpreted as (`T`, `d`) or (`T`,), respectively.
+        array : (N, T, d) array-like
+            the data for the new trajectory. We expect ``N in {1, 2}``, ``d in
+            {1, 2, 3}``. Arrays with less than three dimensions will be
+            interpreted as ``(T, d)`` or ``(T,)``, respectively.
+        t : (T,) array-like, optional
+            the frame number for each data point in the array. Use this if your
+            array has missing data points; they will be patched with `!np.nan`.
 
         Returns
         -------
@@ -87,7 +90,14 @@ class Trajectory(ABC):
         except AttributeError:
             raise ValueError("Could not instantiate trajectory with (N, T, d) = {}".format(str(array.shape)))
 
-        obj.data = array
+        if t is None:
+            obj.data = array
+        else:
+            t = t - np.min(t)
+            obj.data = np.empty((array.shape[0], np.max(t)+1, array.shape[2]), dtype=float)
+            obj.data[:] = np.nan
+            obj.data[:, t, :] = array
+
         return obj
 
     ### Basic properties ###
@@ -107,6 +117,20 @@ class Trajectory(ABC):
 
     def __len__(self):
         return self.T
+
+    def valid_frames(self):
+        """
+        Return the number of frames that have data.
+
+        We regard a frame as unusable as soon as any data is missing. So this
+        function counts the number of frames in the trajectory where none of
+        the data is `!np.nan`.
+
+        Returns
+        -------
+        int
+        """
+        return np.min(np.sum(~np.isnan(self.data), axis=1))
 
     def __getitem__(self, key):
         """

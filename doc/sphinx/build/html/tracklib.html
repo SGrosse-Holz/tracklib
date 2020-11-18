@@ -478,14 +478,18 @@ dimension is guaranteed to be present.</p>
 much like a list.</p>
 <dl class="method">
 <dt id="tracklib.trajectory.Trajectory.fromArray">
-<em class="property">classmethod </em><code class="sig-name descname">fromArray</code><span class="sig-paren">(</span><em class="sig-param">array</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#tracklib.trajectory.Trajectory.fromArray" title="Permalink to this definition">¶</a></dt>
+<em class="property">classmethod </em><code class="sig-name descname">fromArray</code><span class="sig-paren">(</span><em class="sig-param">array</em>, <em class="sig-param">t=None</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#tracklib.trajectory.Trajectory.fromArray" title="Permalink to this definition">¶</a></dt>
 <dd><p>Create a new <a class="reference internal" href="#tracklib.trajectory.Trajectory" title="tracklib.trajectory.Trajectory"><code class="xref any py py-class docutils literal notranslate"><span class="pre">Trajectory</span></code></a> from an array.</p>
 <p>Any keyword arguments are simply written into <code class="docutils literal notranslate"><span class="pre">self.meta</span></code>.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>array</strong> (<em>array-like with shape</em><em> (</em><em>N</em><em>, </em><em>T</em><em>, </em><em>d</em><em>)</em>) – the data for the new trajectory. We expect <a class="reference internal" href="#tracklib.trajectory.Trajectory.N" title="tracklib.trajectory.Trajectory.N"><code class="xref any py py-meth docutils literal notranslate"><span class="pre">N</span></code></a> in {1, 2}, <a class="reference internal" href="#tracklib.trajectory.Trajectory.d" title="tracklib.trajectory.Trajectory.d"><code class="xref any py py-meth docutils literal notranslate"><span class="pre">d</span></code></a> in
-{1, 2, 3}. Arrays with less than three dimensions will be
-interpreted as (<a class="reference internal" href="#tracklib.trajectory.Trajectory.T" title="tracklib.trajectory.Trajectory.T"><code class="xref any py py-meth docutils literal notranslate"><span class="pre">T</span></code></a>, <a class="reference internal" href="#tracklib.trajectory.Trajectory.d" title="tracklib.trajectory.Trajectory.d"><code class="xref any py py-meth docutils literal notranslate"><span class="pre">d</span></code></a>) or (<a class="reference internal" href="#tracklib.trajectory.Trajectory.T" title="tracklib.trajectory.Trajectory.T"><code class="xref any py py-meth docutils literal notranslate"><span class="pre">T</span></code></a>,), respectively.</p>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>array</strong> (<em>(</em><em>N</em><em>, </em><em>T</em><em>, </em><em>d</em><em>) </em><em>array-like</em>) – the data for the new trajectory. We expect <code class="docutils literal notranslate"><span class="pre">N</span> <span class="pre">in</span> <span class="pre">{1,</span> <span class="pre">2}</span></code>, <code class="docutils literal notranslate"><span class="pre">d</span> <span class="pre">in</span>
+<span class="pre">{1,</span> <span class="pre">2,</span> <span class="pre">3}</span></code>. Arrays with less than three dimensions will be
+interpreted as <code class="docutils literal notranslate"><span class="pre">(T,</span> <span class="pre">d)</span></code> or <code class="docutils literal notranslate"><span class="pre">(T,)</span></code>, respectively.</p></li>
+<li><p><strong>t</strong> (<em>(</em><em>T</em><em>,</em><em>) </em><em>array-like</em><em>, </em><em>optional</em>) – the frame number for each data point in the array. Use this if your
+array has missing data points; they will be patched with <code class="xref any docutils literal notranslate"><span class="pre">np.nan</span></code>.</p></li>
+</ul>
 </dd>
 <dt class="field-even">Returns</dt>
 <dd class="field-even"><p><em>Trajectory_?N_?d</em> – a new <a class="reference internal" href="#tracklib.trajectory.Trajectory" title="tracklib.trajectory.Trajectory"><code class="xref any py py-class docutils literal notranslate"><span class="pre">Trajectory</span></code></a> object with the specified data</p>
@@ -511,6 +515,20 @@ interpreted as (<a class="reference internal" href="#tracklib.trajectory.Traject
 <dt id="tracklib.trajectory.Trajectory.d">
 <em class="property">property </em><code class="sig-name descname">d</code><a class="headerlink" href="#tracklib.trajectory.Trajectory.d" title="Permalink to this definition">¶</a></dt>
 <dd><p>Number of dimensions</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="tracklib.trajectory.Trajectory.valid_frames">
+<code class="sig-name descname">valid_frames</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#tracklib.trajectory.Trajectory.valid_frames" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the number of frames that have data.</p>
+<p>We regard a frame as unusable as soon as any data is missing. So this
+function counts the number of frames in the trajectory where none of
+the data is <code class="xref any docutils literal notranslate"><span class="pre">np.nan</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p><em>int</em></p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="method">

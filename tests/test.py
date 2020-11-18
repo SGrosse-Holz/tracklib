@@ -43,6 +43,10 @@ class Test0Trajectory(myTestCase):
         traj = tl.Trajectory.fromArray(np.zeros((2, 10, 3)))
         self.assertIsInstance(traj, tl.trajectory.Trajectory_2N3d)
 
+        traj = tl.Trajectory.fromArray(np.zeros((2, 5, 2)), t=[1, 2, 4, 5, 7])
+        self.assertEqual(traj.T, 7)
+        self.assertTrue(np.all(np.isnan(traj[[2, 5]])))
+
         with self.assertRaises(ValueError):
             traj = tl.Trajectory.fromArray(np.zeros((1, 1, 1, 1)))
 
@@ -54,6 +58,16 @@ class Test1Trajectory(myTestCase):
         self.trajs = [tl.Trajectory.fromArray(np.zeros((N, self.T, d)), localization_error=np.ones((d,)), parity='even') \
                       for N, d in zip(self.Ns, self.ds)]
         self.trajs[5].meta['localization_error'] = np.ones((2, 3)) # To check that shape
+
+    def test_valid_frames(self):
+        traj = tl.Trajectory.fromArray(np.zeros((2, 5, 2)), t=[1, 2, 4, 5, 7])
+        self.assertEqual(traj.valid_frames(), 5)
+
+        traj.data[0, 2, :] = 0
+        self.assertEqual(traj.valid_frames(), 5)
+
+        traj.data[1, 2, :] = 0
+        self.assertEqual(traj.valid_frames(), 6)
 
     def test_interface(self):
         """
