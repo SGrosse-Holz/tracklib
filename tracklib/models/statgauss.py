@@ -127,6 +127,8 @@ def dataset(msd, N=1, Ts=None, d=3, **kwargs):
             Ts[i] = Tmax
         elif T > Tmax:
             raise ValueError("Cannot sample trajectory of length {} from MSD of length {}".format(T, Tmax))
+        elif T % 1 != 0:
+            raise ValueError("Found non-integer trajectory length: {} (at index {})".format(T, i))
 
     # Timing execution of sampleMSD indicates that as long as we have a
     # reasonable distribution of lengths (e.g. exponential with mean 10% of
@@ -178,7 +180,7 @@ def control(dataset, msd=None):
 
     N = dataset.map_unique(lambda traj : traj.N)
     d = dataset.map_unique(lambda traj : traj.d)
-    msd /= N*d
+    msd = msd / (N*d) # reassign!
 
     def gen():
         for (traj, mytags) in dataset(giveTags=True):
@@ -187,8 +189,17 @@ def control(dataset, msd=None):
             except np.linalg.LinAlgError:
                 raise RuntimeError("Could not generate trajectories from provided (or ensemble) MSD. Try using something cleaner.")
             newdata = np.array([traces[:, (i*traj.d):((i+1)*traj.d)] for i in range(traj.N)])
-            newdata += np.mean(traj.data, axis=1, keepdims=True)
+            newdata += np.nanmean(traj.data, axis=1, keepdims=True)
+            newdata[np.isnan(traj.data)] = np.nan
 
-            yield (Trajectory.fromArray(newdata, **deepcopy(traj.meta)), deepcopy(mytags))
+            newmeta = deepcopy(traj.meta)
+            # Remove those meta entries that explicitly depend on the data
+            for key in ['MSD', 'MSDmeta', 'chi2scores']:
+                try:
+                    del newmeta[key]
+                except KeyError:
+                    pass
+
+            yield (Trajectory.fromArray(newdata, **newmeta), deepcopy(mytags))
 
     return TaggedSet(gen())

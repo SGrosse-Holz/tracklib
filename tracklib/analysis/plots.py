@@ -44,7 +44,7 @@ def length_distribution(dataset, **kwargs):
     plt.xlabel("Length in frames")
     return h
 
-def msd_overview(dataset, **kwargs):
+def msd_overview(dataset, dt=1., **kwargs):
     """
     Plot individual and ensemble MSDs of the given dataset
 
@@ -55,6 +55,12 @@ def msd_overview(dataset, **kwargs):
     ----------
     dataset : `TaggedSet` of `Trajectory`
         the dataset to use
+    dt : float or (float, str) tuple, optional
+        the time step between two frames of the trajectory. This will simply
+        rescale the horizontal axis of the plot. Optionally, give a string to
+        identify the units, e.g. ``dt = (2, 'seconds')`` if your trajectories
+        have a lapse time of 2 seconds. Note that you might want to set
+        `!plt.xlabel()` yourself if you omit the unit string.
 
     Returns
     -------
@@ -66,6 +72,14 @@ def msd_overview(dataset, **kwargs):
     Only intended as a quick overview plot, for more customization write your
     own plotting routine using `analysis.MSD <tracklib.analysis.msd.MSD>`
     """
+    if isinstance(dt, tuple):
+        unit_str = dt[1]
+        dt = dt[0]
+    elif dt == 1:
+        unit_str = "frames"
+    else:
+        unit_str = "{} frames".format(1/dt)
+
     ensembleLabel = 'ensemble mean'
     if 'label' in kwargs.keys():
         ensembleLabel = kwargs['label']
@@ -75,15 +89,15 @@ def msd_overview(dataset, **kwargs):
     lines = []
     for traj in dataset:
         msd = MSD(traj)
-        tmsd = np.arange(len(msd))
+        tmsd = dt*np.arange(len(msd))
         lines.append(plt.loglog(tmsd, msd, **kwargs))
     msd = MSD(dataset)
-    tmsd = np.arange(len(msd))
+    tmsd = dt*np.arange(len(msd))
     lines.append(plt.loglog(tmsd, msd, color='k', linewidth=2, label='ensemble mean'))
     plt.legend()
 
     plt.title('MSDs')
-    plt.xlabel("time in frames")
+    plt.xlabel("time in " + unit_str)
     plt.ylabel("MSD")
     
     return lines

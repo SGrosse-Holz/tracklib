@@ -582,13 +582,20 @@ data. For more elaborate plotting, obtain the trajectory lengths as</p>
 
 <dl class="function">
 <dt id="tracklib.analysis.plots.msd_overview">
-<code class="sig-prename descclassname">tracklib.analysis.plots.</code><code class="sig-name descname">msd_overview</code><span class="sig-paren">(</span><em class="sig-param">dataset</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#tracklib.analysis.plots.msd_overview" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">tracklib.analysis.plots.</code><code class="sig-name descname">msd_overview</code><span class="sig-paren">(</span><em class="sig-param">dataset</em>, <em class="sig-param">dt=1.0</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#tracklib.analysis.plots.msd_overview" title="Permalink to this definition">¶</a></dt>
 <dd><p>Plot individual and ensemble MSDs of the given dataset</p>
 <p>All keyword arguments are forwarded to <code class="xref any docutils literal notranslate"><span class="pre">plt.loglog()</span></code> for plotting of the
 individual trajectory MSDs</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>dataset</strong> (<a class="reference internal" href="tracklib.html#tracklib.taggedset.TaggedSet" title="tracklib.taggedset.TaggedSet"><code class="xref any py py-class docutils literal notranslate"><span class="pre">TaggedSet</span></code></a> of <a class="reference internal" href="tracklib.html#tracklib.trajectory.Trajectory" title="tracklib.trajectory.Trajectory"><code class="xref any py py-class docutils literal notranslate"><span class="pre">Trajectory</span></code></a>) – the dataset to use</p>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>dataset</strong> (<a class="reference internal" href="tracklib.html#tracklib.taggedset.TaggedSet" title="tracklib.taggedset.TaggedSet"><code class="xref any py py-class docutils literal notranslate"><span class="pre">TaggedSet</span></code></a> of <a class="reference internal" href="tracklib.html#tracklib.trajectory.Trajectory" title="tracklib.trajectory.Trajectory"><code class="xref any py py-class docutils literal notranslate"><span class="pre">Trajectory</span></code></a>) – the dataset to use</p></li>
+<li><p><strong>dt</strong> (<em>float</em><em> or </em><em>(</em><em>float</em><em>, </em><em>str</em><em>) </em><em>tuple</em><em>, </em><em>optional</em>) – the time step between two frames of the trajectory. This will simply
+rescale the horizontal axis of the plot. Optionally, give a string to
+identify the units, e.g. <code class="docutils literal notranslate"><span class="pre">dt</span> <span class="pre">=</span> <span class="pre">(2,</span> <span class="pre">'seconds')</span></code> if your trajectories
+have a lapse time of 2 seconds. Note that you might want to set
+<code class="xref any docutils literal notranslate"><span class="pre">plt.xlabel()</span></code> yourself if you omit the unit string.</p></li>
+</ul>
 </dd>
 <dt class="field-even">Returns</dt>
 <dd class="field-even"><p><em>list of lines</em> – aggregate of the <code class="docutils literal notranslate"><span class="pre">plt.plot()</span></code> outputs</p>

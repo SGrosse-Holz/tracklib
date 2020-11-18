@@ -437,9 +437,9 @@ class Trajectory_2N(Trajectory):
 
         # Plot second particle
         kwargs['linestyle'] = linestyles[1]
-        lines.append(ax.plot(self.data[1, :, dims[0]], \
-                             self.data[1, :, dims[1]], \
-                             **kwargs))
+        lines += ax.plot(self.data[1, :, dims[0]], \
+                         self.data[1, :, dims[1]], \
+                         **kwargs)
 
         return lines
 
