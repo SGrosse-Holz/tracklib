@@ -64,7 +64,7 @@
     <p id="t11" class="pln"><span class="n"><a href="#t11">11</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
     <p id="t12" class="pln"><span class="n"><a href="#t12">12</a></span><span class="t"><span class="str">    For processing data (in the sense of "applying a function to all of them")</span>&nbsp;</span><span class="r"></span></p>
     <p id="t13" class="pln"><span class="n"><a href="#t13">13</a></span><span class="t"><span class="str">    it is often useful to simply use the built-in `!map`. If the function in</span>&nbsp;</span><span class="r"></span></p>
-    <p id="t14" class="pln"><span class="n"><a href="#t14">14</a></span><span class="t"><span class="str">    question has to overwrite the data, you can use `filter`. Note that</span>&nbsp;</span><span class="r"></span></p>
+    <p id="t14" class="pln"><span class="n"><a href="#t14">14</a></span><span class="t"><span class="str">    question has to overwrite the data, you can use `apply`. Note that</span>&nbsp;</span><span class="r"></span></p>
     <p id="t15" class="pln"><span class="n"><a href="#t15">15</a></span><span class="t"><span class="str">    in-place modification can be achieved with `!map()`.</span>&nbsp;</span><span class="r"></span></p>
     <p id="t16" class="pln"><span class="n"><a href="#t16">16</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
     <p id="t17" class="pln"><span class="n"><a href="#t17">17</a></span><span class="t"><span class="str">    Parameters</span>&nbsp;</span><span class="r"></span></p>
@@ -440,9 +440,9 @@
     <p id="t387" class="pln"><span class="n"><a href="#t387">387</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
     <p id="t388" class="pln"><span class="n"><a href="#t388">388</a></span><span class="t">    <span class="com">### Processing data in the set ###</span>&nbsp;</span><span class="r"></span></p>
     <p id="t389" class="pln"><span class="n"><a href="#t389">389</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
-    <p id="t390" class="run"><span class="n"><a href="#t390">390</a></span><span class="t">    <span class="key">def</span> <span class="nam">filter</span><span class="op">(</span><span class="nam">self</span><span class="op">,</span> <span class="nam">fun</span><span class="op">)</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
+    <p id="t390" class="run"><span class="n"><a href="#t390">390</a></span><span class="t">    <span class="key">def</span> <span class="nam">apply</span><span class="op">(</span><span class="nam">self</span><span class="op">,</span> <span class="nam">fun</span><span class="op">)</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
     <p id="t391" class="pln"><span class="n"><a href="#t391">391</a></span><span class="t">        <span class="str">"""</span>&nbsp;</span><span class="r"></span></p>
-    <p id="t392" class="pln"><span class="n"><a href="#t392">392</a></span><span class="t"><span class="str">        Run all data through the given function.</span>&nbsp;</span><span class="r"></span></p>
+    <p id="t392" class="pln"><span class="n"><a href="#t392">392</a></span><span class="t"><span class="str">        Apply the given function to all data.</span>&nbsp;</span><span class="r"></span></p>
     <p id="t393" class="pln"><span class="n"><a href="#t393">393</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
     <p id="t394" class="pln"><span class="n"><a href="#t394">394</a></span><span class="t"><span class="str">        Parameters</span>&nbsp;</span><span class="r"></span></p>
     <p id="t395" class="pln"><span class="n"><a href="#t395">395</a></span><span class="t"><span class="str">        ----------</span>&nbsp;</span><span class="r"></span></p>
@@ -465,9 +465,9 @@
     <p id="t412" class="pln"><span class="n"><a href="#t412">412</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
     <p id="t413" class="run"><span class="n"><a href="#t413">413</a></span><span class="t">    <span class="key">def</span> <span class="nam">process</span><span class="op">(</span><span class="nam">self</span><span class="op">,</span> <span class="nam">fun</span><span class="op">)</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
     <p id="t414" class="pln"><span class="n"><a href="#t414">414</a></span><span class="t">        <span class="str">"""</span>&nbsp;</span><span class="r"></span></p>
-    <p id="t415" class="pln"><span class="n"><a href="#t415">415</a></span><span class="t"><span class="str">        Generate a new `TaggedSet` with filtered data.</span>&nbsp;</span><span class="r"></span></p>
+    <p id="t415" class="pln"><span class="n"><a href="#t415">415</a></span><span class="t"><span class="str">        Generate a new `TaggedSet` with processed data.</span>&nbsp;</span><span class="r"></span></p>
     <p id="t416" class="pln"><span class="n"><a href="#t416">416</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
-    <p id="t417" class="pln"><span class="n"><a href="#t417">417</a></span><span class="t"><span class="str">        Same as `filter`, except that a new list with the processed data is</span>&nbsp;</span><span class="r"></span></p>
+    <p id="t417" class="pln"><span class="n"><a href="#t417">417</a></span><span class="t"><span class="str">        Same as `apply`, except that a new list with the processed data is</span>&nbsp;</span><span class="r"></span></p>
     <p id="t418" class="pln"><span class="n"><a href="#t418">418</a></span><span class="t"><span class="str">        returned, while the original one remains unchanged.</span>&nbsp;</span><span class="r"></span></p>
     <p id="t419" class="pln"><span class="n"><a href="#t419">419</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
     <p id="t420" class="pln"><span class="n"><a href="#t420">420</a></span><span class="t"><span class="str">        Parameters</span>&nbsp;</span><span class="r"></span></p>
@@ -481,7 +481,7 @@
     <p id="t428" class="pln"><span class="n"><a href="#t428">428</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
     <p id="t429" class="pln"><span class="n"><a href="#t429">429</a></span><span class="t"><span class="str">        See also</span>&nbsp;</span><span class="r"></span></p>
     <p id="t430" class="pln"><span class="n"><a href="#t430">430</a></span><span class="t"><span class="str">        --------</span>&nbsp;</span><span class="r"></span></p>
-    <p id="t431" class="pln"><span class="n"><a href="#t431">431</a></span><span class="t"><span class="str">        filter, builtins.map</span>&nbsp;</span><span class="r"></span></p>
+    <p id="t431" class="pln"><span class="n"><a href="#t431">431</a></span><span class="t"><span class="str">        apply, builtins.map</span>&nbsp;</span><span class="r"></span></p>
     <p id="t432" class="pln"><span class="n"><a href="#t432">432</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
     <p id="t433" class="pln"><span class="n"><a href="#t433">433</a></span><span class="t"><span class="str">        Notes</span>&nbsp;</span><span class="r"></span></p>
     <p id="t434" class="pln"><span class="n"><a href="#t434">434</a></span><span class="t"><span class="str">        -----</span>&nbsp;</span><span class="r"></span></p>
@@ -560,7 +560,7 @@
     <div class="content">
         <p>
             <a class="nav" href="index.html">&#xab; index</a> &nbsp; &nbsp; <a class="nav" href="https://coverage.readthedocs.io">coverage.py v5.2.1</a>,
-            created at 2020-11-03 08:15 -0500
+            created at 2020-11-18 10:16 -0500
         </p>
     </div>
 </div>

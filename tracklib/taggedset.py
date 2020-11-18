@@ -11,7 +11,7 @@ class TaggedSet():
 
     For processing data (in the sense of "applying a function to all of them")
     it is often useful to simply use the built-in `!map`. If the function in
-    question has to overwrite the data, you can use `filter`. Note that
+    question has to overwrite the data, you can use `apply`. Note that
     in-place modification can be achieved with `!map()`.
 
     Parameters
@@ -387,9 +387,9 @@ class TaggedSet():
 
     ### Processing data in the set ###
 
-    def filter(self, fun):
+    def apply(self, fun):
         """
-        Run all data through the given function.
+        Apply the given function to all data.
 
         Parameters
         ----------
@@ -412,9 +412,9 @@ class TaggedSet():
 
     def process(self, fun):
         """
-        Generate a new `TaggedSet` with filtered data.
+        Generate a new `TaggedSet` with processed data.
 
-        Same as `filter`, except that a new list with the processed data is
+        Same as `apply`, except that a new list with the processed data is
         returned, while the original one remains unchanged.
 
         Parameters
@@ -428,7 +428,7 @@ class TaggedSet():
 
         See also
         --------
-        filter, builtins.map
+        apply, builtins.map
 
         Notes
         -----

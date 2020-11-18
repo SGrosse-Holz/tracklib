@@ -214,10 +214,10 @@ class Test1TaggedSet(unittest.TestCase):
     def test_tagset(self):
         self.assertSetEqual(self.ls.tagset(), {'a', 'b', 'c'})
 
-    def test_filter(self):
+    def test_apply(self):
         def fun(i):
             return i+1
-        self.ls.filter(fun)
+        self.ls.apply(fun)
         self.assertListEqual(self.ls._data, [2, 3, 4])
 
     def test_process(self):

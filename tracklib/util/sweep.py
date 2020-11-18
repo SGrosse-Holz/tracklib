@@ -65,8 +65,8 @@ class Sweeper:
         ----------
         preproc : callable, with signature ``traj = preproc(traj)``
             the function to use for preprocessing. Will be applied to every
-            trajectory individually via `TaggedSet.filter()
-            <tracklib.taggedset.TaggedSet.filter>`
+            trajectory individually via `TaggedSet.apply()
+            <tracklib.taggedset.TaggedSet.apply>`
 
             Examples:
 
@@ -76,10 +76,10 @@ class Sweeper:
         Notes
         -----
         As of now, this function literally only calls
-        ``self.dataset.filter(preproc)``.  It serves more as a reminder that
+        ``self.dataset.apply(preproc)``.  It serves more as a reminder that
         preprocessing might be necessary.
         """
-        self.dataset.filter(preproc)
+        self.dataset.apply(preproc)
 
     @staticmethod
     def _parfun(args):

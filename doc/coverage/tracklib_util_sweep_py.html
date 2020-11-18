@@ -118,8 +118,8 @@
     <p id="t65" class="pln"><span class="n"><a href="#t65">65</a></span><span class="t"><span class="str">        ----------</span>&nbsp;</span><span class="r"></span></p>
     <p id="t66" class="pln"><span class="n"><a href="#t66">66</a></span><span class="t"><span class="str">        preproc : callable, with signature ``traj = preproc(traj)``</span>&nbsp;</span><span class="r"></span></p>
     <p id="t67" class="pln"><span class="n"><a href="#t67">67</a></span><span class="t"><span class="str">            the function to use for preprocessing. Will be applied to every</span>&nbsp;</span><span class="r"></span></p>
-    <p id="t68" class="pln"><span class="n"><a href="#t68">68</a></span><span class="t"><span class="str">            trajectory individually via `TaggedSet.filter()</span>&nbsp;</span><span class="r"></span></p>
-    <p id="t69" class="pln"><span class="n"><a href="#t69">69</a></span><span class="t"><span class="str">            &lt;tracklib.taggedset.TaggedSet.filter>`</span>&nbsp;</span><span class="r"></span></p>
+    <p id="t68" class="pln"><span class="n"><a href="#t68">68</a></span><span class="t"><span class="str">            trajectory individually via `TaggedSet.apply()</span>&nbsp;</span><span class="r"></span></p>
+    <p id="t69" class="pln"><span class="n"><a href="#t69">69</a></span><span class="t"><span class="str">            &lt;tracklib.taggedset.TaggedSet.apply>`</span>&nbsp;</span><span class="r"></span></p>
     <p id="t70" class="pln"><span class="n"><a href="#t70">70</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
     <p id="t71" class="pln"><span class="n"><a href="#t71">71</a></span><span class="t"><span class="str">            Examples:</span>&nbsp;</span><span class="r"></span></p>
     <p id="t72" class="pln"><span class="n"><a href="#t72">72</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
@@ -129,10 +129,10 @@
     <p id="t76" class="pln"><span class="n"><a href="#t76">76</a></span><span class="t"><span class="str">        Notes</span>&nbsp;</span><span class="r"></span></p>
     <p id="t77" class="pln"><span class="n"><a href="#t77">77</a></span><span class="t"><span class="str">        -----</span>&nbsp;</span><span class="r"></span></p>
     <p id="t78" class="pln"><span class="n"><a href="#t78">78</a></span><span class="t"><span class="str">        As of now, this function literally only calls</span>&nbsp;</span><span class="r"></span></p>
-    <p id="t79" class="pln"><span class="n"><a href="#t79">79</a></span><span class="t"><span class="str">        ``self.dataset.filter(preproc)``.  It serves more as a reminder that</span>&nbsp;</span><span class="r"></span></p>
+    <p id="t79" class="pln"><span class="n"><a href="#t79">79</a></span><span class="t"><span class="str">        ``self.dataset.apply(preproc)``.  It serves more as a reminder that</span>&nbsp;</span><span class="r"></span></p>
     <p id="t80" class="pln"><span class="n"><a href="#t80">80</a></span><span class="t"><span class="str">        preprocessing might be necessary.</span>&nbsp;</span><span class="r"></span></p>
     <p id="t81" class="pln"><span class="n"><a href="#t81">81</a></span><span class="t"><span class="str">        """</span>&nbsp;</span><span class="r"></span></p>
-    <p id="t82" class="run"><span class="n"><a href="#t82">82</a></span><span class="t">        <span class="nam">self</span><span class="op">.</span><span class="nam">dataset</span><span class="op">.</span><span class="nam">filter</span><span class="op">(</span><span class="nam">preproc</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
+    <p id="t82" class="run"><span class="n"><a href="#t82">82</a></span><span class="t">        <span class="nam">self</span><span class="op">.</span><span class="nam">dataset</span><span class="op">.</span><span class="nam">apply</span><span class="op">(</span><span class="nam">preproc</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p id="t83" class="pln"><span class="n"><a href="#t83">83</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
     <p id="t84" class="run"><span class="n"><a href="#t84">84</a></span><span class="t">    <span class="op">@</span><span class="nam">staticmethod</span>&nbsp;</span><span class="r"></span></p>
     <p id="t85" class="pln"><span class="n"><a href="#t85">85</a></span><span class="t">    <span class="key">def</span> <span class="nam">_parfun</span><span class="op">(</span><span class="nam">args</span><span class="op">)</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
@@ -254,7 +254,7 @@
     <div class="content">
         <p>
             <a class="nav" href="index.html">&#xab; index</a> &nbsp; &nbsp; <a class="nav" href="https://coverage.readthedocs.io">coverage.py v5.2.1</a>,
-            created at 2020-11-03 08:15 -0500
+            created at 2020-11-18 10:16 -0500
         </p>
     </div>
 </div>
