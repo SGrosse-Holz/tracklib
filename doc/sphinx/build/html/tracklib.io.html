@@ -64,7 +64,7 @@ important ones are <code class="docutils literal notranslate"><span class="pre">
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>filename</strong> (<em>string</em>) – the file to be read</p></li>
+<li><p><strong>filename</strong> (<em>string</em><em> or </em><em>file-like object</em>) – the file to be read</p></li>
 <li><p><strong>columns</strong> (<em>list</em>) – how to interpret the columns in the file. Use any of these identifiers:
 <code class="docutils literal notranslate"><span class="pre">{'x',</span> <span class="pre">'y',</span> <span class="pre">'z',</span> <span class="pre">'x2',</span> <span class="pre">'y2',</span> <span class="pre">'z2',</span> <span class="pre">'t',</span> <span class="pre">'id',</span> <span class="pre">None}</span></code>, where <code class="docutils literal notranslate"><span class="pre">'t'</span></code>
 (mandatory) is the frame number, <code class="docutils literal notranslate"><span class="pre">'id'</span></code> (mandatory) the trajectory
@@ -86,6 +86,29 @@ With the latter we simply take the mean of the array.</p></li>
 <dd class="field-even"><p><em>TaggedSet</em> – the loaded data set</p>
 </dd>
 </dl>
+<p class="rubric">Examples</p>
+<p>This function can be used to load data from <code class="xref any docutils literal notranslate"><span class="pre">pandas.DataFrame</span></code> tables, if
+they conform to the format described above:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">io</span>
+<span class="gp">... </span><span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="gp">... </span><span class="kn">import</span> <span class="nn">tracklib</span> <span class="k">as</span> <span class="nn">tl</span>
+<span class="gp">...</span>
+<span class="gp">... </span><span class="c1"># Set up a DataFrame containing some dummy data</span>
+<span class="gp">... </span><span class="c1"># Caveat to pay attention to: the order of the columns is important!</span>
+<span class="gp">... </span><span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">()</span>
+<span class="gp">... </span><span class="n">df</span><span class="p">[</span><span class="s1">&#39;frame_no&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">]</span>
+<span class="gp">... </span><span class="n">df</span><span class="p">[</span><span class="s1">&#39;trajectory_id&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="mi">4</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">4</span><span class="p">]</span>
+<span class="gp">... </span><span class="n">df</span><span class="p">[</span><span class="s1">&#39;coord1&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">]</span>
+<span class="gp">... </span><span class="n">df</span><span class="p">[</span><span class="s1">&#39;coord2&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="mi">4</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">6</span><span class="p">]</span>
+<span class="gp">...</span>
+<span class="gp">... </span><span class="n">csv_stream</span> <span class="o">=</span> <span class="n">io</span><span class="o">.</span><span class="n">StringIO</span><span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">to_csv</span><span class="p">())</span>
+<span class="gp">... </span><span class="n">dataset</span> <span class="o">=</span> <span class="n">tl</span><span class="o">.</span><span class="n">io</span><span class="o">.</span><span class="n">load</span><span class="o">.</span><span class="n">csv</span><span class="p">(</span><span class="n">csv_stream</span><span class="p">,</span>
+<span class="gp">... </span>                         <span class="p">[</span><span class="kc">None</span><span class="p">,</span> <span class="s1">&#39;t&#39;</span><span class="p">,</span> <span class="s1">&#39;id&#39;</span><span class="p">,</span> <span class="s1">&#39;x&#39;</span><span class="p">,</span> <span class="s1">&#39;y&#39;</span><span class="p">],</span> <span class="c1"># first column will be index</span>
+<span class="gp">... </span>                         <span class="n">delimiter</span><span class="o">=</span><span class="s1">&#39;,&#39;</span><span class="p">,</span>               <span class="c1"># pandas&#39; default</span>
+<span class="gp">... </span>                         <span class="n">skip_header</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>               <span class="c1"># pandas prints a header line</span>
+<span class="gp">... </span>                        <span class="p">)</span>
+</pre></div>
+</div>
 </dd></dl>
 
 <dl class="function">

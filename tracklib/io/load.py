@@ -18,7 +18,7 @@ def csv(filename, columns=['x', 'y', 't', 'id'], tags=set(), meta_post={}, **kwa
     
     Parameters
     ----------
-    filename : string
+    filename : string or file-like object
         the file to be read
     columns : list
         how to interpret the columns in the file. Use any of these identifiers:
@@ -43,6 +43,30 @@ def csv(filename, columns=['x', 'y', 't', 'id'], tags=set(), meta_post={}, **kwa
     -------
     TaggedSet
         the loaded data set
+
+    Examples
+    --------
+    This function can be used to load data from `!pandas.DataFrame` tables, if
+    they conform to the format described above:
+
+    >>> import io
+    ... import pandas as pd
+    ... import tracklib as tl
+    ...
+    ... # Set up a DataFrame containing some dummy data
+    ... # Caveat to pay attention to: the order of the columns is important!
+    ... df = pd.DataFrame()
+    ... df['frame_no'] = [1, 2, 3]
+    ... df['trajectory_id'] = [4, 4, 4]
+    ... df['coord1'] = [1, 2, 3]
+    ... df['coord2'] = [4, 5, 6]
+    ...
+    ... csv_stream = io.StringIO(df.to_csv())
+    ... dataset = tl.io.load.csv(csv_stream,
+    ...                          [None, 't', 'id', 'x', 'y'], # first column will be index
+    ...                          delimiter=',',               # pandas' default
+    ...                          skip_header=1,               # pandas prints a header line
+    ...                         )
     """
     col_inds = {}
     for i, key in enumerate(columns):
