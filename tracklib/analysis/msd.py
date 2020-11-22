@@ -10,8 +10,10 @@ import warnings
 import numpy as np
 
 import scipy.optimize
+import scipy.interpolate
 
 from tracklib import Trajectory, TaggedSet
+from tracklib.util.util import log_derivative
 
 def MSDtraj(traj):
     """
@@ -121,7 +123,7 @@ def MSD(*args, **kwargs):
 
     See also
     --------
-    MSDtraj, MSDdataset
+    MSDtraj, MSDdataset, tl.util.util.log_derivative
     """
     if issubclass(type(args[0]), Trajectory):
         return MSDtraj(*args, **kwargs)
@@ -129,6 +131,14 @@ def MSD(*args, **kwargs):
         return MSDdataset(*args, **kwargs)
     else:
         raise ValueError("Did not understand first argument, with type {}".format(type(args[0])))
+
+def dMSD(*args, resampling_density=2, **kwargs):
+    """
+    Shortcut to calculate time-dependent MSD scaling
+
+    This is a shortcut for ``tl.util.util.log_derivative(MSD(<input>))``
+    """
+    return log_derivative(MSD(*args, **kwargs), resampling_density=resampling_density)
 
 def scaling(traj, n=5):
     """

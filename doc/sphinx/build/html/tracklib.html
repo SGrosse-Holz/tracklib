@@ -139,7 +139,7 @@ those missing data will not be considered.</p>
 <code class="docutils literal notranslate"><span class="pre">myset(giveTags=True)</span></code>.</p>
 <p>For processing data (in the sense of “applying a function to all of them”)
 it is often useful to simply use the built-in <code class="xref any docutils literal notranslate"><span class="pre">map</span></code>. If the function in
-question has to overwrite the data, you can use <a class="reference internal" href="#tracklib.taggedset.TaggedSet.filter" title="tracklib.taggedset.TaggedSet.filter"><code class="xref any py py-meth docutils literal notranslate"><span class="pre">filter</span></code></a>. Note that
+question has to overwrite the data, you can use <a class="reference internal" href="#tracklib.taggedset.TaggedSet.apply" title="tracklib.taggedset.TaggedSet.apply"><code class="xref any py py-meth docutils literal notranslate"><span class="pre">apply</span></code></a>. Note that
 in-place modification can be achieved with <code class="xref any docutils literal notranslate"><span class="pre">map()</span></code>.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -357,9 +357,9 @@ additional tags can be added.</p>
 </dd></dl>
 
 <dl class="method">
-<dt id="tracklib.taggedset.TaggedSet.filter">
-<code class="sig-name descname">filter</code><span class="sig-paren">(</span><em class="sig-param">fun</em><span class="sig-paren">)</span><a class="headerlink" href="#tracklib.taggedset.TaggedSet.filter" title="Permalink to this definition">¶</a></dt>
-<dd><p>Run all data through the given function.</p>
+<dt id="tracklib.taggedset.TaggedSet.apply">
+<code class="sig-name descname">apply</code><span class="sig-paren">(</span><em class="sig-param">fun</em><span class="sig-paren">)</span><a class="headerlink" href="#tracklib.taggedset.TaggedSet.apply" title="Permalink to this definition">¶</a></dt>
+<dd><p>Apply the given function to all data.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><p><strong>fun</strong> (callable of signature <code class="docutils literal notranslate"><span class="pre">datum</span> <span class="pre">=</span> <span class="pre">fun(datum)</span></code>) – </p>
@@ -377,8 +377,8 @@ unchanged, use <code class="docutils literal notranslate"><span class="pre">proc
 <dl class="method">
 <dt id="tracklib.taggedset.TaggedSet.process">
 <code class="sig-name descname">process</code><span class="sig-paren">(</span><em class="sig-param">fun</em><span class="sig-paren">)</span><a class="headerlink" href="#tracklib.taggedset.TaggedSet.process" title="Permalink to this definition">¶</a></dt>
-<dd><p>Generate a new <a class="reference internal" href="#tracklib.taggedset.TaggedSet" title="tracklib.taggedset.TaggedSet"><code class="xref any py py-class docutils literal notranslate"><span class="pre">TaggedSet</span></code></a> with filtered data.</p>
-<p>Same as <a class="reference internal" href="#tracklib.taggedset.TaggedSet.filter" title="tracklib.taggedset.TaggedSet.filter"><code class="xref any py py-meth docutils literal notranslate"><span class="pre">filter</span></code></a>, except that a new list with the processed data is
+<dd><p>Generate a new <a class="reference internal" href="#tracklib.taggedset.TaggedSet" title="tracklib.taggedset.TaggedSet"><code class="xref any py py-class docutils literal notranslate"><span class="pre">TaggedSet</span></code></a> with processed data.</p>
+<p>Same as <a class="reference internal" href="#tracklib.taggedset.TaggedSet.apply" title="tracklib.taggedset.TaggedSet.apply"><code class="xref any py py-meth docutils literal notranslate"><span class="pre">apply</span></code></a>, except that a new list with the processed data is
 returned, while the original one remains unchanged.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -390,7 +390,7 @@ returned, while the original one remains unchanged.</p>
 </dl>
 <div class="admonition seealso">
 <p class="admonition-title">See also</p>
-<p><a class="reference internal" href="#tracklib.taggedset.TaggedSet.filter" title="tracklib.taggedset.TaggedSet.filter"><code class="xref py py-meth docutils literal notranslate"><span class="pre">filter()</span></code></a>, <code class="xref py py-meth docutils literal notranslate"><span class="pre">builtins.map()</span></code></p>
+<p><a class="reference internal" href="#tracklib.taggedset.TaggedSet.apply" title="tracklib.taggedset.TaggedSet.apply"><code class="xref py py-meth docutils literal notranslate"><span class="pre">apply()</span></code></a>, <code class="xref py py-meth docutils literal notranslate"><span class="pre">builtins.map()</span></code></p>
 </div>
 <p class="rubric">Notes</p>
 <p>The new set will contain only the processed data, i.e. data that are
@@ -604,6 +604,42 @@ get the <code class="docutils literal notranslate"><span class="pre">i</span></c
 <div class="admonition seealso">
 <p class="admonition-title">See also</p>
 <p><a class="reference internal" href="#tracklib.trajectory.Trajectory.abs" title="tracklib.trajectory.Trajectory.abs"><code class="xref py py-meth docutils literal notranslate"><span class="pre">abs()</span></code></a>, <a class="reference internal" href="#tracklib.trajectory.Trajectory.diff" title="tracklib.trajectory.Trajectory.diff"><code class="xref py py-meth docutils literal notranslate"><span class="pre">diff()</span></code></a>, <a class="reference internal" href="#tracklib.trajectory.Trajectory.relative" title="tracklib.trajectory.Trajectory.relative"><code class="xref py py-meth docutils literal notranslate"><span class="pre">relative()</span></code></a></p>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="tracklib.trajectory.Trajectory.rescale">
+<code class="sig-name descname">rescale</code><span class="sig-paren">(</span><em class="sig-param">factor</em><span class="sig-paren">)</span><a class="headerlink" href="#tracklib.trajectory.Trajectory.rescale" title="Permalink to this definition">¶</a></dt>
+<dd><p>Modifier: rescale all data by a constant factor</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>factor</strong> (<em>float</em>) – </p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><em>Trajectory</em></p>
+</dd>
+</dl>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><a class="reference internal" href="#tracklib.trajectory.Trajectory.abs" title="tracklib.trajectory.Trajectory.abs"><code class="xref py py-meth docutils literal notranslate"><span class="pre">abs()</span></code></a>, <a class="reference internal" href="#tracklib.trajectory.Trajectory.offset" title="tracklib.trajectory.Trajectory.offset"><code class="xref py py-meth docutils literal notranslate"><span class="pre">offset()</span></code></a></p>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="tracklib.trajectory.Trajectory.offset">
+<code class="sig-name descname">offset</code><span class="sig-paren">(</span><em class="sig-param">off</em><span class="sig-paren">)</span><a class="headerlink" href="#tracklib.trajectory.Trajectory.offset" title="Permalink to this definition">¶</a></dt>
+<dd><p>Modifier: shift the trajectory by some offset</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>off</strong> (float or array of shape <code class="docutils literal notranslate"><span class="pre">(d,)</span></code>, <code class="docutils literal notranslate"><span class="pre">(N,</span> <span class="pre">d)</span></code>, or <code class="docutils literal notranslate"><span class="pre">(N,</span> <span class="pre">T,</span> <span class="pre">d)</span></code>) – the offset to add</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><em>Trajectory</em></p>
+</dd>
+</dl>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><a class="reference internal" href="#tracklib.trajectory.Trajectory.abs" title="tracklib.trajectory.Trajectory.abs"><code class="xref py py-meth docutils literal notranslate"><span class="pre">abs()</span></code></a>, <a class="reference internal" href="#tracklib.trajectory.Trajectory.rescale" title="tracklib.trajectory.Trajectory.rescale"><code class="xref py py-meth docutils literal notranslate"><span class="pre">rescale()</span></code></a></p>
 </div>
 </dd></dl>
 

@@ -280,6 +280,59 @@ class Trajectory(ABC):
 
         return traj
 
+    def rescale(self, factor):
+        """
+        Modifier: rescale all data by a constant factor
+
+        Parameters
+        ----------
+        factor : float
+        
+        Returns
+        -------
+        Trajectory
+
+        See also
+        --------
+        abs, offset
+        """
+        traj = Trajectory.fromArray(self.data * factor, **deepcopy(self.meta))
+
+        if 'localization_error' in traj.meta.keys():
+            traj.meta['localization_error'] *= factor
+
+        return traj
+
+    def offset(self, off):
+        """
+        Modifier: shift the trajectory by some offset
+
+        Parameters
+        ----------
+        off : float or array of shape ``(d,)``, ``(N, d)``, or ``(N, T, d)``
+            the offset to add
+
+        Returns
+        -------
+        Trajectory
+
+        See also
+        --------
+        abs, rescale
+        """
+        off = np.array(off)
+        ls = len(off.shape)
+        if ls == 0: # happens if input is scalar
+            off = np.expand_dims(off, (0, 1, 2))
+        elif ls == 1:
+            off = np.expand_dims(off, (0, 1))
+        elif ls == 2:
+            off = np.expand_dims(off, 1)
+
+        traj = Trajectory.fromArray(self.data + off, **deepcopy(self.meta))
+
+        return traj
+
     def relative(self):
         """
         Modifier: distance vector between two loci

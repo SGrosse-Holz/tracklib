@@ -104,6 +104,13 @@ class Test1Trajectory(myTestCase):
                         lines = traj.plot_spatial(linestyle=['-', '--'])
 
             # Modifiers
+            times2 = traj.rescale(2)
+            self.assert_array_equal(traj.data*2, times2.data)
+            plus1 = traj.offset(1)
+            self.assert_array_equal(traj.data+1, plus1.data)
+            plus1 = traj.offset([[1]])
+            self.assert_array_equal(traj.data+1, plus1.data)
+
             if N == 2:
                 rel = traj.relative()
                 self.assertTupleEqual(rel.data.shape, (1, self.T, d))
@@ -335,6 +342,13 @@ class TestIOWrite(myTestCase):
 
         with open(filename, 'r') as f:
             self.assertTrue(f.read() == 'id\tframe\tx\n0\t0\t0.0\n0\t1\t0.75\n0\t2\t0.5\n0\t3\t0.3\n0\t4\t5.4\n0\t5\t5.5\n0\t6\t5.3\n0\t7\t-2.0\n0\t8\t5.4\n1\t0\t1.2\n1\t1\t1.4\n1\t4\t10.0\n1\t5\t10.2\n')
+
+class TestUtilUtil(myTestCase):
+    def test_log_derivative(self):
+        x = [1, 2, 5, np.nan, 30]
+        y = np.array(x)**1.438
+        xnew, dy = tl.util.util.log_derivative(y, x, resampling_density=1.5)
+        self.assertTrue(np.all(np.abs(dy - 1.438) < 1e-7))
 
 class TestUtilSweep(myTestCase):
     @staticmethod
@@ -611,6 +625,10 @@ class TestAnalysisMSD(myTestCase):
         self.assert_array_equal(N, len(self.ds)*np.linspace(10, 1, 10))
 
         self.assert_array_equal(msd, tl.analysis.MSD(self.ds))
+
+    def test_dMSD(self):
+        t, scal = tl.analysis.msd.dMSD(self.ds)
+        t, scal = tl.analysis.msd.dMSD(self.traj)
 
     def test_scaling(self):
         alpha = tl.analysis.msd.scaling(self.traj, n=5)

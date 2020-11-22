@@ -29,3 +29,46 @@ def twoLociRelativeMSD(ts, *args, **kwargs):
     B = Δs^2 / 4κ       (tether length)
     """
     return 2*(twoLociRelativeACF(0, *args, **kwargs) - twoLociRelativeACF(ts, *args, **kwargs))
+
+
+
+def log_derivative(y, x=None, resampling_density=2):
+    """
+    Calculate loglog-derivative.
+
+    We resample the given data to log-spaced x.
+
+    Parameters
+    ----------
+    y : array-like
+        the function values whose derivative we are interested in
+    x : array-like, optional
+        the independent variable for the data in y. Will default to
+        ``np.arange(len(y))`` (and thus ignore the first data point).
+    resampling_density : float, optional
+        how tight to space the log-resampled points. A value of 1 corresponds
+        to the spacing between the first two data points, higher values
+        decrease spacing.
+
+    Returns
+    -------
+    x : np.array
+        the log-resampled abscissa
+    dlog : np.array
+        the calculated log-derivative
+    """
+    if x is None:
+        x = np.arange(len(y))
+
+    with np.errstate(divide='ignore'):
+        x = np.log(x)
+        y = np.log(y)
+    ind_valid = np.logical_and(np.isfinite(x), np.isfinite(y))
+    x = x[ind_valid]
+    y = y[ind_valid]
+
+    dlogx = (x[1] - x[0])/resampling_density
+    xnew = np.arange(np.min(x), np.max(x), dlogx)
+    ynew = scipy.interpolate.interp1d(x, y)(xnew)
+
+    return np.exp(xnew[:-1] + dlogx/2), np.diff(ynew)/dlogx

@@ -290,7 +290,7 @@ modify the original.</p></li>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><p><strong>preproc</strong> (callable, with signature <code class="docutils literal notranslate"><span class="pre">traj</span> <span class="pre">=</span> <span class="pre">preproc(traj)</span></code>) – <p>the function to use for preprocessing. Will be applied to every
-trajectory individually via <a class="reference internal" href="tracklib.html#tracklib.taggedset.TaggedSet.filter" title="tracklib.taggedset.TaggedSet.filter"><code class="xref any py py-meth docutils literal notranslate"><span class="pre">TaggedSet.filter()</span></code></a></p>
+trajectory individually via <a class="reference internal" href="tracklib.html#tracklib.taggedset.TaggedSet.apply" title="tracklib.taggedset.TaggedSet.apply"><code class="xref any py py-meth docutils literal notranslate"><span class="pre">TaggedSet.apply()</span></code></a></p>
 <p>Examples:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="k">lambda</span> <span class="n">traj</span> <span class="p">:</span> <span class="n">traj</span><span class="o">.</span><span class="n">relative</span><span class="p">()</span><span class="o">.</span><span class="n">abs</span><span class="p">()</span> <span class="c1"># would give absolute distance for two-locus trajectory</span>
 <span class="gp">... </span><span class="k">lambda</span> <span class="n">traj</span> <span class="p">:</span> <span class="n">traj</span><span class="o">.</span><span class="n">relative</span><span class="p">()</span><span class="o">.</span><span class="n">diff</span><span class="p">()</span><span class="o">.</span><span class="n">abs</span><span class="p">()</span> <span class="c1"># would give absolute displacements</span>
@@ -301,7 +301,7 @@ trajectory individually via <a class="reference internal" href="tracklib.html#tr
 </dl>
 <p class="rubric">Notes</p>
 <p>As of now, this function literally only calls
-<code class="docutils literal notranslate"><span class="pre">self.dataset.filter(preproc)</span></code>.  It serves more as a reminder that
+<code class="docutils literal notranslate"><span class="pre">self.dataset.apply(preproc)</span></code>.  It serves more as a reminder that
 preprocessing might be necessary.</p>
 </dd></dl>
 
@@ -364,6 +364,32 @@ B = Δs^2 / 4κ    (tether length)</p>
 <code class="sig-prename descclassname">tracklib.util.util.</code><code class="sig-name descname">twoLociRelativeMSD</code><span class="sig-paren">(</span><em class="sig-param">ts</em>, <em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#tracklib.util.util.twoLociRelativeMSD" title="Permalink to this definition">¶</a></dt>
 <dd><p>A = σ^2 / √κ     (general prefactor)
 B = Δs^2 / 4κ       (tether length)</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="tracklib.util.util.log_derivative">
+<code class="sig-prename descclassname">tracklib.util.util.</code><code class="sig-name descname">log_derivative</code><span class="sig-paren">(</span><em class="sig-param">y</em>, <em class="sig-param">x=None</em>, <em class="sig-param">resampling_density=2</em><span class="sig-paren">)</span><a class="headerlink" href="#tracklib.util.util.log_derivative" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculate loglog-derivative.</p>
+<p>We resample the given data to log-spaced x.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>y</strong> (<em>array-like</em>) – the function values whose derivative we are interested in</p></li>
+<li><p><strong>x</strong> (<em>array-like</em><em>, </em><em>optional</em>) – the independent variable for the data in y. Will default to
+<code class="docutils literal notranslate"><span class="pre">np.arange(len(y))</span></code> (and thus ignore the first data point).</p></li>
+<li><p><strong>resampling_density</strong> (<em>float</em><em>, </em><em>optional</em>) – how tight to space the log-resampled points. A value of 1 corresponds
+to the spacing between the first two data points, higher values
+decrease spacing.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><strong>x</strong> (<em>np.array</em>) – the log-resampled abscissa</p></li>
+<li><p><strong>dlog</strong> (<em>np.array</em>) – the calculated log-derivative</p></li>
+</ul>
+</p>
+</dd>
+</dl>
 </dd></dl>
 
 </div>
