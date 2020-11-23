@@ -52,6 +52,7 @@
 <li><p><a class="reference internal" href="#module-tracklib.analysis.kli" id="id3">tracklib.analysis.kli</a></p></li>
 <li><p><a class="reference internal" href="#module-tracklib.analysis.msd" id="id4">tracklib.analysis.msd</a></p></li>
 <li><p><a class="reference internal" href="#module-tracklib.analysis.plots" id="id5">tracklib.analysis.plots</a></p></li>
+<li><p><a class="reference internal" href="#module-tracklib.analysis.vacf" id="id6">tracklib.analysis.vacf</a></p></li>
 </ul>
 </div>
 <div class="section" id="module-tracklib.analysis.chi2">
@@ -672,6 +673,80 @@ dataset.  For a two-locus trajectory, this would presumably be</p>
 </dd></dl>
 
 </div>
+<div class="section" id="module-tracklib.analysis.vacf">
+<span id="tracklib-analysis-vacf"></span><h2><a class="toc-backref" href="#id6">tracklib.analysis.vacf</a><a class="headerlink" href="#module-tracklib.analysis.vacf" title="Permalink to this headline">¶</a></h2>
+<p>A module for calculating velocity autocorrelations.</p>
+<p>Follows the structure of <a class="reference internal" href="#module-tracklib.analysis.msd" title="tracklib.analysis.msd"><code class="xref any py py-mod docutils literal notranslate"><span class="pre">tracklib.analysis.msd</span></code></a>.</p>
+<dl class="function">
+<dt id="tracklib.analysis.vacf.VACFtraj">
+<code class="sig-prename descclassname">tracklib.analysis.vacf.</code><code class="sig-name descname">VACFtraj</code><span class="sig-paren">(</span><em class="sig-param">traj</em>, <em class="sig-param">dt=1</em><span class="sig-paren">)</span><a class="headerlink" href="#tracklib.analysis.vacf.VACFtraj" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculate/give velocity autocorrelation for a single trajectory.</p>
+<p>The result of the calculation is stored in <code class="docutils literal notranslate"><span class="pre">traj.meta['VACF']</span></code> and
+<code class="docutils literal notranslate"><span class="pre">traj.meta['VACFmeta']</span></code>. This function checks whether the corresponding
+fields exist and if not calculates them. It then returns the value of the
+<code class="xref any docutils literal notranslate"><span class="pre">'VACF'</span></code> entry.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>traj</strong> (<a class="reference internal" href="tracklib.html#tracklib.trajectory.Trajectory" title="tracklib.trajectory.Trajectory"><em>Trajectory</em></a>) – the trajectory whose velocity autocorrelation function to calculate</p></li>
+<li><p><strong>dt</strong> (<em>int</em><em>, </em><em>optional</em>) – the time step to use for displacements. If <code class="docutils literal notranslate"><span class="pre">dt</span> <span class="pre">&gt;</span> <span class="pre">1</span></code>, we average over
+the <code class="xref any docutils literal notranslate"><span class="pre">dt</span></code> realizations of the downsampling.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>VACF</strong> (<em>np.ndarray</em>) – the velocity autocorrelation function of the trajectory. This is
+normalized such that <code class="docutils literal notranslate"><span class="pre">VACF[0]</span> <span class="pre">=</span> <span class="pre">1</span></code>.</p>
+</dd>
+</dl>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><a class="reference internal" href="#tracklib.analysis.vacf.VACFdataset" title="tracklib.analysis.vacf.VACFdataset"><code class="xref py py-func docutils literal notranslate"><span class="pre">VACFdataset()</span></code></a>, <a class="reference internal" href="#tracklib.analysis.vacf.VACF" title="tracklib.analysis.vacf.VACF"><code class="xref py py-func docutils literal notranslate"><span class="pre">VACF()</span></code></a></p>
+</div>
+<p class="rubric">Notes</p>
+<p>This function expects a single-locus trajectory (<code class="docutils literal notranslate"><span class="pre">N=1</span></code>) and will raise a
+<code class="xref any docutils literal notranslate"><span class="pre">ValueError</span></code> otherwise. Preprocess accordingly.</p>
+<p>Usually this function should always be preferred to accessing
+<code class="docutils literal notranslate"><span class="pre">traj.meta['VACF']</span></code> directly.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="tracklib.analysis.vacf.VACFdataset">
+<code class="sig-prename descclassname">tracklib.analysis.vacf.</code><code class="sig-name descname">VACFdataset</code><span class="sig-paren">(</span><em class="sig-param">dataset</em>, <em class="sig-param">giveN=False</em>, <em class="sig-param">dt=1</em><span class="sig-paren">)</span><a class="headerlink" href="#tracklib.analysis.vacf.VACFdataset" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculate ensemble VACF for the given dataset</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>dataset</strong> (<a class="reference internal" href="tracklib.html#tracklib.taggedset.TaggedSet" title="tracklib.taggedset.TaggedSet"><em>TaggedSet</em></a>) – a list of <a class="reference internal" href="tracklib.html#tracklib.trajectory.Trajectory" title="tracklib.trajectory.Trajectory"><code class="xref any py py-class docutils literal notranslate"><span class="pre">Trajectory</span></code></a> for which to calculate an ensemble VACF</p></li>
+<li><p><strong>giveN</strong> (<em>bool</em><em>, </em><em>optional</em>) – whether to return the sample size for each VACF data point</p></li>
+<li><p><strong>dt</strong> (<em>int</em>) – the time lag to use for calculating displacements</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>vacf / (vacf, N)</strong> (np.ndarray / tuple of np.ndarray, see <code class="xref any docutils literal notranslate"><span class="pre">giveN</span></code>) – either just the enseble VACF or the VACF and the number of samples for
+each data point</p>
+</dd>
+</dl>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><a class="reference internal" href="#tracklib.analysis.vacf.VACFtraj" title="tracklib.analysis.vacf.VACFtraj"><code class="xref py py-func docutils literal notranslate"><span class="pre">VACFtraj()</span></code></a>, <a class="reference internal" href="#tracklib.analysis.vacf.VACF" title="tracklib.analysis.vacf.VACF"><code class="xref py py-func docutils literal notranslate"><span class="pre">VACF()</span></code></a></p>
+</div>
+<p class="rubric">Notes</p>
+<p>We normalize such that <code class="docutils literal notranslate"><span class="pre">vacf[0]</span> <span class="pre">=</span> <span class="pre">1</span></code>.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="tracklib.analysis.vacf.VACF">
+<code class="sig-prename descclassname">tracklib.analysis.vacf.</code><code class="sig-name descname">VACF</code><span class="sig-paren">(</span><em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#tracklib.analysis.vacf.VACF" title="Permalink to this definition">¶</a></dt>
+<dd><p>Shortcut function to calculate VACFs.</p>
+<p>Will select either <a class="reference internal" href="#tracklib.analysis.vacf.VACFtraj" title="tracklib.analysis.vacf.VACFtraj"><code class="xref any py py-func docutils literal notranslate"><span class="pre">VACFtraj</span></code></a> or <a class="reference internal" href="#tracklib.analysis.vacf.VACFdataset" title="tracklib.analysis.vacf.VACFdataset"><code class="xref any py py-func docutils literal notranslate"><span class="pre">VACFdataset</span></code></a>, depending on the type of the
+first argument. Everything is then forwarded to that function.</p>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><a class="reference internal" href="#tracklib.analysis.vacf.VACFtraj" title="tracklib.analysis.vacf.VACFtraj"><code class="xref py py-func docutils literal notranslate"><span class="pre">VACFtraj()</span></code></a>, <a class="reference internal" href="#tracklib.analysis.vacf.VACFdataset" title="tracklib.analysis.vacf.VACFdataset"><code class="xref py py-func docutils literal notranslate"><span class="pre">VACFdataset()</span></code></a></p>
+</div>
+</dd></dl>
+
+</div>
 </div>
 
 
@@ -688,6 +763,7 @@ dataset.  For a two-locus trajectory, this would presumably be</p>
 <li><a class="reference internal" href="#module-tracklib.analysis.kli">tracklib.analysis.kli</a></li>
 <li><a class="reference internal" href="#module-tracklib.analysis.msd">tracklib.analysis.msd</a></li>
 <li><a class="reference internal" href="#module-tracklib.analysis.plots">tracklib.analysis.plots</a></li>
+<li><a class="reference internal" href="#module-tracklib.analysis.vacf">tracklib.analysis.vacf</a></li>
 </ul>
 </li>
 </ul>

@@ -635,6 +635,26 @@ class TestAnalysisMSD(myTestCase):
         self.assertAlmostEqual(alpha, 2, places=5)
         self.assertTrue(np.isnan(tl.analysis.msd.scaling(tl.Trajectory.fromArray([np.nan, np.nan]), n=1)))
 
+class TestAnalysisVACF(myTestCase):
+    def setUp(self):
+        self.traj = tl.Trajectory.fromArray([1, 2, 3, 4, np.nan, 6])
+        self.ds = tl.models.statgauss.dataset(msd=np.linspace(0, 5, 10), Ts=10*[None])
+
+    def test_VACFtraj(self):
+        vacf = tl.analysis.vacf.VACFtraj(self.traj)
+        self.assert_array_equal(vacf, self.traj.meta['VACF'])
+        self.assert_array_equal(vacf, np.array([1, 1, 1, np.nan, np.nan, np.nan]))
+        self.assert_array_equal(self.traj.meta['VACFmeta']['N'], np.array([3, 2, 1, 0, 0, 0]))
+
+        self.assert_array_equal(vacf, tl.analysis.VACF(self.traj))
+
+    def test_VACFdataset(self):
+        vacf, N = tl.analysis.vacf.VACFdataset(self.ds, giveN=True, dt=2)
+        self.assertEqual(len(vacf), 5)
+        self.assert_array_equal(N, len(self.ds)*np.array([8, 6, 4, 2, 0]))
+
+        self.assert_array_equal(vacf, tl.analysis.VACF(self.ds, dt=2))
+
 class TestAnalysisKLD(myTestCase):
     def setUp(self):
         self.ds = tl.models.statgauss.dataset(msd=np.linspace(0, 5, 10), Ts=10*[None])

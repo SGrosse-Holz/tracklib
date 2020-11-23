@@ -44,4 +44,12 @@ tracklib.analysis.plots
    :undoc-members:
    :show-inheritance:
 
+tracklib.analysis.vacf
+----------------------
+
+.. automodule:: tracklib.analysis.vacf
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 
