@@ -70,7 +70,7 @@ def MSDtraj(traj):
     
     return traj.meta['MSD']
 
-def MSDdataset(dataset, giveN=False):
+def MSDdataset(dataset, givevar=False, giveN=False, average_in_logspace=False):
     """
     Calculate ensemble MSD for the given dataset
 
@@ -78,14 +78,23 @@ def MSDdataset(dataset, giveN=False):
     ----------
     dataset : TaggedSet
         a list of `Trajectory` for which to calculate an ensemble MSD
+    givevar : bool, optional
+        whether to also return the variance around the mean
     giveN : bool, optional
         whether to return the sample size for each MSD data point
+    average_in_logspace : bool, optional
+        if ``True``, the averages used to calculate mean and variance will be
+        taken in log-space, i.e. ``exp(mean(log(...)))`` instead of
+        ``mean(...)``
 
     Returns
     -------
-    msd / (msd, N) : np.ndarray / tuple of np.ndarray, see `!giveN`
-        either just the enseble MSD or the MSD and the number of samples for
-        each data point
+    msd : np.ndarray
+        the calculated ensemble mean
+    var : np.ndarray, optional
+        variance around the mean
+    N : np.ndarray, optional
+        number of data points going into each estimate
 
     See also
     --------
@@ -100,17 +109,37 @@ def MSDdataset(dataset, giveN=False):
     Ns = [traj.meta['MSDmeta']['N'] for traj in dataset]
 
     maxlen = max(len(MSD) for MSD in MSDs)
-    eMSD = np.zeros(maxlen)
-    eN = np.zeros(maxlen)
+    allMSD = np.empty((len(MSDs), maxlen), dtype=float)
+    allMSD[:] = np.nan
+    allN = np.zeros((len(Ns), maxlen), dtype=int)
+    for i, (msd, N) in enumerate(zip(MSDs, Ns)):
+        allMSD[i, :len(msd)] = msd
+        allN[i, :len(N)] = N
+    allN[np.where(np.isnan(allMSD))] = 0
 
-    for MSD, N in zip(MSDs, Ns):
-        ind = N > 0
-        eMSD[:len(MSD)][ind] += (MSD*N)[ind]
-        eN[:len(MSD)][ind] += N[ind]
-    eMSD /= eN
+    if average_in_logspace:
+        allMSD = np.log(allMSD[:, 1:])
+        N0 = np.sum(allN[:, 0])
+        allN = allN[:, 1:]
 
-    if giveN:
-        return (eMSD, eN)
+    N = np.sum(allN, axis=0)
+    meanN = N / np.sum(allN != 0, axis=0)
+    with warnings.catch_warnings():
+        warnings.filterwarnings(action='ignore', message=r'(invalid value|divide by zero) encountered in true_divide')
+        eMSD = np.nansum(allMSD*allN, axis=0) / N
+        var = np.nansum((allMSD-eMSD)**2 * allN, axis=0) / (N-meanN)
+
+    if average_in_logspace:
+        eMSD = np.insert(np.exp(eMSD), 0, 0)
+        var = np.insert(np.exp(var), 0, 0)
+        N = np.insert(N, 0, N0)
+
+    if givevar and giveN:
+        return eMSD, var, N
+    elif givevar:
+        return eMSD, var
+    elif giveN:
+        return eMSD, N
     else:
         return eMSD
 

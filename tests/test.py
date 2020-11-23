@@ -624,6 +624,9 @@ class TestAnalysisMSD(myTestCase):
         self.assertEqual(len(msd), 10)
         self.assert_array_equal(N, len(self.ds)*np.linspace(10, 1, 10))
 
+        msd, var = tl.analysis.msd.MSDdataset(self.ds, givevar=True)
+        self.assert_array_equal(np.isnan(var), 10*[False])
+
         self.assert_array_equal(msd, tl.analysis.MSD(self.ds))
 
     def test_dMSD(self):
@@ -643,15 +646,18 @@ class TestAnalysisVACF(myTestCase):
     def test_VACFtraj(self):
         vacf = tl.analysis.vacf.VACFtraj(self.traj)
         self.assert_array_equal(vacf, self.traj.meta['VACF'])
-        self.assert_array_equal(vacf, np.array([1, 1, 1, np.nan, np.nan, np.nan]))
-        self.assert_array_equal(self.traj.meta['VACFmeta']['N'], np.array([3, 2, 1, 0, 0, 0]))
+        self.assert_array_equal(vacf, np.array([1, 1, 1, np.nan, np.nan]))
+        self.assert_array_equal(self.traj.meta['VACFmeta']['N'], np.array([3, 2, 1, 0, 0]))
 
         self.assert_array_equal(vacf, tl.analysis.VACF(self.traj))
 
     def test_VACFdataset(self):
         vacf, N = tl.analysis.vacf.VACFdataset(self.ds, giveN=True, dt=2)
-        self.assertEqual(len(vacf), 5)
-        self.assert_array_equal(N, len(self.ds)*np.array([8, 6, 4, 2, 0]))
+        self.assertEqual(len(vacf), 4)
+        self.assert_array_equal(N, len(self.ds)*np.array([8, 6, 4, 2]))
+
+        vacf, var = tl.analysis.vacf.VACFdataset(self.ds, givevar=True, dt=2)
+        self.assert_array_equal(np.isnan(var), 4*[False])
 
         self.assert_array_equal(vacf, tl.analysis.VACF(self.ds, dt=2))
 

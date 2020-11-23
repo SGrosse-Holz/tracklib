@@ -58,7 +58,7 @@ def VACFtraj(traj, dt=1):
         with warnings.catch_warnings():
             warnings.filterwarnings(action='ignore', message='Mean of empty slice')
 
-            acf = np.zeros(int(np.ceil(len(traj)/dt - 1) + 1))
+            acf = np.zeros(int(np.ceil(len(traj)/dt - 1)))
             Nacf = np.zeros(len(acf))
             N = np.zeros(len(acf))
             for off in range(dt):
@@ -87,7 +87,7 @@ def VACFtraj(traj, dt=1):
     
     return traj.meta['VACF']
 
-def VACFdataset(dataset, giveN=False, dt=1):
+def VACFdataset(dataset, dt=1, givevar=False, giveN=False, average_in_logspace=False):
     """
     Calculate ensemble VACF for the given dataset
 
@@ -95,16 +95,25 @@ def VACFdataset(dataset, giveN=False, dt=1):
     ----------
     dataset : TaggedSet
         a list of `Trajectory` for which to calculate an ensemble VACF
+    dt : int, optional
+        step size for displacements
+    givevar : bool, optional
+        whether to also return the variance around the mean
     giveN : bool, optional
         whether to return the sample size for each VACF data point
-    dt : int
-        the time lag to use for calculating displacements
+    average_in_logspace : bool, optional
+        if ``True``, the averages used to calculate mean and variance will be
+        taken in log-space, i.e. ``exp(mean(log(...)))`` instead of
+        ``mean(...)``
 
     Returns
     -------
-    vacf / (vacf, N) : np.ndarray / tuple of np.ndarray, see `!giveN`
-        either just the enseble VACF or the VACF and the number of samples for
-        each data point
+    vacf : np.ndarray
+        the calculated ensemble mean
+    var : np.ndarray, optional
+        variance around the mean
+    N : np.ndarray, optional
+        number of data points going into each estimate
 
     See also
     --------
@@ -118,20 +127,37 @@ def VACFdataset(dataset, giveN=False, dt=1):
     Ns = [traj.meta['VACFmeta']['N'] for traj in dataset]
 
     maxlen = max(len(VACF) for VACF in VACFs)
-    eVACF = np.zeros(maxlen)
-    eN = np.zeros(maxlen)
+    allVACF = np.empty((len(VACFs), maxlen), dtype=float)
+    allVACF[:] = np.nan
+    allN = np.zeros((len(Ns), maxlen), dtype=int)
+    for i, (vacf, N) in enumerate(zip(VACFs, Ns)):
+        allVACF[i, :len(vacf)] = vacf
+        allN[i, :len(N)] = N
+    allN[np.where(np.isnan(allVACF))] = 0
 
-    for VACF, N in zip(VACFs, Ns):
-        ind = N > 0
-        eVACF[:len(VACF)][ind] += (VACF*N)[ind]
-        eN[:len(VACF)][ind] += N[ind]
+    if average_in_logspace:
+        allVACF = np.log(allVACF[:, 1:])
+        N0 = np.sum(allN[:, 0])
+        allN = allN[:, 1:]
 
+    N = np.sum(allN, axis=0)
+    meanN = N / np.sum(allN != 0, axis=0)
     with warnings.catch_warnings():
-        warnings.filterwarnings(action='ignore', message='invalid value encountered in true_divide')
-        eVACF /= eN
+        warnings.filterwarnings(action='ignore', message=r'(invalid value|divide by zero) encountered in true_divide')
+        eVACF = np.nansum(allVACF*allN, axis=0) / N
+        var = np.nansum((allVACF-eVACF)**2 * allN, axis=0) / (N-meanN)
 
-    if giveN:
-        return (eVACF, eN)
+    if average_in_logspace:
+        eVACF = np.insert(np.exp(eVACF), 0, 0)
+        var = np.insert(np.exp(var), 0, 0)
+        N = np.insert(N, 0, N0)
+
+    if givevar and giveN:
+        return eVACF, var, N
+    elif givevar:
+        return eVACF, var
+    elif giveN:
+        return eVACF, N
     else:
         return eVACF
 

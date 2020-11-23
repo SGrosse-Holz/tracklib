@@ -493,18 +493,26 @@ of 1 frame, etc.</p>
 
 <dl class="function">
 <dt id="tracklib.analysis.msd.MSDdataset">
-<code class="sig-prename descclassname">tracklib.analysis.msd.</code><code class="sig-name descname">MSDdataset</code><span class="sig-paren">(</span><em class="sig-param">dataset</em>, <em class="sig-param">giveN=False</em><span class="sig-paren">)</span><a class="headerlink" href="#tracklib.analysis.msd.MSDdataset" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">tracklib.analysis.msd.</code><code class="sig-name descname">MSDdataset</code><span class="sig-paren">(</span><em class="sig-param">dataset</em>, <em class="sig-param">givevar=False</em>, <em class="sig-param">giveN=False</em>, <em class="sig-param">average_in_logspace=False</em><span class="sig-paren">)</span><a class="headerlink" href="#tracklib.analysis.msd.MSDdataset" title="Permalink to this definition">¶</a></dt>
 <dd><p>Calculate ensemble MSD for the given dataset</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>dataset</strong> (<a class="reference internal" href="tracklib.html#tracklib.taggedset.TaggedSet" title="tracklib.taggedset.TaggedSet"><em>TaggedSet</em></a>) – a list of <a class="reference internal" href="tracklib.html#tracklib.trajectory.Trajectory" title="tracklib.trajectory.Trajectory"><code class="xref any py py-class docutils literal notranslate"><span class="pre">Trajectory</span></code></a> for which to calculate an ensemble MSD</p></li>
+<li><p><strong>givevar</strong> (<em>bool</em><em>, </em><em>optional</em>) – whether to also return the variance around the mean</p></li>
 <li><p><strong>giveN</strong> (<em>bool</em><em>, </em><em>optional</em>) – whether to return the sample size for each MSD data point</p></li>
+<li><p><strong>average_in_logspace</strong> (<em>bool</em><em>, </em><em>optional</em>) – if <code class="docutils literal notranslate"><span class="pre">True</span></code>, the averages used to calculate mean and variance will be
+taken in log-space, i.e. <code class="docutils literal notranslate"><span class="pre">exp(mean(log(...)))</span></code> instead of
+<code class="docutils literal notranslate"><span class="pre">mean(...)</span></code></p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
-<dd class="field-even"><p><strong>msd / (msd, N)</strong> (np.ndarray / tuple of np.ndarray, see <code class="xref any docutils literal notranslate"><span class="pre">giveN</span></code>) – either just the enseble MSD or the MSD and the number of samples for
-each data point</p>
+<dd class="field-even"><p><ul class="simple">
+<li><p><strong>msd</strong> (<em>np.ndarray</em>) – the calculated ensemble mean</p></li>
+<li><p><strong>var</strong> (<em>np.ndarray, optional</em>) – variance around the mean</p></li>
+<li><p><strong>N</strong> (<em>np.ndarray, optional</em>) – number of data points going into each estimate</p></li>
+</ul>
+</p>
 </dd>
 </dl>
 <div class="admonition seealso">
@@ -711,19 +719,27 @@ normalized such that <code class="docutils literal notranslate"><span class="pre
 
 <dl class="function">
 <dt id="tracklib.analysis.vacf.VACFdataset">
-<code class="sig-prename descclassname">tracklib.analysis.vacf.</code><code class="sig-name descname">VACFdataset</code><span class="sig-paren">(</span><em class="sig-param">dataset</em>, <em class="sig-param">giveN=False</em>, <em class="sig-param">dt=1</em><span class="sig-paren">)</span><a class="headerlink" href="#tracklib.analysis.vacf.VACFdataset" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">tracklib.analysis.vacf.</code><code class="sig-name descname">VACFdataset</code><span class="sig-paren">(</span><em class="sig-param">dataset</em>, <em class="sig-param">dt=1</em>, <em class="sig-param">givevar=False</em>, <em class="sig-param">giveN=False</em>, <em class="sig-param">average_in_logspace=False</em><span class="sig-paren">)</span><a class="headerlink" href="#tracklib.analysis.vacf.VACFdataset" title="Permalink to this definition">¶</a></dt>
 <dd><p>Calculate ensemble VACF for the given dataset</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>dataset</strong> (<a class="reference internal" href="tracklib.html#tracklib.taggedset.TaggedSet" title="tracklib.taggedset.TaggedSet"><em>TaggedSet</em></a>) – a list of <a class="reference internal" href="tracklib.html#tracklib.trajectory.Trajectory" title="tracklib.trajectory.Trajectory"><code class="xref any py py-class docutils literal notranslate"><span class="pre">Trajectory</span></code></a> for which to calculate an ensemble VACF</p></li>
+<li><p><strong>dt</strong> (<em>int</em><em>, </em><em>optional</em>) – step size for displacements</p></li>
+<li><p><strong>givevar</strong> (<em>bool</em><em>, </em><em>optional</em>) – whether to also return the variance around the mean</p></li>
 <li><p><strong>giveN</strong> (<em>bool</em><em>, </em><em>optional</em>) – whether to return the sample size for each VACF data point</p></li>
-<li><p><strong>dt</strong> (<em>int</em>) – the time lag to use for calculating displacements</p></li>
+<li><p><strong>average_in_logspace</strong> (<em>bool</em><em>, </em><em>optional</em>) – if <code class="docutils literal notranslate"><span class="pre">True</span></code>, the averages used to calculate mean and variance will be
+taken in log-space, i.e. <code class="docutils literal notranslate"><span class="pre">exp(mean(log(...)))</span></code> instead of
+<code class="docutils literal notranslate"><span class="pre">mean(...)</span></code></p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
-<dd class="field-even"><p><strong>vacf / (vacf, N)</strong> (np.ndarray / tuple of np.ndarray, see <code class="xref any docutils literal notranslate"><span class="pre">giveN</span></code>) – either just the enseble VACF or the VACF and the number of samples for
-each data point</p>
+<dd class="field-even"><p><ul class="simple">
+<li><p><strong>vacf</strong> (<em>np.ndarray</em>) – the calculated ensemble mean</p></li>
+<li><p><strong>var</strong> (<em>np.ndarray, optional</em>) – variance around the mean</p></li>
+<li><p><strong>N</strong> (<em>np.ndarray, optional</em>) – number of data points going into each estimate</p></li>
+</ul>
+</p>
 </dd>
 </dl>
 <div class="admonition seealso">
