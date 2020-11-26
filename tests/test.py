@@ -517,6 +517,10 @@ class TestModelsStatgauss(myTestCase):
         for original, control in zip(ds, cont):
             self.assertEqual(len(original), len(control))
 
+        cont = tl.models.statgauss.control(ds, msd=lambda t : t)
+        for original, control in zip(ds, cont):
+            self.assertEqual(len(original), len(control))
+
 class TestAnalysisKLILoopSequence(myTestCase):
     def setUp(self):
         self.lt = tl.analysis.kli.LoopSequence(T=100, numInt=10)

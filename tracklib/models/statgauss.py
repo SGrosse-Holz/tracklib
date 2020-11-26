@@ -160,8 +160,10 @@ def control(dataset, msd=None):
     ----------
     dataset : `TaggedSet` of `Trajectory`
         the dataset to generate a control for
-    msd : (T,) np.ndarray
-        the MSD to use for sampling. Note that this will be divided by
+    msd : (T,) np.ndarray, callable, or None
+        the MSD to use for sampling, either directly (i.e. as array) or as
+        function that will be evaluated on the needed lag times (where the unit
+        of time is one frame). Note that this will be divided by
         (#loci)x(#dimensions) before sampling scalar traces, matching the usual
         notion of MSD of (e.g.) multidimensional trajectories.
 
@@ -175,7 +177,11 @@ def control(dataset, msd=None):
     Generation from empirical MSDs does not always work, since they might be
     noisy. In that case, provide a smoothed version as `!msd`.
     """
-    if msd is None:
+    if callable(msd):
+        maxlen = max([len(traj) for traj in dataset])
+        msd = msd(np.arange(maxlen))
+        print(msd)
+    elif msd is None:
         from tracklib.analysis import MSD # bad style :( We cannot do the import at
                                           # import time (i.e. on top), because
                                           # the analysis module depends on the
