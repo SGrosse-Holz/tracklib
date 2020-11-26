@@ -165,7 +165,11 @@ def dMSD(*args, resampling_density=2, **kwargs):
     """
     Shortcut to calculate time-dependent MSD scaling
 
-    This is a shortcut for ``tl.util.util.log_derivative(MSD(<input>))``
+    This is a shortcut for ``tracklib.util.util.log_derivative(MSD(<input>))``
+
+    See also
+    --------
+    tracklib.util.util.log_derivative
     """
     return log_derivative(MSD(*args, **kwargs), resampling_density=resampling_density)
 

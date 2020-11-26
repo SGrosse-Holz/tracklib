@@ -115,7 +115,7 @@ def fit_RouseParams(data, model_init, unknown_params, **kwargs):
             return -traj_likelihood(traj, model)
 
         # Parallelization?
-        return np.sum(list(map(neg_logL_traj, data)))
+        return np.nansum(list(map(neg_logL_traj, data)))
 
     minimize_kwargs = {
             'method' : 'L-BFGS-B',

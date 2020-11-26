@@ -176,7 +176,12 @@ def control(dataset, msd=None):
     noisy. In that case, provide a smoothed version as `!msd`.
     """
     if msd is None:
-        msd = analysis.MSD(dataset)
+        from tracklib.analysis import MSD # bad style :( We cannot do the import at
+                                          # import time (i.e. on top), because
+                                          # the analysis module depends on the
+                                          # models one.
+        msd = MSD(dataset)
+        del MSD
 
     N = dataset.map_unique(lambda traj : traj.N)
     d = dataset.map_unique(lambda traj : traj.d)
