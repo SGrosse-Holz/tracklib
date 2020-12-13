@@ -41,10 +41,6 @@ def sampleMSD(msd, n=1, isCorr=False, subtractMean=True):
 
     Notes
     -----
-    To produce a trace of length :math:`N` from an MSD of length :math:`!N`, we
-    assume the very last data point of the autocorrelation function to be
-    identical to the second to last.
-
     Strictly speaking, only the ensemble of displacements is well-defined,
     because this is the one we assume steady state for. For the actual traces,
     we can add an arbitrary offset, and the reasonable thing to do here depends
@@ -70,14 +66,17 @@ def sampleMSD(msd, n=1, isCorr=False, subtractMean=True):
         msd[0] = 0
         msd = np.insert(msd, 0, msd[1])
         corr = 0.5 * (msd[2:] + msd[:-2] - 2*msd[1:-1])
-        corr = np.append(corr, corr[-1])
     else:
         corr = msd
 
-    L = cholesky(toeplitz(corr), lower=True)
+    try:
+        L = cholesky(toeplitz(corr), lower=True)
+    except np.linalg.LinAlgError:
+        vals = np.linalg.eigvalsh(toeplitz(corr))
+        raise RuntimeError("Correlation not positive definite. First 5 eigenvalues: {}".format(vals[:5]))
     steps = L @ np.random.normal(size=(len(corr), n))
 
-    trajs = np.cumsum(steps, axis=0)
+    trajs = np.insert(np.cumsum(steps, axis=0), 0, 0, axis=0)
     if subtractMean:
         trajs = trajs - np.mean(trajs, axis=0)
 
@@ -180,7 +179,6 @@ def control(dataset, msd=None):
     if callable(msd):
         maxlen = max([len(traj) for traj in dataset])
         msd = msd(np.arange(maxlen))
-        print(msd)
     elif msd is None:
         from tracklib.analysis import MSD # bad style :( We cannot do the import at
                                           # import time (i.e. on top), because
