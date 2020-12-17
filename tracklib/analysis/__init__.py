@@ -6,3 +6,4 @@ from . import chi2
 from . import kld
 from . import kli
 from . import plots
+from . import bild
