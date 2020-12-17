@@ -439,9 +439,6 @@ should be the MSD at time lag <code class="docutils literal notranslate"><span c
 <p><a class="reference internal" href="#tracklib.models.statgauss.dataset" title="tracklib.models.statgauss.dataset"><code class="xref py py-func docutils literal notranslate"><span class="pre">dataset()</span></code></a></p>
 </div>
 <p class="rubric">Notes</p>
-<p>To produce a trace of length <span class="math notranslate nohighlight">\(N\)</span> from an MSD of length <span class="math notranslate nohighlight">\(!N\)</span>, we
-assume the very last data point of the autocorrelation function to be
-identical to the second to last.</p>
 <p>Strictly speaking, only the ensemble of displacements is well-defined,
 because this is the one we assume steady state for. For the actual traces,
 we can add an arbitrary offset, and the reasonable thing to do here depends
@@ -507,7 +504,9 @@ sister trajectory it is generated from.</p>
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>dataset</strong> (<a class="reference internal" href="tracklib.html#tracklib.taggedset.TaggedSet" title="tracklib.taggedset.TaggedSet"><code class="xref any py py-class docutils literal notranslate"><span class="pre">TaggedSet</span></code></a> of <a class="reference internal" href="tracklib.html#tracklib.trajectory.Trajectory" title="tracklib.trajectory.Trajectory"><code class="xref any py py-class docutils literal notranslate"><span class="pre">Trajectory</span></code></a>) – the dataset to generate a control for</p></li>
-<li><p><strong>msd</strong> (<em>(</em><em>T</em><em>,</em><em>) </em><em>np.ndarray</em>) – the MSD to use for sampling. Note that this will be divided by
+<li><p><strong>msd</strong> (<em>(</em><em>T</em><em>,</em><em>) </em><em>np.ndarray</em><em>, </em><em>callable</em><em>, or </em><em>None</em>) – the MSD to use for sampling, either directly (i.e. as array) or as
+function that will be evaluated on the needed lag times (where the unit
+of time is one frame). Note that this will be divided by
 (#loci)x(#dimensions) before sampling scalar traces, matching the usual
 notion of MSD of (e.g.) multidimensional trajectories.</p></li>
 </ul>

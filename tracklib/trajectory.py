@@ -300,6 +300,8 @@ class Trajectory(ABC):
 
         if 'localization_error' in traj.meta.keys():
             traj.meta['localization_error'] *= factor
+        if 'MSD' in traj.meta.keys():
+            traj.meta['MSD'] *= factor**2
 
         return traj
 

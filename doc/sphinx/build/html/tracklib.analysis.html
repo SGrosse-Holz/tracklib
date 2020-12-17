@@ -218,6 +218,20 @@ as <code class="docutils literal notranslate"><span class="pre">res.hess_inv.tod
 <p>Default parameters for minimization: we use <code class="docutils literal notranslate"><span class="pre">method</span> <span class="pre">=</span> <span class="pre">'L-BFGS-B'</span></code>,
 constrain all parameters to be positive (&gt;1e-10) using the <code class="docutils literal notranslate"><span class="pre">bounds</span></code>
 keyword and set the options <code class="docutils literal notranslate"><span class="pre">maxfun</span> <span class="pre">=</span> <span class="pre">300</span></code>, and <code class="docutils literal notranslate"><span class="pre">ftol</span> <span class="pre">=</span> <span class="pre">1e-5</span></code>.</p>
+<dl class="simple">
+<dt><strong>Troubleshooting</strong></dt><dd><ul class="simple">
+<li><p>make sure that the magnitude of parameter values is around one. The
+minimizer (see <code class="xref any docutils literal notranslate"><span class="pre">scipy.optimize.minimize</span></code>) defaults to a fixed step
+gradient descent, which is useless if parameters are orders of magnitude
+bigger than 1. You can also try to play with the minimizer’s options to
+make it use an adaptive step size.</p></li>
+<li><p>make sure units match up. A common mistake is to have a unit mismatch
+between localization error and trajectories (e.g. one in μm and the
+other in nm). If the localization error is too big (here by a factor of
+1000), the fit for <code class="xref any docutils literal notranslate"><span class="pre">D</span></code> will converge to zero (i.e. <code class="docutils literal notranslate"><span class="pre">1e-10</span></code>).</p></li>
+</ul>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="class">

@@ -51,9 +51,13 @@ def perezcruz(dataset, n=10, k=20, dt=1):
     # Generate snippets
     snips = []
     for traj in dataset:
-        newsnips = [traj[start:(start+(n*dt)):dt].flatten() for start in range(len(traj)-(n*dt)+1)]
+        newsnips = [traj[start:(start+(n*dt)):dt] for start in range(len(traj)-(n*dt)+1)]
         snips += [snip for snip in newsnips if not np.any(np.isnan(snip))]
     snips = np.array(snips)
+
+    if dataset.map_unique(lambda traj : traj.N) > 1:
+        snips = snips.swapaxes(2, 1)
+    snips = snips.reshape((snips.shape[0], snips.shape[1], -1))
 
     # DCT seems to speed up neighbor search. Analytically it is irrelevant, as
     # long as normalized and we account for the switching parity of the
@@ -67,14 +71,17 @@ def perezcruz(dataset, n=10, k=20, dt=1):
     estimation_snips = snips[ind[:halfN]]
     sample_snips = snips[ind[halfN:]]
 
-    # Build neighbor trees and run estimation
     # Note that time reversal in DCT space means multiplying all odd modes by -1
-    tree_fw = KDTree(estimation_snips)
-    if parity == 'even':
-        tree_bw = KDTree(estimation_snips*[(-1)**i for i in range(estimation_snips.shape[1])])
-    else:
-        tree_bw = KDTree(estimation_snips*[(-1)**(i+1) for i in range(estimation_snips.shape[1])])
+    rev_estimation_snips = estimation_snips * ((-1)**np.arange(estimation_snips.shape[1])).reshape(1, -1, 1)
+    if parity == 'odd':
+        rev_estimation_snips *= -1
 
-    rk = tree_fw.query(sample_snips, k)[0][:, -1]
-    sk = tree_bw.query(sample_snips, k)[0][:, -1]
-    return n * np.mean(np.log(sk/rk))
+    # Build neighbor trees and run estimation
+    N_snips = estimation_snips.shape[0]
+    tree_fw = KDTree(estimation_snips.reshape(N_snips, -1))
+    tree_bw = KDTree(rev_estimation_snips.reshape(N_snips, -1))
+
+    N_snips = sample_snips.shape[0]
+    rk = tree_fw.query(sample_snips.reshape(N_snips, -1), k)[0][:, -1]
+    sk = tree_bw.query(sample_snips.reshape(N_snips, -1), k)[0][:, -1]
+    return np.prod(snips.shape[1:]) * np.mean(np.log(sk/rk))

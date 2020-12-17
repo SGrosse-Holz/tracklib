@@ -184,6 +184,13 @@ class Test1TaggedSet(unittest.TestCase):
             tl.TaggedSet.makeTagsSet(1)
 
     def test_selection(self):
+        for _ in range(5):
+            self.ls.makeSelection(nrand=1)
+            self.assertEqual(len(self.ls), 1)
+        for _ in range(5):
+            self.ls.makeSelection(prand=0.5)
+            self.assertEqual(len(self.ls), 1)
+
         self.ls.makeSelection(tags="a")
         self.assertSetEqual({*self.ls}, {1, 2})
 

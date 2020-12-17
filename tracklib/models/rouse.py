@@ -463,7 +463,12 @@ def _likelihood_filter(trace, model, looptrace, noise):
         
         # Update step copied from Christoph
         if noise > 0:
-            InvSigmaPrior = scipy.linalg.inv(C1)
+            try:
+                InvSigmaPrior = scipy.linalg.inv(C1)
+            except Exception as err:
+                print(model)
+                print(C1)
+                raise err
             InvSigma = np.tensordot(w, w, 0)/noise**2 + InvSigmaPrior
             SigmaPosterior = scipy.linalg.inv(InvSigma)
             MuPosterior = SigmaPosterior @ (w*trace[i] / noise**2 + InvSigmaPrior @ M1)

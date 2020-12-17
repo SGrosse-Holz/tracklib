@@ -59,7 +59,7 @@ def traj_likelihood(traj, model, looptrace=None):
 
 ### Fitting Rouse parameters to a dataset ###
 
-def fit_RouseParams(data, model_init, unknown_params, **kwargs):
+def fit_RouseParams(data, model_init, unknown_params, fit_in_logspace=True, **kwargs):
     """
     Run gradient descent to find best fit for Rouse parameters
 
@@ -80,6 +80,8 @@ def fit_RouseParams(data, model_init, unknown_params, **kwargs):
         the parameters of `!model_init` that should be fit. Should contain
         names of attributes of a `rouse.Model`. Examples: ``['D', 'k']``,
         ``['D', 'k', 'k_extra']``, ``'k_extra'``.
+    fit_in_logspace : bool, str or list of str
+        whether / which parameters to fit in log-space.
 
     Returns
     -------
@@ -97,17 +99,50 @@ def fit_RouseParams(data, model_init, unknown_params, **kwargs):
     Default parameters for minimization: we use ``method = 'L-BFGS-B'``,
     constrain all parameters to be positive (>1e-10) using the ``bounds``
     keyword and set the options ``maxfun = 300``, and ``ftol = 1e-5``.
+
+    **Troubleshooting**
+     - make sure that the magnitude of parameter values is around one. The
+       minimizer (see `!scipy.optimize.minimize`) defaults to a fixed step
+       gradient descent, which is useless if parameters are orders of magnitude
+       bigger than 1. You can also try to play with the minimizer's options to
+       make it use an adaptive step size.
+     - make sure units match up. A common mistake is to have a unit mismatch
+       between localization error and trajectories (e.g. one in μm and the
+       other in nm). If the localization error is too big (here by a factor of
+       1000), the fit for `!D` will converge to zero (i.e. ``1e-10``).
     """
     model = deepcopy(model_init)
 
+    # Unknown parameters
     if isinstance(unknown_params, str):
         unknown_params = [unknown_params]
     elif not isinstance(unknown_params, list):
         raise ValueError("Did not understand type of 'unknown_params' : {} (should be str or list)".format(type(unknown_params)))
+
     init_params = [getattr(model, pname) for pname in unknown_params]
 
+    # Logspace fitting
+    if isinstance(fit_in_logspace, str):
+        fit_in_logspace = [fit_in_logspace]
+    elif isinstance(fit_in_logspace, bool):
+        if fit_in_logspace:
+            fit_in_logspace = unknown_params
+        else:
+            fit_in_logspace = []
+    elif not isinstance(fit_in_logspace, str):
+        raise ValueError("Did not understand type of 'fit_in_logspace' : {} (should be str, list, or bool)".format(type(fit_in_logspace)))
+    
+    for i, pname in enumerate(unknown_params):
+        if pname in fit_in_logspace:
+            init_params[i] = np.log(init_params[i])
+            unknown_params[i] = '_log_' + pname
+
+    # Likelihood calculation
     def neg_logL_ds(params):
         for pname, pval in zip(unknown_params, params):
+            if pname.startswith('_log_'):
+                pname = pname[5:]
+                pval = np.exp(pval)
             setattr(model, pname, pval)
         model.check_setup_called(run_if_necessary=True)
 
@@ -119,7 +154,8 @@ def fit_RouseParams(data, model_init, unknown_params, **kwargs):
 
     minimize_kwargs = {
             'method' : 'L-BFGS-B',
-            'bounds' : tuple((1e-10, None) for _ in range(len(init_params))), # all parameters should be positive
+            'bounds' : tuple((-10, 10) if pname.startswith('_log_') else (1e-10, None) \
+                             for pname in unknown_params), # all parameters should be positive
             'options' : {'maxfun' : 300, 'ftol' : 1e-5},
             }
     # 'People' might try to override the defaults individually

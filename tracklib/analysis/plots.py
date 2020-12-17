@@ -90,10 +90,10 @@ def msd_overview(dataset, dt=1., **kwargs):
     for traj in dataset:
         msd = MSD(traj)
         tmsd = dt*np.arange(len(msd))
-        lines.append(plt.loglog(tmsd, msd, **kwargs))
+        lines.append(plt.loglog(tmsd[1:], msd[1:], **kwargs))
     msd = MSD(dataset)
     tmsd = dt*np.arange(len(msd))
-    lines.append(plt.loglog(tmsd, msd, color='k', linewidth=2, label='ensemble mean'))
+    lines.append(plt.loglog(tmsd[1:], msd[1:], color='k', linewidth=2, label='ensemble mean'))
     plt.legend()
 
     plt.title('MSDs')

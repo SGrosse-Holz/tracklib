@@ -1,4 +1,5 @@
 from copy import deepcopy
+import random
 
 class TaggedSet():
     """
@@ -38,7 +39,7 @@ class TaggedSet():
     ``myset[i]``
         element access within the current selection. You can use indices from
         ``0`` to ``len(myset)-1``.
-    ``myset &= otherset``
+    ``myset |= otherset``
         add the data in `!otherset` into `!myset`. This is a shortcut for
         ``myset.mergein(otherset)``.
     """
@@ -54,13 +55,15 @@ class TaggedSet():
 
         Parameters
         ----------
-        tags : str, list of str, or set of str
+        tags : str, list of str, set of str, or None
 
         Returns
         -------
         set of str
         """
-        if isinstance(tags, str):
+        if tags is None:
+            return set()
+        elif isinstance(tags, str):
             tags = {tags}
         elif isinstance(tags, list):
             tags = set(tags)
@@ -83,7 +86,7 @@ class TaggedSet():
             for datum in iterable:
                 self.add(datum)
 
-    def add(self, datum, tags=set()):
+    def add(self, datum, tags=None):
         """
         Append the given datum with the given tags.
 
@@ -154,6 +157,7 @@ class TaggedSet():
         There are multiple ways to select data. Which one is used depends on
         the kwargs given. With increasing preference, these methods are
 
+        - select randomly: use the kwargs `!nrand` or `!prand`
         - select by tag: use the kwargs `!tags` and `!logic`
         - select with a user-specified function: use kwarg `!selector`
 
@@ -162,6 +166,12 @@ class TaggedSet():
 
         Parameters
         ----------
+        nrand : int
+            number of trajectories to select at random
+        prand : float, in [0, 1]
+            fraction of trajectories to select at random
+        random_seed : int, str, or bytes, optional
+            seed for random selection. Note that this can be a string.
         tags : str, list of str, or set of str
             the tags to select. How these go together will be determined by
             `!logic`.
@@ -199,6 +209,25 @@ class TaggedSet():
                 kwargs['logic'] = any
             def selector(datum, tags):
                 return kwargs['logic']([tag in tags for tag in kwargs['tags']])
+        elif 'nrand' in kwargs.keys() or \
+             'prand' in kwargs.keys():
+            curlen = sum(self._selected) if kwargs['refining'] else len(self._data)
+            try:
+                nrand = kwargs['nrand']
+            except KeyError:
+                nrand = int(kwargs['prand']*curlen)
+            if 'random_seed' in kwargs.keys():
+                random.seed(kwargs['random_seed'])
+            toselect = random.sample(range(curlen), nrand)
+            def selector(datum, tags):
+                # Note: have to hack a bit to get a static variable
+                try:
+                    return selector.cnt in toselect
+                except AttributeError:
+                    selector.cnt = 0
+                    return selector.cnt in toselect
+                finally:
+                    selector.cnt += 1
         else:
             def selector(datum, tags):
                 return True
@@ -269,9 +298,27 @@ class TaggedSet():
 
         return TaggedSet(gen())
 
+    def deleteSelection(self):
+        """
+        Remove the selected entries from the set
+
+        See also
+        --------
+        makeSelection, copySelection
+
+        Notes
+        -----
+        Since everything in the current selection is deleted, the current
+        selection of the list after calling this function will be completely
+        empty.
+        """
+        self._data = [datum for datum, selected in zip(self._data, self._selected) if not selected]
+        self._tags = [tagset for tagset, selected in zip(self._tags, self._selected) if not selected]
+        self._selected = len(self._data)*[False]
+
     ### Managing multiple TaggedSets ###
 
-    def mergein(self, other, additionalTags=set()):
+    def mergein(self, other, additionalTags=None):
         """
         Add the contents of the TaggedSet `!other` to the caller.
 
@@ -284,7 +331,7 @@ class TaggedSet():
 
         Notes
         -----
-        This can also be invoked as ``self &= other``. In that case no
+        This can also be invoked as ``self |= other``. In that case no
         additional tags can be added.
         """
         if not issubclass(type(other), TaggedSet):
@@ -297,7 +344,7 @@ class TaggedSet():
         self._tags += newTags
         self._selected += other._selected
 
-    def __iand__(self, other):
+    def __ior__(self, other):
         self.mergein(other)
         return self
 

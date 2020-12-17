@@ -230,6 +230,7 @@ purposes, the set will behave as if it contained only these data.</p>
 <p>There are multiple ways to select data. Which one is used depends on
 the kwargs given. With increasing preference, these methods are</p>
 <ul class="simple">
+<li><p>select randomly: use the kwargs <code class="xref any docutils literal notranslate"><span class="pre">nrand</span></code> or <code class="xref any docutils literal notranslate"><span class="pre">prand</span></code></p></li>
 <li><p>select by tag: use the kwargs <code class="xref any docutils literal notranslate"><span class="pre">tags</span></code> and <code class="xref any docutils literal notranslate"><span class="pre">logic</span></code></p></li>
 <li><p>select with a user-specified function: use kwarg <code class="xref any docutils literal notranslate"><span class="pre">selector</span></code></p></li>
 </ul>
@@ -238,6 +239,8 @@ dataset.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
+<li><p><strong>nrand</strong> (<em>int</em>) – number of trajectories to select at random</p></li>
+<li><p><strong>prand</strong> (<em>float</em><em>, </em><em>in</em><em> [</em><em>0</em><em>, </em><em>1</em><em>]</em>) – fraction of trajectories to select at random</p></li>
 <li><p><strong>tags</strong> (<em>str</em><em>, </em><em>list of str</em><em>, or </em><em>set of str</em>) – the tags to select. How these go together will be determined by
 <code class="xref any docutils literal notranslate"><span class="pre">logic</span></code>.</p></li>
 <li><p><strong>logic</strong> (<em>callable with signature bool = logic</em><em>(</em><em>&lt;list of bool&gt;</em><em>)</em>) – the logic for handling multiple tags. Set this to (the built-in)
