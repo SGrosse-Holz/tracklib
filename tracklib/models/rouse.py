@@ -178,7 +178,7 @@ class Model:
             return ettA @ S @ ettA.T
 
         self._propagation_memo = {
-                'model' : Model(self.N, self.D, self.k, self.k_extra, setup=False),
+                'model' : Model(self.N, self.D, self.k, self.k_extra, setup=False, extrabond=self.bondpos),
                 'dt' : dt,
                 }
         for bond in [True, False]:
