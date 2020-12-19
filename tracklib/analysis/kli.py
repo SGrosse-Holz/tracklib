@@ -59,7 +59,7 @@ def traj_likelihood(traj, model, looptrace=None):
 
 ### Fitting Rouse parameters to a dataset ###
 
-def fit_RouseParams(data, model_init, unknown_params, fit_in_logspace=True, **kwargs):
+def fit_RouseParams(data, model_init, unknown_params, fit_in_logspace=False, **kwargs):
     """
     Run gradient descent to find best fit for Rouse parameters
 
@@ -154,7 +154,7 @@ def fit_RouseParams(data, model_init, unknown_params, fit_in_logspace=True, **kw
 
     minimize_kwargs = {
             'method' : 'L-BFGS-B',
-            'bounds' : tuple((-10, 10) if pname.startswith('_log_') else (1e-10, None) \
+            'bounds' : tuple((-50, 50) if pname.startswith('_log_') else (1e-10, None) \
                              for pname in unknown_params), # all parameters should be positive
             'options' : {'maxfun' : 300, 'ftol' : 1e-5},
             }
