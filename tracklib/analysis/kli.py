@@ -252,7 +252,7 @@ class LoopSequence:
             the number of loops
         """
         return np.sum(self.isLoop[:-1] * (1-self.isLoop[1:])) + self.isLoop[-1]
-        
+
     def plottable(self):
         """
         Give arrays that can be used for plotting
@@ -274,6 +274,108 @@ class LoopSequence:
         t = np.array([0] + [time for time in self.t for _ in range(2)] + [self.T]) - 0.5
         loop = np.array([float(isLoop) for isLoop in self.isLoop for _ in range(2)])
         return t, loop
+
+### Running the inference on a trajectory ###
+
+def estimate_looping(traj, model, numIntervals, MCMCconfig):
+    """
+    Run the looping inference on a single trajectory.
+
+    Results are written to corresponding `!traj.meta` fields and the whole
+    trajectory object is returned. This way this function can be run in
+    parallel on a whole data set.
+
+    Parameters
+    ----------
+    traj : Trajectory
+        the trajectory to run the inference on
+    model : tracklib.models.rouse.Model
+        the calibrated model to use in the inference
+    numIntervals : int
+        the number of looping/no looping intervals to assume
+    MCMCconfig : dict
+        configuration of the MCMC sampler. See `LoopSequenceMCMC.configure`.
+
+    Returns
+    -------
+    Trajectory
+        the input trajectory, with the inference results written to
+        ``traj.meta['logL']`` (log-likelihood during the MCMC runs),
+        ``traj.meta['pLoop']`` (inferred looping probability), and
+        ``traj.meta['loopSequences']`` (the individual loopSequences at each
+        MCMC iteration after burn-in).
+
+    See also
+    --------
+    fit_RouseParams, LoopSequenceMCMC, LoopSequenceMCMC.configure
+
+    Examples
+    --------
+    Parallelization using `!multiprocessing.Pool`, assuming we have a
+    `!TaggedSet` of `!Trajectory` as the input ``data``. Note that for
+    parallelization the data will be copied anyways. `!tracklib` is assumed to
+    be imported as ``tl``
+
+    >>> from multiprocessing import Pool
+    ... from functools import partial
+    ...
+    ... # Dummy parameters
+    ... model = tl.models.Rouse(20, 1, 5, 1)
+    ... numIntervals = 10
+    ... MCMCconfig = {
+    ...         'iterations' : 1000,
+    ...         'burn_in' : 500,
+    ...     }
+    ...
+    ... with Pool(20) as mypool:
+    ...     data_estimated = tl.TaggedSet(
+    ...         mypool.imap_unordered(
+    ...             partial(tl.analysis.kli.estimate_looping, model=model, numIntervals=numIntervals, MCMCconfig=MCMCconfig),
+    ...             data,
+    ...         ),
+    ...         hasTags=False,
+    ...     )
+
+    Note that you can incorporate a progressbar (using e.g. `!tqdm`) by
+    wrapping the generator ``mypool.imap_unordered(...)`` in the above
+    expression.
+    """
+    mc = LoopSequenceMCMC()
+    mc.setup(traj, model)
+    mc.configure(**MCMCconfig)
+
+    traj.meta['logL'], traj.meta['loopSequences'] = mc.run(LoopSequence(len(traj), numIntervals))
+    traj.meta['pLoop'] = np.mean([seq.toLooptrace() for seq in traj.meta['loopSequences']], axis=0)
+
+    return traj
+
+def loop_lifetimes(pLoop, threshold=0.5):
+    """
+    Calculate loop lifetimes
+
+    Parameters
+    ----------
+    pLoop : array-like
+        the input trace. A loop is defined as any point where this is greater
+        than `!threshold`.
+    threshold : float
+        the threshold to use for loop calling
+
+    Returns
+    -------
+    np.ndarray(dtype=int)
+        the list of lengths of detected loops. May be empty if there are no
+        loops to be found.
+
+    Notes
+    -----
+    This problem is called "run length encoding".
+    """
+    looptrace = np.pad(np.asarray(pLoop) > threshold, (1, 1), constant_values=False)
+    indicator = np.diff(looptrace.astype(int))
+    starts, _ = np.where(indicator == 1)
+    ends, _ = np.where(indicator == -1)
+    return ends - starts
 
 ### The MCMC samplers ###
 
