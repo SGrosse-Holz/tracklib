@@ -393,7 +393,7 @@ def looplifes(traj, step=1):
         gives mostly redundant data.
     """
     lifelist = []
-    for seq in traj.meta['loopSequences'][range(None, None, step)]:
+    for seq in traj.meta['loopSequences'][slice(None, None, step)]:
         loops = callLoops(seq.toLooptrace().astype(float))
         lifelist += (loops[:, 1] - loops[:, 0]).tolist()
 
