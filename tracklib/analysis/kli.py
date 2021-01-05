@@ -374,8 +374,8 @@ def callLoops(pLoop, threshold=0.5):
     """
     looptrace = np.pad(np.asarray(pLoop) > threshold, (1, 1), constant_values=False)
     indicator = np.diff(looptrace.astype(int))
-    starts, _ = np.where(indicator == 1) - 1 # indices shift by 1 bc of padding
-    ends, _ = np.where(indicator == -1) - 1
+    starts = np.where(indicator == 1)[0] - 1 # indices shift by 1 bc of padding
+    ends = np.where(indicator == -1)[0] - 1
     return np.array([starts, ends]).T
 
 def looplifes(traj):
