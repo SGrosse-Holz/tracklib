@@ -349,7 +349,7 @@ def estimate_looping(traj, model, numIntervals, MCMCconfig):
 
     return traj
 
-def loop_lifetimes(pLoop, threshold=0.5):
+def callLoops(pLoop, threshold=0.5):
     """
     Calculate loop lifetimes
 
@@ -364,8 +364,9 @@ def loop_lifetimes(pLoop, threshold=0.5):
     Returns
     -------
     np.ndarray(dtype=int)
-        the list of lengths of detected loops. May be empty if there are no
-        loops to be found.
+        the start and end points of detected loops, as (N_loop, 2) array. Note
+        that the start index might be -1, if the trace starts looped. If
+        ``len(pLoop)`` is listed as an end point, the trajectory ended looped.
 
     Notes
     -----
@@ -373,9 +374,20 @@ def loop_lifetimes(pLoop, threshold=0.5):
     """
     looptrace = np.pad(np.asarray(pLoop) > threshold, (1, 1), constant_values=False)
     indicator = np.diff(looptrace.astype(int))
-    starts, _ = np.where(indicator == 1)
-    ends, _ = np.where(indicator == -1)
-    return ends - starts
+    starts, _ = np.where(indicator == 1) - 1 # indices shift by 1 bc of padding
+    ends, _ = np.where(indicator == -1) - 1
+    return np.array([starts, ends]).T
+
+def looplifes(traj):
+    """
+    Get all the loop lifetimes from the individual MCMC steps
+    """
+    lifelist = []
+    for seq in traj.meta['loopSequences']:
+        loops = callLoops(seq.toLooptrace().astype(float))
+        lifelist += (loops[:, 1] - loops[:, 0]).tolist()
+
+    return lifelist
 
 ### The MCMC samplers ###
 
