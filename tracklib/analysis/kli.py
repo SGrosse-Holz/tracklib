@@ -494,8 +494,8 @@ class LoopSequenceMCMC(mcmc.Sampler):
     def logL(self, sequence):
         "" # Remove the default docstring from mcmc.Sampler; this is an internal function now
 
-        return traj_likelihood(self.traj, self.model, sequence.toLooptrace()) \
-                + (sequence.numLoops() - 1)*np.log(1-0.3) # from Christoph's code
+        return traj_likelihood(self.traj, self.model, sequence.toLooptrace())
+#                 + (sequence.numLoops() - 1)*np.log(1-0.3) # from Christoph's code
     
 class LoopTraceMCMC(LoopSequenceMCMC):
     """
