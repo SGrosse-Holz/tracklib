@@ -378,9 +378,19 @@ def callLoops(pLoop, threshold=0.5):
     ends = np.where(indicator == -1)[0] - 1
     return np.array([starts, ends]).T
 
-def looplifes(traj):
+def looplifes(traj, step=1):
     """
     Get all the loop lifetimes from the individual MCMC steps
+
+    Parameters
+    ----------
+    traj : Trajectory
+        should be processed through `estimate_loops`, such that it has the
+        ``'loopSequences'`` meta-field.
+    step : int, optional
+        how big steps to take through the ``traj.meta['loopSequences']`` list.
+        Since successive MCMC steps are correlated, using every single one
+        gives mostly redundant data.
     """
     lifelist = []
     for seq in traj.meta['loopSequences']:
