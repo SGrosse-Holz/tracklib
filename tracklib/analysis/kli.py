@@ -277,7 +277,7 @@ class LoopSequence:
 
 ### Running the inference on a trajectory ###
 
-def estimate_looping(traj, model, numIntervals, MCMCconfig):
+def estimate_looping(traj, model, numIntervals, MCMCconfig, moveBoundaries=True):
     """
     Run the looping inference on a single trajectory.
 
@@ -295,6 +295,11 @@ def estimate_looping(traj, model, numIntervals, MCMCconfig):
         the number of looping/no looping intervals to assume
     MCMCconfig : dict
         configuration of the MCMC sampler. See `LoopSequenceMCMC.configure`.
+    moveBoundaries : bool, optional
+        whether to include the boundaries of the looping regions in the MCMC.
+        Set to ``False`` to run MCMC for fixed intervals of length
+        ``len(traj)/numIntervals``. In this case, the MCMC state space is
+        really just the binary string of "which looping interval is active".
 
     Returns
     -------
@@ -341,6 +346,8 @@ def estimate_looping(traj, model, numIntervals, MCMCconfig):
     expression.
     """
     mc = LoopSequenceMCMC()
+    if not moveBoundaries:
+        mc.propose_update = mc.propose_update_noBoundaries
     mc.setup(traj, model)
     mc.configure(**MCMCconfig)
 
@@ -404,6 +411,14 @@ def looplifes(traj, step=1):
 class LoopSequenceMCMC(mcmc.Sampler):
     """
     An MCMC sampler that uses `LoopSequence` objects as parametrization.
+
+    Notes
+    -----
+    To remove updating of the boundaries of the looping intervals
+    (`LoopSequence.t`), overwrite the `propose_update` function with the
+    included alternative:
+    >>> mc = LoopSequenceMCMC()
+    ... mc.propose_update = mc.propose_update_noBoundaries
 
     See also
     --------
@@ -483,6 +498,22 @@ class LoopSequenceMCMC(mcmc.Sampler):
 #         p_backward += np.log(scipy.stats.beta.pdf(cur_tau, betaParam*prop_tau / (1-prop_tau), betaParam))
         
         proposed_sequence.t[ind_up] = t1 + prop_tau * (t2 - t1)
+        
+        # Update a loop interval
+        ind_up = np.random.randint(len(current_sequence.isLoop))
+        if np.random.rand() < 0.5:
+            proposed_sequence.isLoop[ind_up] = not proposed_sequence.isLoop[ind_up]
+            
+        return proposed_sequence, p_forward, p_backward
+
+    def propose_update_noBoundaries(self, current_sequence):
+        ""
+        # Do not change looping intervals when updating; only change the loop
+        # state in the given intervals
+
+        proposed_sequence = deepcopy(current_sequence)
+        p_forward = 0.
+        p_backward = 0.
         
         # Update a loop interval
         ind_up = np.random.randint(len(current_sequence.isLoop))
