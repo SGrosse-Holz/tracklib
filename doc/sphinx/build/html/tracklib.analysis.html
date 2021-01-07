@@ -186,7 +186,7 @@ trajectories. Most of the conceptual work is due to Christoph Zechner.</p>
 
 <dl class="function">
 <dt id="tracklib.analysis.kli.fit_RouseParams">
-<code class="sig-prename descclassname">tracklib.analysis.kli.</code><code class="sig-name descname">fit_RouseParams</code><span class="sig-paren">(</span><em class="sig-param">data</em>, <em class="sig-param">model_init</em>, <em class="sig-param">unknown_params</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#tracklib.analysis.kli.fit_RouseParams" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">tracklib.analysis.kli.</code><code class="sig-name descname">fit_RouseParams</code><span class="sig-paren">(</span><em class="sig-param">data</em>, <em class="sig-param">model_init</em>, <em class="sig-param">unknown_params</em>, <em class="sig-param">fit_in_logspace=False</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#tracklib.analysis.kli.fit_RouseParams" title="Permalink to this definition">¶</a></dt>
 <dd><p>Run gradient descent to find best fit for Rouse parameters</p>
 <p>All keyword arguments will be forwarded to <code class="xref any docutils literal notranslate"><span class="pre">scipy.minimize.optimize</span></code>.</p>
 <dl class="field-list simple">
@@ -202,6 +202,7 @@ and provides initial values for those that will be fit.</p></li>
 <li><p><strong>unknown_params</strong> (<em>str</em><em> or </em><em>list of str</em>) – the parameters of <code class="xref any docutils literal notranslate"><span class="pre">model_init</span></code> that should be fit. Should contain
 names of attributes of a <a class="reference internal" href="tracklib.models.html#tracklib.models.rouse.Model" title="tracklib.models.rouse.Model"><code class="xref any py py-class docutils literal notranslate"><span class="pre">rouse.Model</span></code></a>. Examples: <code class="docutils literal notranslate"><span class="pre">['D',</span> <span class="pre">'k']</span></code>,
 <code class="docutils literal notranslate"><span class="pre">['D',</span> <span class="pre">'k',</span> <span class="pre">'k_extra']</span></code>, <code class="docutils literal notranslate"><span class="pre">'k_extra'</span></code>.</p></li>
+<li><p><strong>fit_in_logspace</strong> (<em>bool</em><em>, </em><em>str</em><em> or </em><em>list of str</em>) – whether / which parameters to fit in log-space.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
@@ -334,6 +335,86 @@ i.e. where <code class="docutils literal notranslate"><span class="pre">isLoop[i
 </div>
 </dd></dl>
 
+</dd></dl>
+
+<dl class="function">
+<dt id="tracklib.analysis.kli.estimate_looping">
+<code class="sig-prename descclassname">tracklib.analysis.kli.</code><code class="sig-name descname">estimate_looping</code><span class="sig-paren">(</span><em class="sig-param">traj</em>, <em class="sig-param">model</em>, <em class="sig-param">numIntervals</em>, <em class="sig-param">MCMCconfig</em><span class="sig-paren">)</span><a class="headerlink" href="#tracklib.analysis.kli.estimate_looping" title="Permalink to this definition">¶</a></dt>
+<dd><p>Run the looping inference on a single trajectory.</p>
+<p>Results are written to corresponding <code class="xref any docutils literal notranslate"><span class="pre">traj.meta</span></code> fields and the whole
+trajectory object is returned. This way this function can be run in
+parallel on a whole data set.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>traj</strong> (<a class="reference internal" href="tracklib.html#tracklib.trajectory.Trajectory" title="tracklib.trajectory.Trajectory"><em>Trajectory</em></a>) – the trajectory to run the inference on</p></li>
+<li><p><strong>model</strong> (<a class="reference internal" href="tracklib.models.html#tracklib.models.rouse.Model" title="tracklib.models.rouse.Model"><em>tracklib.models.rouse.Model</em></a>) – the calibrated model to use in the inference</p></li>
+<li><p><strong>numIntervals</strong> (<em>int</em>) – the number of looping/no looping intervals to assume</p></li>
+<li><p><strong>MCMCconfig</strong> (<em>dict</em>) – configuration of the MCMC sampler. See <a class="reference internal" href="#tracklib.analysis.kli.LoopSequenceMCMC.configure" title="tracklib.analysis.kli.LoopSequenceMCMC.configure"><code class="xref any py py-meth docutils literal notranslate"><span class="pre">LoopSequenceMCMC.configure</span></code></a>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><em>Trajectory</em> – the input trajectory, with the inference results written to
+<code class="docutils literal notranslate"><span class="pre">traj.meta['logL']</span></code> (log-likelihood during the MCMC runs),
+<code class="docutils literal notranslate"><span class="pre">traj.meta['pLoop']</span></code> (inferred looping probability), and
+<code class="docutils literal notranslate"><span class="pre">traj.meta['loopSequences']</span></code> (the individual loopSequences at each
+MCMC iteration after burn-in).</p>
+</dd>
+</dl>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><a class="reference internal" href="#tracklib.analysis.kli.fit_RouseParams" title="tracklib.analysis.kli.fit_RouseParams"><code class="xref py py-func docutils literal notranslate"><span class="pre">fit_RouseParams()</span></code></a>, <a class="reference internal" href="#tracklib.analysis.kli.LoopSequenceMCMC" title="tracklib.analysis.kli.LoopSequenceMCMC"><code class="xref py py-func docutils literal notranslate"><span class="pre">LoopSequenceMCMC()</span></code></a>, <a class="reference internal" href="#tracklib.analysis.kli.LoopSequenceMCMC.configure" title="tracklib.analysis.kli.LoopSequenceMCMC.configure"><code class="xref py py-func docutils literal notranslate"><span class="pre">LoopSequenceMCMC.configure()</span></code></a></p>
+</div>
+<p class="rubric">Examples</p>
+<p>Parallelization using <code class="xref any docutils literal notranslate"><span class="pre">multiprocessing.Pool</span></code>, assuming we have a
+<code class="xref any docutils literal notranslate"><span class="pre">TaggedSet</span></code> of <code class="xref any docutils literal notranslate"><span class="pre">Trajectory</span></code> as the input <code class="docutils literal notranslate"><span class="pre">data</span></code>. Note that for
+parallelization the data will be copied anyways. <code class="xref any docutils literal notranslate"><span class="pre">tracklib</span></code> is assumed to
+be imported as <code class="docutils literal notranslate"><span class="pre">tl</span></code></p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">multiprocessing</span> <span class="k">import</span> <span class="n">Pool</span>
+<span class="gp">... </span><span class="kn">from</span> <span class="nn">functools</span> <span class="k">import</span> <span class="n">partial</span>
+<span class="gp">...</span>
+<span class="gp">... </span><span class="c1"># Dummy parameters</span>
+<span class="gp">... </span><span class="n">model</span> <span class="o">=</span> <span class="n">tl</span><span class="o">.</span><span class="n">models</span><span class="o">.</span><span class="n">Rouse</span><span class="p">(</span><span class="mi">20</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+<span class="gp">... </span><span class="n">numIntervals</span> <span class="o">=</span> <span class="mi">10</span>
+<span class="gp">... </span><span class="n">MCMCconfig</span> <span class="o">=</span> <span class="p">{</span>
+<span class="gp">... </span>        <span class="s1">&#39;iterations&#39;</span> <span class="p">:</span> <span class="mi">1000</span><span class="p">,</span>
+<span class="gp">... </span>        <span class="s1">&#39;burn_in&#39;</span> <span class="p">:</span> <span class="mi">500</span><span class="p">,</span>
+<span class="gp">... </span>    <span class="p">}</span>
+<span class="gp">...</span>
+<span class="gp">... </span><span class="k">with</span> <span class="n">Pool</span><span class="p">(</span><span class="mi">20</span><span class="p">)</span> <span class="k">as</span> <span class="n">mypool</span><span class="p">:</span>
+<span class="gp">... </span>    <span class="n">data_estimated</span> <span class="o">=</span> <span class="n">tl</span><span class="o">.</span><span class="n">TaggedSet</span><span class="p">(</span>
+<span class="gp">... </span>        <span class="n">mypool</span><span class="o">.</span><span class="n">imap_unordered</span><span class="p">(</span>
+<span class="gp">... </span>            <span class="n">partial</span><span class="p">(</span><span class="n">tl</span><span class="o">.</span><span class="n">analysis</span><span class="o">.</span><span class="n">kli</span><span class="o">.</span><span class="n">estimate_looping</span><span class="p">,</span> <span class="n">model</span><span class="o">=</span><span class="n">model</span><span class="p">,</span> <span class="n">numIntervals</span><span class="o">=</span><span class="n">numIntervals</span><span class="p">,</span> <span class="n">MCMCconfig</span><span class="o">=</span><span class="n">MCMCconfig</span><span class="p">),</span>
+<span class="gp">... </span>            <span class="n">data</span><span class="p">,</span>
+<span class="gp">... </span>        <span class="p">),</span>
+<span class="gp">... </span>        <span class="n">hasTags</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+<span class="gp">... </span>    <span class="p">)</span>
+</pre></div>
+</div>
+<p>Note that you can incorporate a progressbar (using e.g. <code class="xref any docutils literal notranslate"><span class="pre">tqdm</span></code>) by
+wrapping the generator <code class="docutils literal notranslate"><span class="pre">mypool.imap_unordered(...)</span></code> in the above
+expression.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="tracklib.analysis.kli.loop_lifetimes">
+<code class="sig-prename descclassname">tracklib.analysis.kli.</code><code class="sig-name descname">loop_lifetimes</code><span class="sig-paren">(</span><em class="sig-param">pLoop</em>, <em class="sig-param">threshold=0.5</em><span class="sig-paren">)</span><a class="headerlink" href="#tracklib.analysis.kli.loop_lifetimes" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculate loop lifetimes</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>pLoop</strong> (<em>array-like</em>) – the input trace. A loop is defined as any point where this is greater
+than <code class="xref any docutils literal notranslate"><span class="pre">threshold</span></code>.</p></li>
+<li><p><strong>threshold</strong> (<em>float</em>) – the threshold to use for loop calling</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><em>np.ndarray(dtype=int)</em> – the list of lengths of detected loops. May be empty if there are no
+loops to be found.</p>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<p>This problem is called “run length encoding”.</p>
 </dd></dl>
 
 <dl class="class">

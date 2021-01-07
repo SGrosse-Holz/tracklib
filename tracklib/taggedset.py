@@ -114,7 +114,7 @@ class TaggedSet():
 
     def __call__(self, giveTags=False):
         """
-        Iterate through the current selection of the list.
+        Iterate through the current selection of the set.
 
         Parameters
         ----------
@@ -282,11 +282,11 @@ class TaggedSet():
 
     def copySelection(self):
         """
-        Generate a new (copied) list from the current selection.
+        Generate a new (copied) set from the current selection.
 
         Returns
         -------
-        The new list
+        The new set
 
         See also
         --------
@@ -309,7 +309,7 @@ class TaggedSet():
         Notes
         -----
         Since everything in the current selection is deleted, the current
-        selection of the list after calling this function will be completely
+        selection of the set after calling this function will be completely
         empty.
         """
         self._data = [datum for datum, selected in zip(self._data, self._selected) if not selected]
@@ -325,7 +325,7 @@ class TaggedSet():
         Parameters
         ----------
         other : TaggedSet
-            the list whose data to add
+            the set whose data to add
         additionalTags : str, list of str, or set of str, optional
             additional tag(s) to add to all of the new data.
 
@@ -379,58 +379,6 @@ class TaggedSet():
 
         return tagset
 
-        ### Probably unnecessary ###
-
-#     def isHomogeneous(self, dtype=None, allowSubclass=False):
-#         """
-#         Check whether all the data are of the same type.
-# 
-#         Parameters
-#         ----------
-#         dtype : type
-#             if given, check that all data are of this type
-#         allowSubclass : bool
-#             whether to accept subclasses of the common type
-#             default: False
-# 
-#         Returns
-#         -------
-#         True if the types are homogeneous, False otherwise
-#         """
-#         try:
-#             for datum in self:
-#                 try:
-#                     if allowSubclass:
-#                         assert isinstance(datum, commontype)
-#                     else:
-#                         assert type(datum) == commontype
-#                 except NameError:
-#                     if dtype is None:
-#                         commontype = type(datum)
-#                     else:
-#                         commontype = dtype
-#                         if allowSubclass:
-#                             assert isinstance(datum, commontype)
-#                         else:
-#                             assert type(datum) == commontype
-#         except AssertionError:
-#             return False
-#         return True
-# 
-#     def getHom(self, attr):
-#         """
-#         Check that the attribute attr is the same for all data and return its
-#         value if so.
-#         """
-#         try:
-#             for datum in self:
-#                 try:
-#                     assert getattr(datum, attr) == attrvalue
-#                 except NameError:
-#                     attrvalue = getattr(datum, attr)
-#         except AssertionError:
-#             raise RuntimeError("Attribute '{}' has non-homogeneous values".format(attr))
-#         return attrvalue
 
     ### Processing data in the set ###
 
@@ -461,7 +409,7 @@ class TaggedSet():
         """
         Generate a new `TaggedSet` with processed data.
 
-        Same as `apply`, except that a new list with the processed data is
+        Same as `apply`, except that a new set with the processed data is
         returned, while the original one remains unchanged.
 
         Parameters

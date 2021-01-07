@@ -171,7 +171,7 @@ class Test1TaggedSet(unittest.TestCase):
         self.assertListEqual(self.ls._data, [1, 2, 3, 4, 5, 6])
         self.assertSetEqual(self.ls.tagset(), {'a', 'b', 'c', 'd', 'e', 'new'})
 
-        self.ls &= newls
+        self.ls |= newls
         self.assertEqual(len(self.ls), 9)
         
         self.ls.makeSelection(tags='new')
