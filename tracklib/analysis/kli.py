@@ -392,7 +392,7 @@ def looplifes(traj, step=1):
     Parameters
     ----------
     traj : Trajectory
-        should be processed through `estimate_loops`, such that it has the
+        should be processed through `estimate_looping`, such that it has the
         ``'loopSequences'`` meta-field.
     step : int, optional
         how big steps to take through the ``traj.meta['loopSequences']`` list.
@@ -436,7 +436,7 @@ class LoopSequenceMCMC(mcmc.Sampler):
     ...        'show_progress' : True,
     ...        }
     ... mc = LoopSequenceMCMC()
-    ... mc.setup(traj, model, noise=1)
+    ... mc.setup(traj, model)
     ... mc.configure(**MCMCconfig)
     ... logL, sequneces = mc.run(LoopSequence(len(traj), 10))
 

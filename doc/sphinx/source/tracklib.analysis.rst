@@ -4,6 +4,11 @@ tracklib.analysis
 .. contents::
    :local:
 
+.. toctree::
+
+   tracklib.analysis.neda
+
+
 tracklib.analysis.chi2
 ----------------------
 

@@ -15,7 +15,7 @@
     <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="tracklib.io" href="tracklib.io.html" />
+    <link rel="next" title="tracklib.analysis.neda" href="tracklib.analysis.neda.html" />
     <link rel="prev" title="tracklib" href="tracklib.html" /> 
   </head><body>
     <div class="related" role="navigation" aria-label="related navigation">
@@ -28,7 +28,7 @@
           <a href="py-modindex.html" title="Python Module Index"
              >modules</a> |</li>
         <li class="right" >
-          <a href="tracklib.io.html" title="tracklib.io"
+          <a href="tracklib.analysis.neda.html" title="tracklib.analysis.neda"
              accesskey="N">next</a> |</li>
         <li class="right" >
           <a href="tracklib.html" title="tracklib"
@@ -53,6 +53,19 @@
 <li><p><a class="reference internal" href="#module-tracklib.analysis.msd" id="id4">tracklib.analysis.msd</a></p></li>
 <li><p><a class="reference internal" href="#module-tracklib.analysis.plots" id="id5">tracklib.analysis.plots</a></p></li>
 <li><p><a class="reference internal" href="#module-tracklib.analysis.vacf" id="id6">tracklib.analysis.vacf</a></p></li>
+</ul>
+</div>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="tracklib.analysis.neda.html">tracklib.analysis.neda</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="tracklib.analysis.neda.html#module-tracklib.analysis.neda.mcmc">tracklib.analysis.neda.mcmc</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tracklib.analysis.neda.html#module-tracklib.analysis.neda.models">tracklib.analysis.neda.models</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tracklib.analysis.neda.html#module-tracklib.analysis.neda.neda">tracklib.analysis.neda.neda</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tracklib.analysis.neda.html#module-tracklib.analysis.neda.plot">tracklib.analysis.neda.plot</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tracklib.analysis.neda.html#module-tracklib.analysis.neda.priors">tracklib.analysis.neda.priors</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tracklib.analysis.neda.html#module-tracklib.analysis.neda.util">tracklib.analysis.neda.util</a></li>
+</ul>
+</li>
 </ul>
 </div>
 <div class="section" id="module-tracklib.analysis.chi2">
@@ -339,7 +352,7 @@ i.e. where <code class="docutils literal notranslate"><span class="pre">isLoop[i
 
 <dl class="function">
 <dt id="tracklib.analysis.kli.estimate_looping">
-<code class="sig-prename descclassname">tracklib.analysis.kli.</code><code class="sig-name descname">estimate_looping</code><span class="sig-paren">(</span><em class="sig-param">traj</em>, <em class="sig-param">model</em>, <em class="sig-param">numIntervals</em>, <em class="sig-param">MCMCconfig</em><span class="sig-paren">)</span><a class="headerlink" href="#tracklib.analysis.kli.estimate_looping" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">tracklib.analysis.kli.</code><code class="sig-name descname">estimate_looping</code><span class="sig-paren">(</span><em class="sig-param">traj</em>, <em class="sig-param">model</em>, <em class="sig-param">numIntervals</em>, <em class="sig-param">MCMCconfig</em>, <em class="sig-param">moveBoundaries=True</em><span class="sig-paren">)</span><a class="headerlink" href="#tracklib.analysis.kli.estimate_looping" title="Permalink to this definition">¶</a></dt>
 <dd><p>Run the looping inference on a single trajectory.</p>
 <p>Results are written to corresponding <code class="xref any docutils literal notranslate"><span class="pre">traj.meta</span></code> fields and the whole
 trajectory object is returned. This way this function can be run in
@@ -351,6 +364,10 @@ parallel on a whole data set.</p>
 <li><p><strong>model</strong> (<a class="reference internal" href="tracklib.models.html#tracklib.models.rouse.Model" title="tracklib.models.rouse.Model"><em>tracklib.models.rouse.Model</em></a>) – the calibrated model to use in the inference</p></li>
 <li><p><strong>numIntervals</strong> (<em>int</em>) – the number of looping/no looping intervals to assume</p></li>
 <li><p><strong>MCMCconfig</strong> (<em>dict</em>) – configuration of the MCMC sampler. See <a class="reference internal" href="#tracklib.analysis.kli.LoopSequenceMCMC.configure" title="tracklib.analysis.kli.LoopSequenceMCMC.configure"><code class="xref any py py-meth docutils literal notranslate"><span class="pre">LoopSequenceMCMC.configure</span></code></a>.</p></li>
+<li><p><strong>moveBoundaries</strong> (<em>bool</em><em>, </em><em>optional</em>) – whether to include the boundaries of the looping regions in the MCMC.
+Set to <code class="docutils literal notranslate"><span class="pre">False</span></code> to run MCMC for fixed intervals of length
+<code class="docutils literal notranslate"><span class="pre">len(traj)/numIntervals</span></code>. In this case, the MCMC state space is
+really just the binary string of “which looping interval is active”.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
@@ -397,8 +414,8 @@ expression.</p>
 </dd></dl>
 
 <dl class="function">
-<dt id="tracklib.analysis.kli.loop_lifetimes">
-<code class="sig-prename descclassname">tracklib.analysis.kli.</code><code class="sig-name descname">loop_lifetimes</code><span class="sig-paren">(</span><em class="sig-param">pLoop</em>, <em class="sig-param">threshold=0.5</em><span class="sig-paren">)</span><a class="headerlink" href="#tracklib.analysis.kli.loop_lifetimes" title="Permalink to this definition">¶</a></dt>
+<dt id="tracklib.analysis.kli.callLoops">
+<code class="sig-prename descclassname">tracklib.analysis.kli.</code><code class="sig-name descname">callLoops</code><span class="sig-paren">(</span><em class="sig-param">pLoop</em>, <em class="sig-param">threshold=0.5</em><span class="sig-paren">)</span><a class="headerlink" href="#tracklib.analysis.kli.callLoops" title="Permalink to this definition">¶</a></dt>
 <dd><p>Calculate loop lifetimes</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -409,12 +426,30 @@ than <code class="xref any docutils literal notranslate"><span class="pre">thres
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
-<dd class="field-even"><p><em>np.ndarray(dtype=int)</em> – the list of lengths of detected loops. May be empty if there are no
-loops to be found.</p>
+<dd class="field-even"><p><em>np.ndarray(dtype=int)</em> – the start and end points of detected loops, as (N_loop, 2) array. Note
+that the start index might be -1, if the trace starts looped. If
+<code class="docutils literal notranslate"><span class="pre">len(pLoop)</span></code> is listed as an end point, the trajectory ended looped.</p>
 </dd>
 </dl>
 <p class="rubric">Notes</p>
 <p>This problem is called “run length encoding”.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="tracklib.analysis.kli.looplifes">
+<code class="sig-prename descclassname">tracklib.analysis.kli.</code><code class="sig-name descname">looplifes</code><span class="sig-paren">(</span><em class="sig-param">traj</em>, <em class="sig-param">step=1</em><span class="sig-paren">)</span><a class="headerlink" href="#tracklib.analysis.kli.looplifes" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get all the loop lifetimes from the individual MCMC steps</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>traj</strong> (<a class="reference internal" href="tracklib.html#tracklib.trajectory.Trajectory" title="tracklib.trajectory.Trajectory"><em>Trajectory</em></a>) – should be processed through <a class="reference internal" href="#tracklib.analysis.kli.estimate_looping" title="tracklib.analysis.kli.estimate_looping"><code class="xref any py py-func docutils literal notranslate"><span class="pre">estimate_looping</span></code></a>, such that it has the
+<code class="docutils literal notranslate"><span class="pre">'loopSequences'</span></code> meta-field.</p></li>
+<li><p><strong>step</strong> (<em>int</em><em>, </em><em>optional</em>) – how big steps to take through the <code class="docutils literal notranslate"><span class="pre">traj.meta['loopSequences']</span></code> list.
+Since successive MCMC steps are correlated, using every single one
+gives mostly redundant data.</p></li>
+</ul>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="class">
@@ -422,6 +457,12 @@ loops to be found.</p>
 <em class="property">class </em><code class="sig-prename descclassname">tracklib.analysis.kli.</code><code class="sig-name descname">LoopSequenceMCMC</code><a class="headerlink" href="#tracklib.analysis.kli.LoopSequenceMCMC" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="tracklib.util.html#tracklib.util.mcmc.Sampler" title="tracklib.util.mcmc.Sampler"><code class="xref py py-class docutils literal notranslate"><span class="pre">tracklib.util.mcmc.Sampler</span></code></a></p>
 <p>An MCMC sampler that uses <a class="reference internal" href="#tracklib.analysis.kli.LoopSequence" title="tracklib.analysis.kli.LoopSequence"><code class="xref any py py-class docutils literal notranslate"><span class="pre">LoopSequence</span></code></a> objects as parametrization.</p>
+<p class="rubric">Notes</p>
+<p>To remove updating of the boundaries of the looping intervals
+(<a class="reference internal" href="#tracklib.analysis.kli.LoopSequence.t" title="tracklib.analysis.kli.LoopSequence.t"><code class="xref any py py-attr docutils literal notranslate"><span class="pre">LoopSequence.t</span></code></a>), overwrite the <a class="reference internal" href="#tracklib.analysis.kli.LoopSequenceMCMC.propose_update" title="tracklib.analysis.kli.LoopSequenceMCMC.propose_update"><code class="xref any py py-meth docutils literal notranslate"><span class="pre">propose_update</span></code></a> function with the
+included alternative:
+&gt;&gt;&gt; mc = LoopSequenceMCMC()
+… mc.propose_update = mc.propose_update_noBoundaries</p>
 <div class="admonition seealso">
 <p class="admonition-title">See also</p>
 <p><a class="reference internal" href="#tracklib.analysis.kli.LoopSequenceMCMC.setup" title="tracklib.analysis.kli.LoopSequenceMCMC.setup"><code class="xref py py-class docutils literal notranslate"><span class="pre">setup</span></code></a>, <a class="reference internal" href="#tracklib.analysis.kli.traj_likelihood" title="tracklib.analysis.kli.traj_likelihood"><code class="xref py py-class docutils literal notranslate"><span class="pre">traj_likelihood</span></code></a>, <a class="reference internal" href="tracklib.util.html#module-tracklib.util.mcmc" title="tracklib.util.mcmc"><code class="xref py py-class docutils literal notranslate"><span class="pre">tracklib.util.mcmc</span></code></a>, <a class="reference internal" href="tracklib.models.html#module-tracklib.models.rouse" title="tracklib.models.rouse"><code class="xref py py-class docutils literal notranslate"><span class="pre">tracklib.models.rouse</span></code></a></p>
@@ -436,7 +477,7 @@ loops to be found.</p>
 <span class="gp">... </span>       <span class="s1">&#39;show_progress&#39;</span> <span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
 <span class="gp">... </span>       <span class="p">}</span>
 <span class="gp">... </span><span class="n">mc</span> <span class="o">=</span> <span class="n">LoopSequenceMCMC</span><span class="p">()</span>
-<span class="gp">... </span><span class="n">mc</span><span class="o">.</span><span class="n">setup</span><span class="p">(</span><span class="n">traj</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">noise</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<span class="gp">... </span><span class="n">mc</span><span class="o">.</span><span class="n">setup</span><span class="p">(</span><span class="n">traj</span><span class="p">,</span> <span class="n">model</span><span class="p">)</span>
 <span class="gp">... </span><span class="n">mc</span><span class="o">.</span><span class="n">configure</span><span class="p">(</span><span class="o">**</span><span class="n">MCMCconfig</span><span class="p">)</span>
 <span class="gp">... </span><span class="n">logL</span><span class="p">,</span> <span class="n">sequneces</span> <span class="o">=</span> <span class="n">mc</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">LoopSequence</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">traj</span><span class="p">),</span> <span class="mi">10</span><span class="p">))</span>
 </pre></div>
@@ -519,6 +560,11 @@ only after the burn-in period.</p>
 <dl class="method">
 <dt id="tracklib.analysis.kli.LoopSequenceMCMC.propose_update">
 <code class="sig-name descname">propose_update</code><span class="sig-paren">(</span><em class="sig-param">current_sequence</em><span class="sig-paren">)</span><a class="headerlink" href="#tracklib.analysis.kli.LoopSequenceMCMC.propose_update" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="tracklib.analysis.kli.LoopSequenceMCMC.propose_update_noBoundaries">
+<code class="sig-name descname">propose_update_noBoundaries</code><span class="sig-paren">(</span><em class="sig-param">current_sequence</em><span class="sig-paren">)</span><a class="headerlink" href="#tracklib.analysis.kli.LoopSequenceMCMC.propose_update_noBoundaries" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="method">
@@ -887,8 +933,8 @@ first argument. Everything is then forwarded to that function.</p>
   <p class="topless"><a href="tracklib.html"
                         title="previous chapter">tracklib</a></p>
   <h4>Next topic</h4>
-  <p class="topless"><a href="tracklib.io.html"
-                        title="next chapter">tracklib.io</a></p>
+  <p class="topless"><a href="tracklib.analysis.neda.html"
+                        title="next chapter">tracklib.analysis.neda</a></p>
   <div role="note" aria-label="source link">
     <h3>This Page</h3>
     <ul class="this-page-menu">
@@ -920,7 +966,7 @@ first argument. Everything is then forwarded to that function.</p>
           <a href="py-modindex.html" title="Python Module Index"
              >modules</a> |</li>
         <li class="right" >
-          <a href="tracklib.io.html" title="tracklib.io"
+          <a href="tracklib.analysis.neda.html" title="tracklib.analysis.neda"
              >next</a> |</li>
         <li class="right" >
           <a href="tracklib.html" title="tracklib"

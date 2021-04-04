@@ -487,6 +487,8 @@ def _likelihood_filter(trace, model, looptrace, noise):
 def _likelihood_direct(trace, model, looptrace, noise):
     """
     Likelihood calculation using the full Rouse PDF.
+
+    Note: this *scales* worse than Kalman, namely O(len(trace)**2).
     """
     T = len(trace)
     try:
@@ -502,16 +504,16 @@ def _likelihood_direct(trace, model, looptrace, noise):
     _, J = model.steady_state(looptrace[0])
 
     traceCov = np.zeros((len(trace), len(trace)))
+    etAs = {True : model._propagation_memo[True]['etA'],
+            False : model._propagation_memo[False]['etA']}
     for i, bond in enumerate(looptrace):
         if i > 0:
-            etA = model._propagation_memo[bond]['etA']
-            Sig = model._propagation_memo[bond]['Sig']
-            J = etA @ J @ etA.T + Sig
+            J = etAs[bond] @ J @ etAs[bond].T + model._propagation_memo[bond]['Sig']
 
         AJw = J @ w
         traceCov[i, i] = w @ AJw
         for j in range(i+1, len(looptrace)):
-            AJw = model._propagation_memo[looptrace[j]]['etA'] @ AJw
+            AJw = etAs[looptrace[j]] @ AJw
             traceCov[j, i] = w @ AJw
 
     traceCov = traceCov + traceCov.T - np.diagflat(np.diagonal(traceCov))
@@ -527,7 +529,7 @@ def _likelihood_direct(trace, model, looptrace, noise):
     (detsign, logdet) = np.linalg.slogdet(traceCov)
     if detsign < 1:
         raise RuntimeError("Calculated covariance matrix has non-positive determinant")
-    return -0.5 * trace @ scipy.linalg.inv(traceCov) @ trace - 0.5*(np.log(2*np.pi) + logdet)
+    return -0.5 * ( trace @ scipy.linalg.inv(traceCov) @ trace + len(trace)*np.log(2*np.pi) + logdet )
 
 likelihood = _likelihood_filter # faster
 likelihood.__doc__ = """
@@ -538,7 +540,7 @@ likelihood.__doc__ = """
     ----------
     trace : (T,) array
         the observed trace.
-    model : Model
+    model : rouse.Model
         the model to use for likelihood calculation
     looptrace : (T,) array, dtype=bool
         for which steps there is a loop. ``looptrace[i]`` indicates that there
@@ -565,3 +567,96 @@ likelihood.__doc__ = """
     `!model.measurement` to some `!model.N`-dimensional measurement vector. For
     the default behavior, this would be ``np.array([1, 0, ..., 0, -1])``.
     """
+
+def multistate_likelihood(trace, models, looptrace, noise):
+    """
+    Likelihood calculation for a multistate model, using the Kalman filter
+    approach
+
+    Parameters
+    ----------
+    trace : (T,) np.ndarray
+        the observed trace
+    models : list of `rouse.Model`
+        the models
+    looptrace : (T,) np.ndarray
+        a list of which model to use leading up to each data point
+    noise : float
+        the localization error associated with the trace
+
+    Returns
+    -------
+    logL : float
+        the calculated log-likelihood
+
+    See also
+    --------
+    likelihood, rouse.Model
+
+    Notes
+    -----
+    We assume that the ensemble starts from steady state of the model indicated
+    by ``looptrace[0]``
+
+    By default, we assume that the input trace is the relative coordinate of
+    the two ends of the chain. To change this behavior, set
+    `!model.measurement` to some `!model.N`-dimensional measurement vector. For
+    the default behavior, this would be ``np.array([-1, 0, ..., 0, 1])``.
+
+    If `!trace` contains ``np.nan`` entries, make sure that `!looptrace` contains
+    valid values at these positions. The reasonable choice is to fix these
+    entries to the next non-nan `!looptrace` value, such that evolution will
+    happen with a consistent model throughout the gap.
+
+    The two-state functionality built into the `Model` class is now replaced by
+    assuming that the "extra" bond in each of the `!models` is always "on".
+    Remember to include the unlooped model in the `!models` argument.
+    """
+    assert noise > 0
+    noise_sq = noise**2
+    LOG_SQRT_2_PI = 0.5*np.log(2*np.pi)
+
+    T = len(trace)
+    for model in models:
+        if not hasattr(model, 'measurement'):
+            model.measurement = np.zeros((model.N,))
+            model.measurement[ 0] = -1
+            model.measurement[-1] =  1
+        model._wwToN2 = model.measurement[:, np.newaxis]*model.measurement[np.newaxis, :] / noise_sq
+        model.check_setup_called()
+
+    M0, C0 = models[looptrace[0]].steady_state(True)
+
+    logL = np.empty((T,), dtype=float)
+    logL[:] = np.nan
+    for i, model_id in enumerate(looptrace):
+        model = models[model_id]
+        dt = model._propagation_memo['dt']
+        w = model.measurement
+        wwToN2 = model._wwToN2
+
+        M1, C1 = model.propagate(M0, C0, dt, True)
+        if np.isnan(trace[i]):
+            M0 = M1
+            C0 = C1
+            continue
+        
+        # Update step copied from Christoph
+        InvSigmaPrior = scipy.linalg.inv(C1)
+        InvSigma = wwToN2 + InvSigmaPrior
+        SigmaPosterior = scipy.linalg.inv(InvSigma)
+        MuPosterior = SigmaPosterior @ (w*trace[i] / noise_sq + InvSigmaPrior @ M1)
+        
+        # Same for likelihood calculation
+        m = w @ M1
+        s = w @ C1 @ w
+        if s < 0:
+            raise RuntimeError("Prediction covariance negative: {}\nModel: {}".format(s, model))
+        sn = s+noise_sq
+        x = (trace[i] - m)/sn
+        logL[i] = -0.5*(x*x - np.log(sn)) - LOG_SQRT_2_PI
+        
+        M0 = MuPosterior
+        C0 = SigmaPosterior
+        
+    return np.nansum(logL)

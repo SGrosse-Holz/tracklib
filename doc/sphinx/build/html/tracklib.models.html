@@ -386,7 +386,7 @@ trace, looping sequence, and model.</p>
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>trace</strong> (<em>(</em><em>T</em><em>,</em><em>) </em><em>array</em>) – the observed trace.</p></li>
-<li><p><strong>model</strong> (<a class="reference internal" href="#tracklib.models.rouse.Model" title="tracklib.models.rouse.Model"><em>Model</em></a>) – the model to use for likelihood calculation</p></li>
+<li><p><strong>model</strong> (<a class="reference internal" href="#tracklib.models.rouse.Model" title="tracklib.models.rouse.Model"><em>rouse.Model</em></a>) – the model to use for likelihood calculation</p></li>
 <li><p><strong>looptrace</strong> (<em>(</em><em>T</em><em>,</em><em>) </em><em>array</em><em>, </em><em>dtype=bool</em>) – for which steps there is a loop. <code class="docutils literal notranslate"><span class="pre">looptrace[i]</span></code> indicates that there
 is a loop during the evolution from <code class="docutils literal notranslate"><span class="pre">trace[i-1]</span></code> to <code class="docutils literal notranslate"><span class="pre">trace[i]</span></code> and
 <code class="docutils literal notranslate"><span class="pre">looptrace[0]</span></code> is the value used for initialization.</p></li>
@@ -407,6 +407,44 @@ is a loop during the evolution from <code class="docutils literal notranslate"><
 the two ends of the chain. To change this behavior, set
 <code class="xref any docutils literal notranslate"><span class="pre">model.measurement</span></code> to some <code class="xref any docutils literal notranslate"><span class="pre">model.N</span></code>-dimensional measurement vector. For
 the default behavior, this would be <code class="docutils literal notranslate"><span class="pre">np.array([1,</span> <span class="pre">0,</span> <span class="pre">...,</span> <span class="pre">0,</span> <span class="pre">-1])</span></code>.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="tracklib.models.rouse.multistate_likelihood">
+<code class="sig-prename descclassname">tracklib.models.rouse.</code><code class="sig-name descname">multistate_likelihood</code><span class="sig-paren">(</span><em class="sig-param">trace</em>, <em class="sig-param">models</em>, <em class="sig-param">looptrace</em>, <em class="sig-param">noise</em><span class="sig-paren">)</span><a class="headerlink" href="#tracklib.models.rouse.multistate_likelihood" title="Permalink to this definition">¶</a></dt>
+<dd><p>Likelihood calculation for a multistate model, using the Kalman filter
+approach</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>trace</strong> (<em>(</em><em>T</em><em>,</em><em>) </em><em>np.ndarray</em>) – the observed trace</p></li>
+<li><p><strong>models</strong> (list of <a class="reference internal" href="#tracklib.models.rouse.Model" title="tracklib.models.rouse.Model"><code class="xref any py py-class docutils literal notranslate"><span class="pre">rouse.Model</span></code></a>) – the models</p></li>
+<li><p><strong>looptrace</strong> (<em>(</em><em>T</em><em>,</em><em>) </em><em>np.ndarray</em>) – a list of which model to use leading up to each data point</p></li>
+<li><p><strong>noise</strong> (<em>float</em>) – the localization error associated with the trace</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>logL</strong> (<em>float</em>) – the calculated log-likelihood</p>
+</dd>
+</dl>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><a class="reference internal" href="#tracklib.models.rouse.likelihood" title="tracklib.models.rouse.likelihood"><code class="xref py py-func docutils literal notranslate"><span class="pre">likelihood()</span></code></a>, <code class="xref py py-func docutils literal notranslate"><span class="pre">rouse.Model()</span></code></p>
+</div>
+<p class="rubric">Notes</p>
+<p>We assume that the ensemble starts from steady state of the model indicated
+by <code class="docutils literal notranslate"><span class="pre">looptrace[0]</span></code></p>
+<p>By default, we assume that the input trace is the relative coordinate of
+the two ends of the chain. To change this behavior, set
+<code class="xref any docutils literal notranslate"><span class="pre">model.measurement</span></code> to some <code class="xref any docutils literal notranslate"><span class="pre">model.N</span></code>-dimensional measurement vector. For
+the default behavior, this would be <code class="docutils literal notranslate"><span class="pre">np.array([-1,</span> <span class="pre">0,</span> <span class="pre">...,</span> <span class="pre">0,</span> <span class="pre">1])</span></code>.</p>
+<p>If <code class="xref any docutils literal notranslate"><span class="pre">trace</span></code> contains <code class="docutils literal notranslate"><span class="pre">np.nan</span></code> entries, make sure that <code class="xref any docutils literal notranslate"><span class="pre">looptrace</span></code> contains
+valid values at these positions. The reasonable choice is to fix these
+entries to the next non-nan <code class="xref any docutils literal notranslate"><span class="pre">looptrace</span></code> value, such that evolution will
+happen with a consistent model throughout the gap.</p>
+<p>The two-state functionality built into the <a class="reference internal" href="#tracklib.models.rouse.Model" title="tracklib.models.rouse.Model"><code class="xref any py py-class docutils literal notranslate"><span class="pre">Model</span></code></a> class is now replaced by
+assuming that the “extra” bond in each of the <code class="xref any docutils literal notranslate"><span class="pre">models</span></code> is always “on”.
+Remember to include the unlooped model in the <code class="xref any docutils literal notranslate"><span class="pre">models</span></code> argument.</p>
 </dd></dl>
 
 </div>

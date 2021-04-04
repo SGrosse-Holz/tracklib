@@ -713,5 +713,7 @@ class TestAnalysisPlots(myTestCase):
         _ = tl.analysis.plots.distance_distribution(self.ds)
         _ = tl.analysis.plots.distance_distribution(self.ds2)
 
+from test_neda import *
+
 if __name__ == '__main__':
     unittest.main(module=__file__[:-3])

@@ -2,7 +2,8 @@ SPHINXDIR = doc/sphinx
 SPHINXBUILD = doc/sphinx/build
 SPHINXSOURCE = doc/sphinx/source
 TESTDIR = tests
-TESTFILE = test.py
+TESTFILE = test_neda.py ###### CHANGE BACK TO test.py, this is just for dev
+COVERAGEREPFLAGS = --include=tracklib/analysis/neda/*
 COVERAGEREPDIR = doc/coverage
 DEVGUIDEDIR = doc/dev_guide
 DEVGUIDEPDF = guide.pdf
@@ -21,7 +22,7 @@ doc :
 tests :
 	cd $(TESTDIR) && coverage run $(TESTFILE)
 	@mv $(TESTDIR)/.coverage .
-	coverage html -d $(COVERAGEREPDIR)
+	coverage html -d $(COVERAGEREPDIR) $(COVERAGEREPFLAGS)
 
 devguide :
 	cd $(DEVGUIDEDIR) && pandoc dev_guide.md -o $(DEVGUIDEPDF)

@@ -5,4 +5,5 @@ from .vacf import VACF
 from . import chi2
 from . import kld
 from . import kli
+from . import neda
 from . import plots

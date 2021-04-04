@@ -243,7 +243,8 @@ class Sampler(ABC):
             # Proposal
             proposed_values, p_forward, p_backward = self.propose_update(current_values)
             new_logL = self.logL(proposed_values)
-            p_accept = np.exp(new_logL - cur_logL - p_forward + p_backward)
+            with np.errstate(under='ignore', over='ignore'):
+                p_accept = np.exp(new_logL - cur_logL - p_forward + p_backward)
 
             # Acceptance
             if np.random.rand() < p_accept:
