@@ -7,3 +7,4 @@ from . import kld
 from . import kli
 from . import neda
 from . import plots
+from . import bild
