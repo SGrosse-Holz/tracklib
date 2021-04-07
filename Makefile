@@ -2,8 +2,10 @@ SPHINXDIR = doc/sphinx
 SPHINXBUILD = doc/sphinx/build
 SPHINXSOURCE = doc/sphinx/source
 TESTDIR = tests
-TESTFILE = test_neda.py ###### CHANGE BACK TO test.py, this is just for dev
-COVERAGEREPFLAGS = --include=tracklib/analysis/neda/*
+TESTFILE = test.py
+# TESTFILE = test_neda.py ###### CHANGE BACK TO test.py, this is just for dev
+COVERAGEREPFLAGS = 
+# COVERAGEREPFLAGS = --include=tracklib/analysis/neda/*
 COVERAGEREPDIR = doc/coverage
 DEVGUIDEDIR = doc/dev_guide
 DEVGUIDEPDF = guide.pdf

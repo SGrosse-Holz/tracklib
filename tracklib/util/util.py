@@ -9,7 +9,7 @@ from scipy.linalg import cholesky, toeplitz
 import scipy.special
 
 #NOTE: sort this a little better
-def twoLociRelativeACF(ts, A=1, B=1, d=1):
+def twoLociRelativeACF(ts, A=1, B=1, d=1): # pragma: no cover
     """
     A = σ^2 / √κ     (general prefactor)
     B = Δs^2 / 4κ    (tether length)
@@ -23,7 +23,7 @@ def twoLociRelativeACF(ts, A=1, B=1, d=1):
 
     return np.array([ d*A*( np.sqrt(B) - np.sqrt(t/np.pi)*( 1 - 0.5*E32(B/t) ) ) if t != 0 else d*A*np.sqrt(B) for t in ts])
 
-def twoLociRelativeMSD(ts, *args, **kwargs):
+def twoLociRelativeMSD(ts, *args, **kwargs): # pragma: no cover
     """
     A = σ^2 / √κ     (general prefactor)
     B = Δs^2 / 4κ       (tether length)

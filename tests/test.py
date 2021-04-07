@@ -5,6 +5,7 @@ except KeyError:
     pass
 
 import numpy as np
+np.seterr(all='raise') # pay attention to details
 from matplotlib import pyplot as plt
 
 import unittest
@@ -18,7 +19,7 @@ class myTestCase(unittest.TestCase):
         try:
             np.testing.assert_array_equal(array1, array2)
             res = True
-        except AssertionError as err:
+        except AssertionError as err: # pragma: no cover
             res = False
             print(err)
         self.assertTrue(res)
@@ -49,6 +50,8 @@ class Test0Trajectory(myTestCase):
 
         with self.assertRaises(ValueError):
             traj = tl.Trajectory.fromArray(np.zeros((1, 1, 1, 1)))
+        with self.assertRaises(ValueError):
+            traj = tl.Trajectory.fromArray(np.zeros((5, 1, 1)))
 
 class Test1Trajectory(myTestCase):
     def setUp(self):
@@ -93,7 +96,7 @@ class Test1Trajectory(myTestCase):
             self.assertEqual(len(lines), d)
 
             if d > 1:
-                lines = traj.plot_spatial()
+                lines = traj.plot_spatial(label='test plot')
                 self.assertEqual(len(lines), N)
 
                 lines = traj.plot_spatial(linestyle='-')
@@ -102,11 +105,18 @@ class Test1Trajectory(myTestCase):
                 else:
                     with self.assertRaises(ValueError):
                         lines = traj.plot_spatial(linestyle=['-', '--'])
+            else:
+                with self.assertRaises(NotImplementedError):
+                    lines = traj.plot_spatial(label='test plot')
 
             # Modifiers
+            traj.meta['MSD'] = np.array([5])
             times2 = traj.rescale(2)
             self.assert_array_equal(traj.data*2, times2.data)
+            self.assert_array_equal(traj.meta['MSD']*4, times2.meta['MSD'])
             plus1 = traj.offset(1)
+            self.assert_array_equal(traj.data+1, plus1.data)
+            plus1 = traj.offset([1])
             self.assert_array_equal(traj.data+1, plus1.data)
             plus1 = traj.offset([[1]])
             self.assert_array_equal(traj.data+1, plus1.data)
@@ -185,7 +195,7 @@ class Test1TaggedSet(unittest.TestCase):
 
     def test_selection(self):
         for _ in range(5):
-            self.ls.makeSelection(nrand=1)
+            self.ls.makeSelection(nrand=1, random_seed=6542)
             self.assertEqual(len(self.ls), 1)
         for _ in range(5):
             self.ls.makeSelection(prand=0.5)
@@ -221,6 +231,12 @@ class Test1TaggedSet(unittest.TestCase):
         copied.makeSelection()
         self.assertEqual(len(copied), 1)
 
+    def test_deleteSelection(self):
+        self.ls.makeSelection(tags='a')
+        self.ls.deleteSelection()
+        self.assertEqual(len(self.ls), 1)
+        self.assertEqual(self.ls[0], 3)
+
     def test_addTags(self):
         self.ls.addTags('moo')
         self.assertSetEqual(self.ls.tagset(), {'a', 'b', 'c', 'moo'})
@@ -253,22 +269,6 @@ class Test1TaggedSet(unittest.TestCase):
         with self.assertRaises(RuntimeError):
             self.ls.map_unique(fun2)
         self.assertIsNone(tl.TaggedSet().map_unique(funTrue))
-
-#     def test_homogeneous(self):
-#         self.assertTrue(self.ls.isHomogeneous())
-#         lsinh = tl.TaggedSet(zip([1, 2., 3], [["a", "b"], "a", ["b", "c"]]))
-#         self.assertFalse(lsinh.isHomogeneous())
-#         st = type('st', (int,), {})
-#         lsinh = tl.TaggedSet(zip([1, st(5), 3], [["a", "b"], "a", ["b", "c"]]))
-#         self.assertTrue(lsinh.isHomogeneous(int, allowSubclass=True))
-#         self.assertFalse(lsinh.isHomogeneous(int, allowSubclass=False))
-# 
-#     def test_getHom(self):
-#         imag = self.ls.getHom('imag')
-#         self.assertEqual(imag, 0)
-#         with self.assertRaises(RuntimeError):
-#             self.ls._data[0] = 1j
-#             imag = self.ls.getHom('imag')
 
 class TestClean(myTestCase):
     def setUp(self):
@@ -316,6 +316,17 @@ class TestIOLoad(myTestCase):
         # 2,32,1.5,0.7,0.5,9,0.7,0.8,2,5
         # 3,20,5.3,1.2,1.3,11,-0.8,-1.2,3,6
 
+        # First two are just dummies
+        with self.assertRaises(ValueError): # too many columns specified
+            ds = tl.io.load.csv(
+                    filename, [None, 'id', 'noise', 'x', 'y', 'z', 't', 'x2', 'y2', 'z2', 'meta_mean', 'meta_unique'],
+                    meta_post={'meta_mean' : 'mean', 'meta_unique' : 'unique'}, delimiter=',', skip_header=1)
+
+        with self.assertRaises(AssertionError): # y2 does not have a y to go with it
+            ds = tl.io.load.csv(
+                    filename, [None, 'id', 'noise', 'x', 't', 'x2', 'y2', 'meta_mean', 'meta_unique'],
+                    meta_post={'meta_mean' : 'mean', 'meta_unique' : 'unique'}, delimiter=',', skip_header=1)
+
         ds = tl.io.load.csv(
                 filename, [None, 'id', 'noise', 'x', 'y', 't', 'x2', 'y2', 'meta_mean', 'meta_unique'],
                 meta_post={'meta_mean' : 'mean', 'meta_unique' : 'unique'}, delimiter=',', skip_header=1)
@@ -350,6 +361,13 @@ class TestIOWrite(myTestCase):
         with open(filename, 'r') as f:
             self.assertTrue(f.read() == 'id\tframe\tx\n0\t0\t0.0\n0\t1\t0.75\n0\t2\t0.5\n0\t3\t0.3\n0\t4\t5.4\n0\t5\t5.5\n0\t6\t5.3\n0\t7\t-2.0\n0\t8\t5.4\n1\t0\t1.2\n1\t1\t1.4\n1\t4\t10.0\n1\t5\t10.2\n')
 
+        ds = tl.TaggedSet()
+        ds.add(tl.Trajectory.fromArray(np.arange(20).reshape((2, 5, 2))))
+        tl.io.write.csv(ds, filename)
+
+        with open(filename, 'r') as f:
+            self.assertTrue(f.read() == 'id\tframe\tx\ty\tx2\ty2\n0\t0\t0\t1\t10\t11\n0\t1\t2\t3\t12\t13\n0\t2\t4\t5\t14\t15\n0\t3\t6\t7\t16\t17\n0\t4\t8\t9\t18\t19\n')
+
 class TestUtilUtil(myTestCase):
     def test_log_derivative(self):
         x = [1, 2, 5, np.nan, 30]
@@ -374,6 +392,7 @@ class TestUtilSweep(myTestCase):
         ds.add(tl.Trajectory.fromArray([1.2, 1.4, np.nan, np.nan, 10.0, 10.2]))
 
         self.sweep = tl.util.Sweeper(ds, self.countfun)
+        _ = tl.util.Sweeper(ds, self.countfun, copy=False)
 
     def test_preprocess(self):
         self.sweep.preprocess(lambda traj : traj.abs())
@@ -510,6 +529,17 @@ class TestModelsRouse(myTestCase):
         logL = tl.models.rouse._likelihood_direct(trace, self.model, looptrace, noise=1)
         self.assertIsInstance(logL, float)
 
+    def test_multistate_likelihood(self):
+        mod0 = tl.models.Rouse(20, 1, 5, 0) # unlooped
+        mod1 = tl.models.Rouse(20, 1, 5, 1) # looped
+        looptrace = np.array([True, False, True, True, False, False, False, True, False])
+        trace = np.array([conf[-1]-conf[0] for conf in mod1.conformations_from_looptrace(looptrace, d=1)])
+        
+        multi_L = tl.models.rouse.multistate_likelihood(trace, [mod0, mod1], looptrace.astype(int), 0.1)
+        binary_L = tl.models.rouse.likelihood(trace, mod1, looptrace, 0.1)
+
+        self.assertAlmostEqual(multi_L, binary_L, delta=1e-12)
+
 class TestModelsStatgauss(myTestCase):
     def test_sampleMSD(self):
         traces = tl.models.statgauss.sampleMSD(np.linspace(0, 5, 10), n=5, subtractMean=True)
@@ -527,6 +557,13 @@ class TestModelsStatgauss(myTestCase):
         cont = tl.models.statgauss.control(ds, msd=lambda t : t)
         for original, control in zip(ds, cont):
             self.assertEqual(len(original), len(control))
+
+        try:
+            cont = tl.models.statgauss.control(ds)
+        except RuntimeError: # pragma: no cover
+                             # the above might or might not work, just want to
+                             # check the internal MSD calculation
+            pass
 
 class TestAnalysisKLILoopSequence(myTestCase):
     def setUp(self):
@@ -697,12 +734,15 @@ class TestAnalysisPlots(myTestCase):
 
     def test_msd_overview(self):
         lines = tl.analysis.plots.msd_overview(self.ds)
+        lines = tl.analysis.plots.msd_overview(self.ds, (2, 'seconds'), label='test')
+        lines = tl.analysis.plots.msd_overview(self.ds, dt=5)
         self.assertEqual(len(lines), len(self.ds)+1)
 
     def test_spatial(self):
-        lines = tl.analysis.plots.trajectories_spatial(self.ds)
+        lines = tl.analysis.plots.trajectories_spatial(self.ds, fallback_color='#abcdef', color='red')
         self.assertEqual(len(lines), len(self.ds))
 
+        lines = tl.analysis.plots.trajectories_spatial(self.ds2, color=['red', 'blue']) # just testing kwarg
         lines = tl.analysis.plots.trajectories_spatial(self.ds2)
         self.assertEqual(len(lines), 2*len(self.ds2))
 

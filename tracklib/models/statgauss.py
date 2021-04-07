@@ -66,12 +66,12 @@ def sampleMSD(msd, n=1, isCorr=False, subtractMean=True):
         msd[0] = 0
         msd = np.insert(msd, 0, msd[1])
         corr = 0.5 * (msd[2:] + msd[:-2] - 2*msd[1:-1])
-    else:
+    else: # pragma: no cover
         corr = msd
 
     try:
         L = cholesky(toeplitz(corr), lower=True)
-    except np.linalg.LinAlgError:
+    except np.linalg.LinAlgError: # pragma: no cover
         vals = np.linalg.eigvalsh(toeplitz(corr))
         raise RuntimeError("Correlation not positive definite. First 5 eigenvalues: {}".format(vals[:5]))
     steps = L @ np.random.normal(size=(len(corr), n))
@@ -117,16 +117,16 @@ def dataset(msd, N=1, Ts=None, d=3, **kwargs):
     The input MSD is assumed to be the goal for the generated trajectories,
     i.e. incorporate the prefactor ``N*d``.
     """
-    if Ts is None:
+    if Ts is None: # pragma: no cover
         Ts = 100*[None]
 
     Tmax = len(msd)
     for i, T in enumerate(Ts):
         if T is None:
             Ts[i] = Tmax
-        elif T > Tmax:
+        elif T > Tmax: # pragma: no cover
             raise ValueError("Cannot sample trajectory of length {} from MSD of length {}".format(T, Tmax))
-        elif T % 1 != 0:
+        elif T % 1 != 0: # pragma: no cover
             raise ValueError("Found non-integer trajectory length: {} (at index {})".format(T, i))
 
     # Timing execution of sampleMSD indicates that as long as we have a
@@ -195,7 +195,7 @@ def control(dataset, msd=None):
         for (traj, mytags) in dataset(giveTags=True):
             try:
                 traces = sampleMSD(msd[:len(traj)], n=traj.N*traj.d, subtractMean=True)
-            except np.linalg.LinAlgError:
+            except np.linalg.LinAlgError: # pragma: no cover
                 raise RuntimeError("Could not generate trajectories from provided (or ensemble) MSD. Try using something cleaner.")
             newdata = np.array([traces[:, (i*traj.d):((i+1)*traj.d)] for i in range(traj.N)])
             newdata += np.nanmean(traj.data, axis=1, keepdims=True)

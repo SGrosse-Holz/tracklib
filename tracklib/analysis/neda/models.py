@@ -5,7 +5,9 @@ The inference models, and the interface they have to conform to.
 import abc
 
 import numpy as np
+import scipy.optimize
 
+from tracklib import Trajectory
 from tracklib.models import rouse
 from .util import Loopingtrace
 
@@ -16,6 +18,11 @@ class Model(metaclass=abc.ABCMeta):
     The most important capability of any model is the likelihood function
     `logL` for a combination of `Loopingtrace` and `Trajectory`. Furthermore, a
     model should provide an initial guess for a good `Loopingtrace`.
+
+    The method `trajectory_from_loopingtrace` is considered an optional part of
+    the interface, since it is not important to the inference, but might come
+    in handy when working with a `Model`. So it is recommended but not
+    required.
     """
     @abc.abstractmethod
     def initial_loopingtrace(self, traj):
@@ -46,6 +53,24 @@ class Model(metaclass=abc.ABCMeta):
         -------
         float
             log-likelihood associated with the inputs
+        """
+        raise NotImplementedError # pragma: no cover
+
+    def trajectory_from_loopingtrace(self, loopingtrace, localization_error=0.1, d=3):
+        """
+        Generate a `Trajectory` from this `Model` and the given `Loopingtrace`
+
+        Parameters
+        ----------
+        loopingtrace : Loopingtrace
+        localization_error : float, optional
+            how much Gaussian noise to add to the trajectory.
+        d : int, optional
+            number of spatial dimensions
+
+        Returns
+        -------
+        Trajectory
         """
         raise NotImplementedError # pragma: no cover
 
@@ -87,6 +112,10 @@ class RouseModel(Model):
     the `models` attribute after initialization. The only thing to pay
     attention to is that each model needs to have a `!measurement` vector.
 
+    The `initial_loopingtrace` for this `Model` is the MLE assuming time scale
+    separation. I.e. we calculate the timepoint-wise MLE using the exact steady
+    state distributions of each model.
+
     See also
     --------
     Model, rouse.Model
@@ -106,8 +135,20 @@ class RouseModel(Model):
             self.models.append(mod)
 
     def initial_loopingtrace(self, traj):
-        # TODO: come up with a good scheme here
-        return Loopingtrace(traj, len(self.models))
+        # We give the MLE assuming time scale separation
+        # This is exactly the same procedure as for FactorizedModel, where we
+        # utilize the steady state distributions of the individual Rouse
+        # models.
+        loopingtrace = Loopingtrace(traj, len(self.models))
+        distances = traj.abs()[loopingtrace.t][:, 0]
+
+        ss_variances = np.array([mod.measurement @ mod.steady_state(True)[1] @ mod.measurement \
+                                 for mod in self.models])
+        ss_likelihoods = -0.5*(distances[:, np.newaxis]**2 / ss_variances[np.newaxis, :] \
+                                + traj.d*np.log(2*np.pi*ss_variances)[np.newaxis, :])
+
+        loopingtrace.state = np.argmax(ss_likelihoods, axis=1)
+        return loopingtrace
 
     def logL(self, loopingtrace, traj):
         if traj.N == 2: # pragma: no cover
@@ -121,6 +162,24 @@ class RouseModel(Model):
                                             traj.meta['localization_error'][i],
                                            ) \
                 for i in range(traj.d)])
+
+    def trajectory_from_loopingtrace(self, loopingtrace, localization_error=0.1, d=3):
+        arr = np.empty((loopingtrace.T, d))
+        arr[:] = np.nan
+
+        cur_mod = self.models[loopingtrace[0]]
+        conf = cur_mod.conf_ss(True, d)
+        arr[loopingtrace.t[0], :] = cur_mod.measurement @ conf
+
+        for i in range(1, len(loopingtrace)):
+            cur_mod = self.models[loopingtrace[i]]
+            conf = cur_mod.evolve(conf, True, loopingtrace.t[i]-loopingtrace.t[i-1])
+            arr[loopingtrace.t[i], :] = cur_mod.measurement @ conf
+
+        return Trajectory.fromArray(arr + localization_error*np.random.normal(size=arr.shape),
+                                    localization_error=np.array(d*[localization_error]),
+                                    loopingtrace=loopingtrace,
+                                    )
 
 class FactorizedModel(Model):
     """
@@ -138,7 +197,9 @@ class FactorizedModel(Model):
         these will usually be ``scipy.stats.rv_continuous`` objects (e.g.
         Maxwell), but can be pretty arbitrary. The only function they have to
         provide is ``logpdf()``, which should take a scalar or vector of
-        distance values and return a corresponding number of outputs.
+        distance values and return a corresponding number of outputs. If you
+        plan on using `trajectory_from_loopingtrace`, the distributions should
+        also have an ``rvs()`` method for sampling.
 
     Attributes
     ----------
@@ -146,6 +207,11 @@ class FactorizedModel(Model):
 
     Notes
     -----
+    This being a heuristical model, we assume that the localization error is
+    already incorporated in the `!distributions`, as would be the case if they
+    come from experimental data. Therefore, this class ignores the
+    ``meta['localization_error']`` field of `Trajectory`.
+
     Instances of this class memoize trajectories they have seen before. To
     reset the memoization, you can either reinstantiate or clear the cache
     manually:
@@ -192,3 +258,82 @@ class FactorizedModel(Model):
     def logL(self, loopingtrace, traj):
         self._memo(traj)
         return np.sum(self._known_trajs[traj]['logL_table'][loopingtrace.state, loopingtrace.t])
+
+    def trajectory_from_loopingtrace(self, loopingtrace, localization_error=0., d=3):
+        # Note that the distributions in the model give us only the length, not
+        #   the orientation. So we also have to sample unit vectors
+        # Furthermore, localization_error should not be added, since
+        #   self.distributions already contain it
+        arr = np.empty((loopingtrace.T, d))
+        arr[:] = np.nan
+        magnitudes = np.array([self.distributions[state].rvs() for state in loopingtrace.state])
+        vectors = np.random.normal(size=(len(magnitudes), d))
+        vectors *= np.expand_dims(magnitudes / np.linalg.norm(vectors, axis=1), 1)
+        arr[loopingtrace.t, :] = vectors
+
+        return Trajectory.fromArray(arr,
+                                    localization_error=np.array(d*[localization_error]),
+                                    loopingtrace=loopingtrace,
+                                    )
+
+
+def fit(data, modelfamily, **kwargs):
+    """
+    Find the best fit model to a calibration dataset
+
+    Parameters
+    ----------
+    data : TaggedSet of Trajectory
+        the calibration data. Each `Trajectory` should have a `meta
+        <Trajectory.meta>` entry ``'loopingtrace'`` indicating the true/assumed
+        `Loopingtrace` for this trajectory.
+    modelfamily : ParametricFamily of Models
+        the family of models to consider.
+    kwargs : kwargs
+        will be forwarded to `!scipy.optimize.minimize`. We use the defaults
+        ``method='L-BFGS-B'``, ``maxfun=300``, ``ftol=1e-5``.
+
+    Returns
+    -------
+    res : fitresult
+        the structure returned by `!scipy.optimize.minimize`. The best fit
+        parameters are ``res.x``, while their covariance matrix can be obtained
+        as ``res.hess_inv.todens()``.
+
+    See also
+    --------
+    ParametricFamily
+
+    **Troubleshooting**
+     - make sure that the magnitude of parameter values is around one. The
+       minimizer (see `!scipy.optimize.minimize`) defaults to a fixed step
+       gradient descent, which is useless if parameters are orders of magnitude
+       bigger than 1. You can also try to play with the minimizer's options to
+       make it use an adaptive step size.
+     - make sure units match up. A common mistake is to have a unit mismatch
+       between localization error and trajectories (e.g. one in μm and the
+       other in nm). If the localization error is too big (here by a factor of
+       1000), the fit for `!D` will converge to zero (i.e. ``1e-10``).
+    """
+    def neg_logL_ds(params):
+        model = modelfamily.get(*params)
+        def neg_logL_traj(traj):
+            return -model.logL(traj.meta['loopingtrace'], traj)
+
+        # Parallelize?
+        return np.nansum(list(map(neg_logL_traj, data)))
+
+    minimize_kwargs = {
+            'method' : 'L-BFGS-B',
+            'bounds' : modelfamily.bounds,
+            'options' : {'maxfun' : 300, 'ftol' : 1e-5},
+            }
+    # 'People' might try to override the defaults individually
+    if not 'options' in kwargs:
+        for key in minimize_kwargs['options']:
+            if key in kwargs:
+                minimize_kwargs['options'][key] = kwargs[key]
+                del kwargs[key]
+    minimize_kwargs.update(kwargs)
+
+    return scipy.optimize.minimize(neg_logL_ds, modelfamily.start_params, **minimize_kwargs)

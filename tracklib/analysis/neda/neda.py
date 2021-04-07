@@ -188,7 +188,7 @@ class Environment:
         return np.log(np.mean(np.exp(prior.logpi_vectorized(ref_mcmcrun.samples) - \
                                      ref_prior.logpi_vectorized(ref_mcmcrun.samples))))
 
-def main(traj, model, priorfac,
+def main(traj, model, priorfam,
          MCMCconfig, MCMCscheme=mcmc.TPWMCMC,
          max_iterations=20, min_iterations=5,
          return_ = 'nothing', # 'traj', 'dict', or anything else
@@ -207,7 +207,7 @@ def main(traj, model, priorfac,
         the `Trajectory` whose looping profile to infer
     model : models.Model
         the inference model to use
-    priorfac : PriorFactory
+    priorfam : ParametricFamily
         a family of priors
     MCMCconfig : dict
         configuration for the MCMC runs. See `tracklib.util.mcmc.Sampler`
@@ -260,21 +260,24 @@ def main(traj, model, priorfac,
     >>> # Set up inference scheme
     ... looppositions = [(0, 0), (0, -1)] # 2 states: unlooped (=0), fully looped (=1)
     ... model = neda.models.RouseModel(N=20, D=1, k=5, k_extra=1, looppositions=looppositions)
-    ... priorfac = neda.priors.PriorFactory(start_params=(0), bounds=[(None, 0)])
-    ... priorfac.get = lambda logq : neda.priors.GeometricPrior(logq, nStates=len(looppositions))
+    ... priorfam = neda.ParametricFamily(start_params=(0), bounds=[(None, 0)])
+    ... priorfam.get = lambda logq : neda.priors.GeometricPrior(logq, nStates=len(looppositions))
     ... MCMCconfig = {
     ...         'iterations' : 1000,
     ...         'burn_in'    :  100,
     ...         }
     ... 
     ... # Run the inference
-    ... neda.main(traj, model, priorfac, MCMCconfig, show_progress=True)
+    ... neda.main(traj, model, priorfam, MCMCconfig, show_progress=True)
     ... 
     ... # Visualize output
     ... from matplotlib import pyplot as plt
     ... neda.plot.butterfly(traj)
     ... plt.show()
 
+    See also
+    --------
+    tracklib.analysis.kli.fit_RouseParams
     """
     assert min_iterations >= 2
     assert return_ in {'nothing', 'None', 'traj', 'dict'}
@@ -291,14 +294,14 @@ def main(traj, model, priorfac,
             from tqdm import tqdm
         iterations = tqdm(iterations, total=min(min_iterations, max_iterations))
 
-    prior_params = [priorfac.start_params]
+    prior_params = [priorfam.start_params]
     mcmcruns = []
     evidences = []
     evidence_diffs = []
 
     # Run iterations
     for it in iterations:
-        prior = priorfac.get(*prior_params[-1])
+        prior = priorfam.get(*prior_params[-1])
         mcmcruns.append(env.runMCMC(prior))
         evidences.append(env.evidence(prior, mcmcruns[-1]))
 
@@ -308,10 +311,10 @@ def main(traj, model, priorfac,
         
         # Maximize estimated evidence differential to find new prior parameters
         def minimization_target(*params):
-            return -env.evidence_differential(priorfac.get(*params), prior, mcmcruns[-1])
+            return -env.evidence_differential(priorfam.get(*params), prior, mcmcruns[-1])
         minimization_result = scipy.optimize.minimize(minimization_target,
                                                       x0=prior_params[-1],
-                                                      bounds=priorfac.bounds)
+                                                      bounds=priorfam.bounds)
 
         if not minimization_result.success: # pragma: no cover
             print(minimization_result)

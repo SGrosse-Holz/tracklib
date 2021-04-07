@@ -1,4 +1,4 @@
-from .util import Loopingtrace
+from .util import Loopingtrace, ParametricFamily
 from . import models
 from . import priors
 from . import mcmc

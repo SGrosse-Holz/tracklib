@@ -46,7 +46,7 @@ def chi2vsMSD(dataset, n=10, msd=None):
     """
     d = dataset.map_unique(lambda traj : traj.d)
 
-    if msd is None:
+    if msd is None: # pragma: no cover
         msd = MSD(dataset)
 
     msd = np.insert(msd, 0, msd[1])
@@ -59,7 +59,7 @@ def chi2vsMSD(dataset, n=10, msd=None):
             displacements = traj.diff()
         elif traj.N == 2:
             displacements = traj.relative().diff()
-        else:
+        else: # pragma: no cover
             raise ValueError("Don't know what to do with trajectories with N = {}", traj.N)
 
         def chi2score(i):

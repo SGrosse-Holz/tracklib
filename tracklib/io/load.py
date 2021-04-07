@@ -87,13 +87,15 @@ def csv(filename, columns=['x', 'y', 't', 'id'], tags=set(), meta_post={}, **kwa
         assert 'x' in keys
     elif 'x' in keys:
         d = 1
-    else:
+    else: # pragma: no cover
         raise ValueError("No valid coordinates found in specification: {}".format(columns))
     N = 1
-    if 'x2' in keys:
+    if 'x2' in keys or 'y2' in keys or 'z2' in keys:
         N = 2
         for key in keys & {'x', 'y', 'z'}:
             assert key + '2' in keys
+        for key in keys & {'x2', 'y2', 'z2'}:
+            assert key[:1] in keys
 
     # Sort into useful order
     col_ind_list = [col_inds['id'], col_inds['t']]

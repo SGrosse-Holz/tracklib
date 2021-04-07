@@ -66,6 +66,32 @@ class Loopingtrace:
                                  (dist_traj > thres).astype(int) \
                                  for thres in thresholds \
                                 ], axis=0)
+    
+    @classmethod
+    def fromStates(cls, states, nStates=None):
+        """
+        Create a new `Loopingtrace` just from a list of states
+
+        Parameters
+        ----------
+        states : array-like
+        
+        Returns
+        -------
+        Loopingtrace
+        """
+        states = np.asarray(states) # no type casting yet, int cannot deal with nan
+
+        new = cls.__new__(cls)
+        new.T = len(states)
+        new.t = np.where(~np.isnan(states))[0].astype(int)
+        new.state = states[new.t].astype(int)
+        if nStates is None:
+            new.n = np.max(states)
+        else:
+            new.n = nStates
+
+        return new
 
     def copy(self):
         """
@@ -137,3 +163,64 @@ class Loopingtrace:
             full[(last_ind+1):(cur_ind+1)] = cur_val
             last_ind = cur_ind
         return full
+
+class ParametricFamily:
+    """
+    A base class for parametric families
+
+    This class is a template for parametric families of any type, i.e. its main
+    capability (`get`) converts a set of parameters into an object, e.g. a
+    `Prior` or `Model <models.Model>`. On top of that, meta information like
+    bounds for parameters is stored here. In summary, this class provides the
+    interface we need generically for fitting.
+
+    Parameters
+    ----------
+    start_params : tuple of float
+        the initial parameters
+    bounds : list of (lower, higher) tuples
+        domain for each parameter
+
+    Attributes
+    ----------
+    start_params : tuple of float
+    nParams : int
+    bounds : list of (lower, higher) tuples
+
+    See also
+    --------
+    fit_model
+
+    Example
+    -------
+    A family of `priors.GeometricPrior`:
+
+    >>> fam = ParametricFamily((0,), [(None, 0)])
+    ... fam.get = lambda logq : priors.GeometricPrior(logq, nStates=2)
+    
+    Note that `GeometricPrior` also has a `family` method providing essentially
+    this construction.
+
+    A family of three state `RouseModels <models.RouseModel>`, which is then
+    fitted to a calibration dataset `!data`:
+
+    >>> fam = ParametricFamily((1, 5), [(1e-10, None), (1e-10, None)])
+    ... fam.get = lambda D, k : models.RouseModel(20, D, k, looppositions=[(0, 0), (5, 15), (0, -1)])
+    ... fitresult = fit_model(data, fam)
+
+    Note that you cannot use the framework provided here to optimize e.g. the
+    number of monomers `!N`, since that is an integer programming problem. One
+    could imagine comparing runs with different (fixed) `!N` though.
+    """
+    def __init__(self, start_params, bounds):
+        self.start_params = start_params
+        self.nParams = len(start_params)
+        self.bounds = bounds
+
+    def get(self, *params):
+        """
+        Generate an object from the given parameters
+
+        This function should be overwritten upon instantiation
+        """
+        raise NotImplementedError # pragma: no cover

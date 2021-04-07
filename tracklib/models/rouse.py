@@ -462,19 +462,15 @@ def _likelihood_filter(trace, model, looptrace, noise):
             continue
         
         # Update step copied from Christoph
-        if noise > 0:
-            InvSigmaPrior = scipy.linalg.inv(C1)
-            InvSigma = np.tensordot(w, w, 0)/noise**2 + InvSigmaPrior
-            SigmaPosterior = scipy.linalg.inv(InvSigma)
-            MuPosterior = SigmaPosterior @ (w*trace[i] / noise**2 + InvSigmaPrior @ M1)
-        else:
-            SigmaPosterior = 0*C1
-            MuPosterior = scipy.linalg.inv(np.tensordot(w, w, 0)) @ w*trace[i]
+        InvSigmaPrior = scipy.linalg.inv(C1)
+        InvSigma = np.tensordot(w, w, 0)/noise**2 + InvSigmaPrior
+        SigmaPosterior = scipy.linalg.inv(InvSigma)
+        MuPosterior = SigmaPosterior @ (w*trace[i] / noise**2 + InvSigmaPrior @ M1)
         
         # Same for likelihood calculation
         m = w @ M1
         s = C1[0, 0] + C1[-1, -1] - 2*C1[0, -1]
-        if s < 0:
+        if s < 0: # pragma: no cover
             raise RuntimeError("Prediction covariance negative: {}\nModel: {}".format(s, model))
 #         logL[i] = np.log(scipy.stats.norm.pdf(trace[i], m, np.sqrt(s + noise**2)))
         logL[i] = -0.5*(trace[i] - m)**2 / (s+noise**2) - 0.5*np.log(2*np.pi*(s+noise**2))
@@ -527,7 +523,7 @@ def _likelihood_direct(trace, model, looptrace, noise):
     trace = trace[ind]
 
     (detsign, logdet) = np.linalg.slogdet(traceCov)
-    if detsign < 1:
+    if detsign < 1: # pragma: no cover
         raise RuntimeError("Calculated covariance matrix has non-positive determinant")
     return -0.5 * ( trace @ scipy.linalg.inv(traceCov) @ trace + len(trace)*np.log(2*np.pi) + logdet )
 
@@ -650,11 +646,10 @@ def multistate_likelihood(trace, models, looptrace, noise):
         # Same for likelihood calculation
         m = w @ M1
         s = w @ C1 @ w
-        if s < 0:
+        if s < 0: # pragma: no cover
             raise RuntimeError("Prediction covariance negative: {}\nModel: {}".format(s, model))
         sn = s+noise_sq
-        x = (trace[i] - m)/sn
-        logL[i] = -0.5*(x*x - np.log(sn)) - LOG_SQRT_2_PI
+        logL[i] = -0.5*((trace[i] - m)*(trace[i] - m)/sn + np.log(sn)) - LOG_SQRT_2_PI
         
         M0 = MuPosterior
         C0 = SigmaPosterior

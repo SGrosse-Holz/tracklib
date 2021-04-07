@@ -86,7 +86,7 @@ class Sampler(ABC):
         --------
         logL, callback_logging
         """
-        pass
+        pass # pragma: no cover
         
     @abstractmethod
     def logL(self, params):
@@ -107,7 +107,7 @@ class Sampler(ABC):
         --------
         propose_update, callback_logging
         """
-        pass
+        pass # pragma: no cover
     
     def callback_logging(self, current_params, best_params):
         """
@@ -130,7 +130,7 @@ class Sampler(ABC):
         --------
         propose_update, logL
         """
-        pass
+        pass # pragma: no cover
     
     def configure(self,
             stepsize=0.1,
@@ -214,7 +214,7 @@ class Sampler(ABC):
         # Input processing
         try:
             config = self.config
-        except AttributeError:
+        except AttributeError: # pragma: no cover
             raise RuntimeError("Trying to run MCMC sampler before calling configure()")
         config['_logging'] = config['log_every'] > 0
         self.stepsize = config['stepsize']
@@ -230,7 +230,7 @@ class Sampler(ABC):
             params = []
         
         Mrange = range(config['iterations'])
-        if config['show_progress']:
+        if config['show_progress']: # pragma: no cover
             if config['assume_notebook_for_progress_display']:
                 from tqdm.notebook import tqdm
             else:

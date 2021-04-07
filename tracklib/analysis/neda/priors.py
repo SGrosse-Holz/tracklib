@@ -1,16 +1,12 @@
 """
 Everything to do with priors
-
-This module provides two important interfaces: the `Prior`, which represents a
-prior distribution over `Loopingtraces <Loopingtrace>`, and the `PriorFactory`,
-which provides a framework for generating priors.
 """
 
 import abc
 
 import numpy as np
 
-from .util import Loopingtrace
+from .util import Loopingtrace, ParametricFamily
 
 class Prior(metaclass=abc.ABCMeta):
     """
@@ -60,57 +56,6 @@ class Prior(metaclass=abc.ABCMeta):
         logpi
         """
         return np.array([self.logpi(trace) for trace in loopingtraces])
-
-class PriorFactory:
-    """
-    A factory class for priors
-
-    This class encodes usage patterns for priors. To that end, it stores a
-    reasonable set of default/initial parametrs for the given prior, as well as
-    the domains for each prior. It then also provides a method to convert a set
-    of parameters to a `Prior` object. In summary, this class provides
-    everything we need to run a generic fitting algorithm over priors.
-
-    Parameters
-    ----------
-    start_params : tuple of float
-        the initial/default parameters for a given class of priors
-    bounds : list of (lower, higher) tuples
-        domain for each parameter
-
-    Attributes
-    ----------
-    start_params : tuple of float
-    nParams : int
-    bounds : list of (lower, higher) tuples
-
-    Example
-    -------
-    A factory for `GeometricPrior` (with 2 states):
-
-    >>> priorfac = PriorFactory((0,), [(None, 0)])
-    ... priorfac.get = lambda logq : GeometricPrior(logq)
-    ... priorfac.get = GeometricPrior # also works in this special case, but suboptimal style
-    
-    Note that `GeometricPrior` also has a `factory` method providing
-    essentially this construction.
-
-    See also
-    --------
-    Prior
-    """
-    def __init__(self, start_params, bounds):
-        self.start_params = start_params
-        self.nParams = len(start_params)
-        self.bounds = bounds
-
-    def get(self, *params):
-        """
-        Generate a prior from the given parameters
-
-        This function should be overwritten upon instantiation
-        """
-        raise NotImplementedError # pragma: no cover
 
 class UniformPrior(Prior):
     r"""
@@ -165,9 +110,9 @@ class GeometricPrior(Prior):
         return ks*self.logq - (loopingtraces.shape[1]-1)*self._log_norm_per_dof - self._log_n
 
     @classmethod
-    def factory(cls, nStates=2):
+    def family(cls, nStates=2):
         """
-        Give a `PriorFactory` for `GeometricPrior`
+        Give a `ParametricFamily` for `GeometricPrior`
 
         Parameters
         ----------
@@ -176,12 +121,12 @@ class GeometricPrior(Prior):
 
         Returns
         -------
-        PriorFactory
+        ParametricFamily
 
         See also
         --------
-        PriorFactory
+        ParametricFamily
         """
-        fac = PriorFactory((0,), [(None, 0)])
-        fac.get = lambda logq : cls(logq, nStates)
-        return fac
+        fam = ParametricFamily((0,), [(None, 0)])
+        fam.get = lambda logq : cls(logq, nStates)
+        return fam

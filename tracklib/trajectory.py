@@ -387,7 +387,7 @@ class Trajectory(ABC):
         --------
         plot_spatial
         """
-        raise NotImplementedError()
+        raise NotImplementedError() # pragma: no cover
 
     @abstractmethod
     def plot_spatial(self, ax=None, dims=(0, 1), **kwargs):
@@ -415,7 +415,7 @@ class Trajectory(ABC):
         --------
         plot_vstime
         """
-        raise NotImplementedError()
+        raise NotImplementedError() # pragma: no cover
 
 # Specialize depending on particle number or dimension, which changes behavior
 # of some functions that can be overridden here
@@ -440,13 +440,13 @@ class Trajectory_1N(Trajectory):
 
     def _raw_plot_spatial(self, ax, dims, **kwargs):
         """ internal method for spatial plotting """
-        if max(dims) >= self.d:
+        if max(dims) >= self.d: # pragma: no cover
             raise ValueError("Invalid plotting dimensions")
 
         if 'linestyle' in kwargs.keys():
             if isinstance(kwargs['linestyle'], list) and len(kwargs['linestyle']) == 2:
                 raise N12Error("Cannot apply two line styles to one-particle trajectory")
-        if 'connect' in kwargs.keys():
+        if 'connect' in kwargs.keys(): # pragma: no cover
             raise N12Error("Cannot connect one-particle trajectory")
 
         return ax.plot(self.data[0, :, dims[0]], \
@@ -482,7 +482,7 @@ class Trajectory_2N(Trajectory):
 
     def _raw_plot_spatial(self, ax, dims, connect=True, **kwargs):
         """ internal method for spatial plotting """
-        if max(dims) >= self.d:
+        if max(dims) >= self.d: # pragma: no cover
             raise ValueError("Invalid plotting dimensions")
 
         linestyles = ['-', (0, (1, 1))]

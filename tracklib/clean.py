@@ -38,7 +38,7 @@ def split_trajectory_at_big_steps(traj, threshold):
     threshold. So if there are missing frames in a trajectory, the step across
     those missing data will not be considered.
     """
-    if traj.N != 1:
+    if traj.N != 1: # pragma: no cover
         raise ValueError("Cannot detect mislinkages in trajectories with N > 1")
 
     old_npwarns = np.seterr(invalid='ignore') # yes, we'll do np.nan <= threshold. Gives False.

@@ -308,13 +308,12 @@ class TaggedSet():
 
         Notes
         -----
-        Since everything in the current selection is deleted, the current
-        selection of the set after calling this function will be completely
-        empty.
+        Since everything in the current selection is deleted, the selection
+        will be reset.
         """
         self._data = [datum for datum, selected in zip(self._data, self._selected) if not selected]
         self._tags = [tagset for tagset, selected in zip(self._tags, self._selected) if not selected]
-        self._selected = len(self._data)*[False]
+        self._selected = len(self._data)*[True]
 
     ### Managing multiple TaggedSets ###
 
@@ -334,7 +333,7 @@ class TaggedSet():
         This can also be invoked as ``self |= other``. In that case no
         additional tags can be added.
         """
-        if not issubclass(type(other), TaggedSet):
+        if not issubclass(type(other), TaggedSet): # pragma: no cover
             raise TypeError("Can only merge a TaggedSet")
 
         additionalTags = TaggedSet.makeTagsSet(additionalTags)

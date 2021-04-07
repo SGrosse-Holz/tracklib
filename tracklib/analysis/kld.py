@@ -55,7 +55,7 @@ def perezcruz(dataset, n=10, k=20, dt=1):
         snips += [snip for snip in newsnips if not np.any(np.isnan(snip))]
     snips = np.array(snips)
 
-    if dataset.map_unique(lambda traj : traj.N) > 1:
+    if dataset.map_unique(lambda traj : traj.N) > 1: # pragma: no cover
         snips = snips.swapaxes(2, 1)
     snips = snips.reshape((snips.shape[0], snips.shape[1], -1))
 

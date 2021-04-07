@@ -45,7 +45,7 @@ def VACFtraj(traj, dt=1):
     Usually this function should always be preferred to accessing
     ``traj.meta['VACF']`` directly.
     """
-    if not traj.N == 1:
+    if not traj.N == 1: # pragma: no cover
         raise ValueError("Preprocess your trajectory to have N=1")
 
     isknown = False
@@ -135,7 +135,7 @@ def VACFdataset(dataset, dt=1, givevar=False, giveN=False, average_in_logspace=F
         allN[i, :len(N)] = N
     allN[np.where(np.isnan(allVACF))] = 0
 
-    if average_in_logspace:
+    if average_in_logspace: # pragma: no cover
         allVACF = np.log(allVACF[:, 1:])
         N0 = np.sum(allN[:, 0])
         allN = allN[:, 1:]
@@ -147,12 +147,12 @@ def VACFdataset(dataset, dt=1, givevar=False, giveN=False, average_in_logspace=F
         eVACF = np.nansum(allVACF*allN, axis=0) / N
         var = np.nansum((allVACF-eVACF)**2 * allN, axis=0) / (N-meanN)
 
-    if average_in_logspace:
+    if average_in_logspace: # pragma: no cover
         eVACF = np.insert(np.exp(eVACF), 0, 0)
         var = np.insert(np.exp(var), 0, 0)
         N = np.insert(N, 0, N0)
 
-    if givevar and giveN:
+    if givevar and giveN: # pragma: no cover
         return eVACF, var, N
     elif givevar:
         return eVACF, var
@@ -176,5 +176,5 @@ def VACF(*args, **kwargs):
         return VACFtraj(*args, **kwargs)
     elif issubclass(type(args[0]), TaggedSet):
         return VACFdataset(*args, **kwargs)
-    else:
+    else: # pragma: no cover
         raise ValueError("Did not understand first argument, with type {}".format(type(args[0])))

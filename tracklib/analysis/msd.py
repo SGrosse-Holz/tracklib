@@ -47,7 +47,7 @@ def MSDtraj(traj):
     Usually this function should always be preferred to accessing
     ``traj.meta['MSD']`` directly.
     """
-    if not traj.N == 1:
+    if not traj.N == 1: # pragma: no cover
         raise ValueError("Preprocess your trajectory to have N=1")
     
     try:
@@ -117,7 +117,7 @@ def MSDdataset(dataset, givevar=False, giveN=False, average_in_logspace=False):
         allN[i, :len(N)] = N
     allN[np.where(np.isnan(allMSD))] = 0
 
-    if average_in_logspace:
+    if average_in_logspace: # pragma: no cover
         allMSD = np.log(allMSD[:, 1:])
         N0 = np.sum(allN[:, 0])
         allN = allN[:, 1:]
@@ -129,12 +129,12 @@ def MSDdataset(dataset, givevar=False, giveN=False, average_in_logspace=False):
         eMSD = np.nansum(allMSD*allN, axis=0) / N
         var = np.nansum((allMSD-eMSD)**2 * allN, axis=0) / (N-meanN)
 
-    if average_in_logspace:
+    if average_in_logspace: # pragma: no cover
         eMSD = np.insert(np.exp(eMSD), 0, 0)
         var = np.insert(np.exp(var), 0, 0)
         N = np.insert(N, 0, N0)
 
-    if givevar and giveN:
+    if givevar and giveN: # pragma: no cover
         return eMSD, var, N
     elif givevar:
         return eMSD, var
@@ -158,7 +158,7 @@ def MSD(*args, **kwargs):
         return MSDtraj(*args, **kwargs)
     elif issubclass(type(args[0]), TaggedSet):
         return MSDdataset(*args, **kwargs)
-    else:
+    else: # pragma: no cover
         raise ValueError("Did not understand first argument, with type {}".format(type(args[0])))
 
 def dMSD(*args, resampling_density=2, **kwargs):

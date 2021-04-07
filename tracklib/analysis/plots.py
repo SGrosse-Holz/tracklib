@@ -90,7 +90,7 @@ def msd_overview(dataset, dt=1., **kwargs):
     for traj in dataset:
         msd = MSD(traj)
         tmsd = dt*np.arange(len(msd))
-        lines.append(plt.loglog(tmsd[1:], msd[1:], **kwargs))
+        lines.append(plt.plot(tmsd[1:], msd[1:], **kwargs)) # using loglog gives underflow error...
     msd = MSD(dataset)
     tmsd = dt*np.arange(len(msd))
     lines.append(plt.loglog(tmsd[1:], msd[1:], color='k', linewidth=2, label='ensemble mean'))
@@ -98,7 +98,9 @@ def msd_overview(dataset, dt=1., **kwargs):
 
     plt.title('MSDs')
     plt.xlabel("time in " + unit_str)
+    plt.xscale('log')
     plt.ylabel("MSD")
+    plt.yscale('log')
     
     return lines
 
@@ -189,7 +191,7 @@ def trajectories_spatial(dataset, **kwargs):
     if flags['fallback_used']:
         kwargs['color'] = fallback_color
         kwargs['label'] = '<other tags>'
-        if 'linestyle' in kwargs.keys() and isinstance(kwargs['linestyle'], list):
+        if 'linestyle' in kwargs.keys() and isinstance(kwargs['linestyle'], list): # pragma: no cover
                 kwargs['linestyle'] = kwargs['linestyle'][0]
         plt.plot(x0, y0, **kwargs)
         
@@ -241,7 +243,7 @@ def distance_distribution(dataset, **kwargs):
         preproc = lambda traj : traj.relative().abs()
     elif N == 1:
         preproc = lambda traj : traj.abs()
-    else:
+    else: # pragma: no cover
         raise RuntimeError("Dataset has neither homogeneously N = 1 nor N = 2")
 
     data = np.concatenate([traj[:].flatten() for traj in dataset.process(preproc)])

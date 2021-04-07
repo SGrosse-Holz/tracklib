@@ -5,6 +5,7 @@ except KeyError:
     pass
 
 import numpy as np
+np.seterr(all='raise')
 from matplotlib import pyplot as plt
 import scipy.stats
 
@@ -14,15 +15,13 @@ from unittest.mock import patch
 from context import tracklib as tl
 neda = tl.analysis.neda
 
-np.seterr(all='raise')
-
 # Extend unittest.TestCase's capabilities to deal with numpy arrays
 class myTestCase(unittest.TestCase):
     def assert_array_equal(self, array1, array2):
         try:
             np.testing.assert_array_equal(array1, array2)
             res = True
-        except AssertionError as err:
+        except AssertionError as err: # pragma: no cover
             res = False
             print(err)
         self.assertTrue(res)
@@ -41,6 +40,12 @@ class TestUtilLoopingtrace(myTestCase):
 
         lt = neda.Loopingtrace(self.traj)
         self.assertEqual(lt.state.dtype, int)
+
+    def test_fromStates(self):
+        lt = neda.Loopingtrace.fromStates([1, 2, 1, np.nan, 0], nStates=3)
+        self.assertEqual(lt.state.dtype, int)
+        self.assertEqual(len(lt.state), 4)
+        self.assert_array_equal(lt.t, np.array([0, 1, 2, 4]))
 
     def test_copy(self):
         new = self.lt.copy()
@@ -64,6 +69,9 @@ class TestUtilLoopingtrace(myTestCase):
         lt = neda.Loopingtrace(traj, thresholds=[3])
         self.assert_array_equal(lt.full_valid(), np.array([0, 0, 1, 1]))
 
+# class TestParametricFamily(myTestCase):
+# This is literally just an initializer, nothing to test here
+
 class TestPriors(myTestCase):
     def setUp(self):
         self.traj = tl.Trajectory.fromArray(np.array([1, 2, np.nan, 4]))
@@ -81,8 +89,8 @@ class TestPriors(myTestCase):
         self.assertEqual(prior.logpi(self.lt), log_pmf)
         self.assert_array_equal(prior.logpi_vectorized([self.lt]), np.array([log_pmf]))
 
-        fac = neda.priors.GeometricPrior.factory(nStates=3)
-        prior = fac.get(-1)
+        fam = neda.priors.GeometricPrior.family(nStates=3)
+        prior = fam.get(-1)
         log_pmf = -1 - 2*np.log(1+np.exp(-1)*2) - np.log(3)
         self.assertEqual(prior.logpi(self.lt), log_pmf)
         self.assert_array_equal(prior.logpi_vectorized([self.lt]), np.array([log_pmf]))
@@ -93,9 +101,14 @@ class TestModels(myTestCase):
         self.lt = neda.Loopingtrace(self.traj, thresholds=[3])
 
     def test_Rouse(self):
-        model = neda.models.RouseModel(20, 1, 5)
+        model = neda.models.RouseModel(20, 1, 5, k_extra=1)
         logL = model.logL(self.lt, self.traj)
+        lt = model.initial_loopingtrace(self.traj)
         self.assertTrue(logL > -100 and logL < 0)
+        self.assert_array_equal(lt.state, np.array([1, 0, 0]))
+
+        traj = model.trajectory_from_loopingtrace(neda.Loopingtrace.fromStates([0, 0, 0, 1, 1, 1]))
+        self.assertEqual(len(traj), 6)
 
     def test_Factorized(self):
         model = neda.models.FactorizedModel([
@@ -113,6 +126,44 @@ class TestModels(myTestCase):
         lt = model.initial_loopingtrace(self.traj)
         self.assertTrue(logL > -100 and logL < 0)
         self.assert_array_equal(lt.state, np.array([0, 0, 1]))
+
+        traj = model.trajectory_from_loopingtrace(neda.Loopingtrace.fromStates([0, 0, 0, 1, 1, 1]))
+        self.assertEqual(len(traj), 6)
+
+    def test_fitting_factorized(self):
+        modelfam = neda.ParametricFamily((0.1, 10), [(1e-10, None), (1e-10, None)])
+        modelfam.get = lambda s0, s1 : neda.models.FactorizedModel([
+            scipy.stats.maxwell(scale=s0),
+            scipy.stats.maxwell(scale=s1),
+            ])
+
+        true_params = (1, 4)
+        data = tl.TaggedSet()
+        mod_gen = modelfam.get(*true_params)
+        for state in 3*[0, 1]:
+            lt = neda.Loopingtrace.fromStates(100*[state])
+            data.add(mod_gen.trajectory_from_loopingtrace(lt))
+
+        fitres = neda.models.fit(data, modelfam, maxfun=200)
+        self.assertTrue(fitres.success)
+        for true_param, est_param in zip(true_params, fitres.x):
+            self.assertAlmostEqual(true_param, est_param, delta=0.5)
+
+    def test_fitting_rouse(self):
+        modelfam = neda.ParametricFamily((0.1,), [(1e-10, None)])
+        modelfam.get = lambda k : neda.models.RouseModel(20, 1, k)
+
+        true_params = (1,)
+        data = tl.TaggedSet()
+        mod_gen = modelfam.get(*true_params)
+        for state in 3*[0, 1]:
+            lt = neda.Loopingtrace.fromStates(100*[state])
+            data.add(mod_gen.trajectory_from_loopingtrace(lt))
+
+        fitres = neda.models.fit(data, modelfam, maxfun=200)
+        self.assertTrue(fitres.success)
+        for true_param, est_param in zip(true_params, fitres.x):
+            self.assertAlmostEqual(true_param, est_param, delta=0.5)
 
 class TestMCMCRun(myTestCase):
     def setUp(self):
@@ -252,22 +303,22 @@ class Test_main(myTestCase):
         self.traj = tl.Trajectory.fromArray(np.array([1, 2, np.nan, 4]), localization_error=[0.5])
 
         self.model = neda.models.RouseModel(N=20, D=1, k=5)
-        self.priorfac = neda.priors.GeometricPrior.factory()
+        self.priorfam = neda.priors.GeometricPrior.family()
         self.MCMCconfig = {'iterations' : 10, 'burn_in' : 5}
 
     @patch("builtins.print")
     def test_main(self, mock_print):
         np.random.seed(119) # chosen such that at least the first run doesn't collapse
-        neda.main(self.traj, self.model, self.priorfac, self.MCMCconfig, max_iterations=7)
+        neda.main(self.traj, self.model, self.priorfam, self.MCMCconfig, max_iterations=7)
         self.assertIn('neda', self.traj.meta.keys())
 
         np.random.seed(119)
-        ret_traj = neda.main(self.traj, self.model, self.priorfac, self.MCMCconfig,
+        ret_traj = neda.main(self.traj, self.model, self.priorfam, self.MCMCconfig,
                              max_iterations=7, return_='traj')
         self.assertIs(ret_traj, self.traj)
 
         np.random.seed(119)
-        ret_dict = neda.main(self.traj, self.model, self.priorfac, self.MCMCconfig,
+        ret_dict = neda.main(self.traj, self.model, self.priorfam, self.MCMCconfig,
                              max_iterations=7, return_='dict')
         self.assertEqual(ret_dict.keys(), self.traj.meta['neda'].keys()) # cheat, we have the dict
                                                                          # from previous runs
@@ -278,15 +329,15 @@ class Test_plot(myTestCase):
         self.traj = tl.Trajectory.fromArray(np.array([1, 2, np.nan, 4]), localization_error=[0.5])
 
         model = neda.models.RouseModel(N=20, D=1, k=5)
-        priorfac = neda.priors.GeometricPrior.factory()
+        priorfam = neda.priors.GeometricPrior.family()
         MCMCconfig = {'iterations' : 10, 'burn_in' : 5}
 
         np.random.seed(119) # chosen such that at least the first run doesn't collapse
-        neda.main(self.traj, model, priorfac, MCMCconfig, max_iterations=7)
+        neda.main(self.traj, model, priorfam, MCMCconfig, max_iterations=7)
 
     def test_butterfly(self):
         neda.plot.butterfly(self.traj)
         plt.show()
 
-if __name__ == '__main__':
+if __name__ == '__main__': # pragma: no cover
     unittest.main(module=__file__[:-3])
