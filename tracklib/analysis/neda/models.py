@@ -139,7 +139,7 @@ class RouseModel(Model):
         # This is exactly the same procedure as for FactorizedModel, where we
         # utilize the steady state distributions of the individual Rouse
         # models.
-        loopingtrace = Loopingtrace(traj, len(self.models))
+        loopingtrace = Loopingtrace.forTrajectory(traj, len(self.models))
         distances = traj.abs()[loopingtrace.t][:, 0]
 
         ss_variances = np.array([mod.measurement @ mod.steady_state(True)[1] @ mod.measurement \
@@ -251,7 +251,7 @@ class FactorizedModel(Model):
 
     def initial_loopingtrace(self, traj):
         self._memo(traj)
-        loopingtrace = Loopingtrace(traj, len(self.distributions))
+        loopingtrace = Loopingtrace.forTrajectory(traj, len(self.distributions))
         loopingtrace.state = np.argmax(self._known_trajs[traj]['logL_table'][:, loopingtrace.t], axis=0)
         return loopingtrace
 
@@ -300,6 +300,16 @@ def fit(data, modelfamily, **kwargs):
         parameters are ``res.x``, while their covariance matrix can be obtained
         as ``res.hess_inv.todens()``.
 
+    Examples
+    --------
+    A good measure for relative uncertainty of the estimate is given by
+    ``(√det(Σ) / Π(x))^(1/n)``, i.e. the major axes of the covariance ellipsoid
+    over the point estimates, normalized by the dimensionality:
+
+    >>> res = neda.models.fit(data, modelfam)
+    ... relative_uncertainty = ( np.sqrt(np.linalg.det(res.hess_inv.todense())) \
+    ...                        / np.prod(res.x) )**(1/modelfam.nParams)
+
     See also
     --------
     ParametricFamily
@@ -314,6 +324,9 @@ def fit(data, modelfamily, **kwargs):
        between localization error and trajectories (e.g. one in μm and the
        other in nm). If the localization error is too big (here by a factor of
        1000), the fit for `!D` will converge to zero (i.e. ``1e-10``).
+     - the ``'hess_inv'`` field returned with ``method='L-BFGS-B'`` might not
+       be super reliable, even if the point estimate is pretty good. Check
+       initial conditions when using this.
     """
     def neg_logL_ds(params):
         model = modelfamily.get(*params)
@@ -337,3 +350,31 @@ def fit(data, modelfamily, **kwargs):
     minimize_kwargs.update(kwargs)
 
     return scipy.optimize.minimize(neg_logL_ds, modelfamily.start_params, **minimize_kwargs)
+
+# TODO: parallelize fitting
+# Problems: Pool.imap cannot pickle local objects, i.e. we cannot, for example,
+#   simply replace the ``nansum`` in `fit` with a parallelized version, since
+#   ``fit.<locals>.neg_logL_ds.<locals>.neg_logL_traj`` can't be pickled.
+#   What does work is to use member functions of a class, but it turns out to
+#   be hard to do this right, since then the question is where the ``model``
+#   would come from, and how to make it such that it is still consistent with
+#   usage of python's ``map()`` instead, if no parallelization needed/wanted.
+#   Therefore left open for now.
+#
+# class Fitter:
+#     def __init__(self, imap=map, method='L-BFGS-B', options={'maxfun' : 300, 'ftol' : 1e-5}, **kwargs):
+#         self.imap = imap
+# 
+#         self.fitting_kwargs = {
+#                 'method' : method,
+#                 'options' : options,
+#                 }
+#         for key in self.fitting_kwargs['options']:
+#             if key in kwargs:
+#                 self.fitting_kwargs['options'][key] = kwargs[key]
+#                 del kwargs[key]
+#         self.fitting_kwargs.update(kwargs)
+# 
+#     def neg_logL_traj(traj):
+# 
+#     def neg_logL_ds(params):

@@ -17,21 +17,6 @@ class Loopingtrace:
     data point this means that the associated model specifies the equilibrium
     state we start from.
 
-    Parameters
-    ----------
-    traj : tracklib.Trajectory
-        the `Trajectory` to which the `Loopingtrace` is associated. This
-        information is needed to assemble the list of valid time points.
-    nStates : int, optional
-        the number of possible states
-    thresholds : sized iterable (e.g. list) of float, optional
-        can be used to initialize the trajectory with states corresponding to a
-        set of absolute distance thresholds. The state of each frame will be
-        the number of given thresholds that are smaller than the absolute
-        distance, i.e. ``thresholds=[5, 10]`` means ``dist <= 5`` is state 0,
-        ``5 < dist <= 10`` state 1, ``10 < dist`` state 2. Will overwrite
-        `!nStates` with ``len(thresholds)+1``.
-
     Attributes
     ----------
     T : int
@@ -53,19 +38,47 @@ class Loopingtrace:
     preferred over accessing ``lt.state``, since it allows for more internal
     control, such as type checks upon assignment.
     """
-    def __init__(self, traj, nStates=2, thresholds=None):
-        self.T = len(traj)
-        self.n = nStates
-        self.t = np.array([i for i in range(len(traj)) if not np.any(np.isnan(traj[i]))])
-        self.state = np.zeros((len(self.t),), dtype=int)
+    def __init__(self):
+        self.T = -1
+        self.n = -1
+        self.t = np.array([], dtype=int)
+        self.state = np.array([], dtype=int)
+
+    @classmethod
+    def forTrajectory(cls, traj, nStates=2, thresholds=None):
+        """
+        Create a new `Loopingtrace` for a given `Trajectory`
+
+        Parameters
+        ----------
+        traj : tracklib.Trajectory
+            the `Trajectory` to which the `Loopingtrace` is associated. This
+            information is needed to assemble the list of valid time points.
+        nStates : int, optional
+            the number of possible states
+        thresholds : sized iterable (e.g. list) of float, optional
+            can be used to initialize the trajectory with states corresponding to a
+            set of absolute distance thresholds. The state of each frame will be
+            the number of given thresholds that are smaller than the absolute
+            distance, i.e. ``thresholds=[5, 10]`` means ``dist <= 5`` is state 0,
+            ``5 < dist <= 10`` state 1, ``10 < dist`` state 2. Will overwrite
+            `!nStates` with ``len(thresholds)+1``.
+        """
+        new = cls()
+        new.T = len(traj)
+        new.n = nStates
+        new.t = np.array([i for i in range(len(traj)) if not np.any(np.isnan(traj[i]))])
+        new.state = np.zeros((len(new.t),), dtype=int)
 
         if thresholds is not None:
-            self.n = len(thresholds)+1
-            dist_traj = traj.abs()[:][self.t, 0]
-            self.state = np.sum([ \
+            new.n = len(thresholds)+1
+            dist_traj = traj.abs()[:][new.t, 0]
+            new.state = np.sum([ \
                                  (dist_traj > thres).astype(int) \
                                  for thres in thresholds \
                                 ], axis=0)
+
+        return new
     
     @classmethod
     def fromStates(cls, states, nStates=None):
@@ -75,6 +88,11 @@ class Loopingtrace:
         Parameters
         ----------
         states : array-like
+            does not have to be of integer type. This can be used to specify
+            missing frames as ``np.nan``.
+        nStates : int, optional
+            how many states there could be in the trajectory in principle. If
+            unspecified, defaults to ``max(states)``.
         
         Returns
         -------
@@ -82,7 +100,7 @@ class Loopingtrace:
         """
         states = np.asarray(states) # no type casting yet, int cannot deal with nan
 
-        new = cls.__new__(cls)
+        new = cls()
         new.T = len(states)
         new.t = np.where(~np.isnan(states))[0].astype(int)
         new.state = states[new.t].astype(int)

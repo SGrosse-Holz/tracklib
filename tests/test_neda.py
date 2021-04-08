@@ -29,16 +29,16 @@ class myTestCase(unittest.TestCase):
 class TestUtilLoopingtrace(myTestCase):
     def setUp(self):
         self.traj = tl.Trajectory.fromArray(np.arange(9).reshape(3, 3))
-        self.lt = neda.Loopingtrace(self.traj, thresholds=[7, 9])
+        self.lt = neda.Loopingtrace.forTrajectory(self.traj, thresholds=[7, 9])
 
-    def test_init(self):
-        lt = neda.Loopingtrace(self.traj, nStates=5, thresholds=[7, 9])
+    def test_forTrajectory(self):
+        lt = neda.Loopingtrace.forTrajectory(self.traj, nStates=5, thresholds=[7, 9])
         self.assertEqual(lt.n, 3)
         self.assert_array_equal(lt.state, [0, 1, 2])
         self.assertEqual(lt.state.dtype, int)
         self.assertEqual(lt.t.dtype, int)
 
-        lt = neda.Loopingtrace(self.traj)
+        lt = neda.Loopingtrace.forTrajectory(self.traj)
         self.assertEqual(lt.state.dtype, int)
 
     def test_fromStates(self):
@@ -66,7 +66,7 @@ class TestUtilLoopingtrace(myTestCase):
 
     def test_full_valid(self):
         traj = tl.Trajectory.fromArray([1, 2, np.nan, 4])
-        lt = neda.Loopingtrace(traj, thresholds=[3])
+        lt = neda.Loopingtrace.forTrajectory(traj, thresholds=[3])
         self.assert_array_equal(lt.full_valid(), np.array([0, 0, 1, 1]))
 
 # class TestParametricFamily(myTestCase):
@@ -75,7 +75,7 @@ class TestUtilLoopingtrace(myTestCase):
 class TestPriors(myTestCase):
     def setUp(self):
         self.traj = tl.Trajectory.fromArray(np.array([1, 2, np.nan, 4]))
-        self.lt = neda.Loopingtrace(self.traj, thresholds=[3])
+        self.lt = neda.Loopingtrace.forTrajectory(self.traj, thresholds=[3])
 
     def test_uniform(self):
         prior = neda.priors.UniformPrior()
@@ -98,7 +98,7 @@ class TestPriors(myTestCase):
 class TestModels(myTestCase):
     def setUp(self):
         self.traj = tl.Trajectory.fromArray(np.array([1, 2, np.nan, 4]), localization_error=[0.5])
-        self.lt = neda.Loopingtrace(self.traj, thresholds=[3])
+        self.lt = neda.Loopingtrace.forTrajectory(self.traj, thresholds=[3])
 
     def test_Rouse(self):
         model = neda.models.RouseModel(20, 1, 5, k_extra=1)
