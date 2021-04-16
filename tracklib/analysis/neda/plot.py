@@ -65,7 +65,7 @@ def butterfly(traj, fig=None, title='Example trajectory',
     pcm = ax.pcolormesh(np.arange(statedists.shape[1]+1)-0.5,
                         np.arange(statedists.shape[0]+1)-0.5,
                         statedists,
-                        cmap='Greens',
+                        cmap='Blues',
                        )
     ax.plot(ref_lt.t, np.argmax(statedists[:, ref_lt.t], axis=0), label='MmAP', color=colors[1])
 #     ax.legend()
