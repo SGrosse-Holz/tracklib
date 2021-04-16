@@ -70,7 +70,7 @@ def butterfly(traj, fig=None, title='Example trajectory',
                         statedists,
                         cmap=states_cmap,
                        )
-    ax.plot(ref_lt.t, np.argmax(statedists[:, ref_lt.t], axis=0), label='MmAP', color=colors[1])
+#     ax.plot(ref_lt.t, np.argmax(statedists[:, ref_lt.t], axis=0), label='MmAP', color=colors[1])
 #     ax.legend()
     ax.set_ylim([-0.5, statedists.shape[0]-0.5])
     ax.set_ylabel('loop state')
