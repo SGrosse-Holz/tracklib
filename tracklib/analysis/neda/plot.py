@@ -6,7 +6,7 @@ from matplotlib import pyplot as plt
 import numpy as np
 
 def butterfly(traj, fig=None, title='Example trajectory',
-              ylim=[0, None], ylabel='distance',
+              ylim=[0, None], ylabel='distance', states_cmap='Greens',
              ):
     """
     General overview over an inference run
@@ -25,6 +25,9 @@ def butterfly(traj, fig=None, title='Example trajectory',
         outliers from distorting the scale)
     ylabel : string, optional
         label to attach to the y-axis of the trajectory plot
+    states_cmap : string, optional
+        an identifier for the colormap to use for the display of marginal
+        probabilities
     """
     colors = plt.rcParams['axes.prop_cycle'].by_key()['color']
     
@@ -65,7 +68,7 @@ def butterfly(traj, fig=None, title='Example trajectory',
     pcm = ax.pcolormesh(np.arange(statedists.shape[1]+1)-0.5,
                         np.arange(statedists.shape[0]+1)-0.5,
                         statedists,
-                        cmap='Blues',
+                        cmap=states_cmap,
                        )
     ax.plot(ref_lt.t, np.argmax(statedists[:, ref_lt.t], axis=0), label='MmAP', color=colors[1])
 #     ax.legend()
