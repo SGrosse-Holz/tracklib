@@ -335,6 +335,7 @@ def main(traj, model, priorfam,
             'mcmcrun'      : mcmcruns[best_it],
             'evidence'     : evidences[best_it],
             'iteration'    : best_it,
+            'best_trace'   : mcmcruns[best_it].best_sample_L()[0],
             },
         }
 

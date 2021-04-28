@@ -182,6 +182,22 @@ class Loopingtrace:
             last_ind = cur_ind
         return full
 
+    def loops(self):
+        """
+        Give intervals where state stays constant
+
+        Returns
+        -------
+        (N, 3) np.ndarray
+            the detected loops. Each entry consists of ``(start, end, state)``,
+            such that ``self[start:end] == state``.
+        """
+        states_full = self.full_valid()
+        states_padded = np.pad(states_full, (1, 1), constant_values=-1)
+        breaks = np.where(states_padded[:-1] != states_padded[1:])[0]
+        # Note that the `breaks` sit to the right of any change point, due to the padding.
+        return np.array([breaks[:-1], breaks[1:], states_full[breaks[:-1]]])
+
 class ParametricFamily:
     """
     A base class for parametric families
