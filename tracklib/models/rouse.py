@@ -564,7 +564,9 @@ likelihood.__doc__ = """
     the default behavior, this would be ``np.array([1, 0, ..., 0, -1])``.
     """
 
-def multistate_likelihood(trace, models, looptrace, noise):
+def multistate_likelihood(trace, models, looptrace, noise,
+                          return_individual_likelihoods=False,
+                          ):
     """
     Likelihood calculation for a multistate model, using the Kalman filter
     approach
@@ -579,6 +581,12 @@ def multistate_likelihood(trace, models, looptrace, noise):
         a list of which model to use leading up to each data point
     noise : float
         the localization error associated with the trace
+
+    Other Parameters
+    ----------------
+    return_individual_likelihoods : bool
+        set to True to also return the array of single point likelihoods whose
+        sum is the total returned `!logL`.
 
     Returns
     -------
@@ -653,5 +661,8 @@ def multistate_likelihood(trace, models, looptrace, noise):
         
         M0 = MuPosterior
         C0 = SigmaPosterior
-        
-    return np.nansum(logL)
+
+    if return_individual_likelihoods:
+        return np.nansum(logL), logL
+    else:
+        return np.nansum(logL)

@@ -388,23 +388,24 @@
     <p id="t335" class="pln"><span class="n"><a href="#t335">335</a></span><span class="t">            <span class="str">'mcmcrun'</span>      <span class="op">:</span> <span class="nam">mcmcruns</span><span class="op">[</span><span class="nam">best_it</span><span class="op">]</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
     <p id="t336" class="pln"><span class="n"><a href="#t336">336</a></span><span class="t">            <span class="str">'evidence'</span>     <span class="op">:</span> <span class="nam">evidences</span><span class="op">[</span><span class="nam">best_it</span><span class="op">]</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
     <p id="t337" class="pln"><span class="n"><a href="#t337">337</a></span><span class="t">            <span class="str">'iteration'</span>    <span class="op">:</span> <span class="nam">best_it</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
-    <p id="t338" class="pln"><span class="n"><a href="#t338">338</a></span><span class="t">            <span class="op">}</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
-    <p id="t339" class="pln"><span class="n"><a href="#t339">339</a></span><span class="t">        <span class="op">}</span>&nbsp;</span><span class="r"></span></p>
-    <p id="t340" class="pln"><span class="n"><a href="#t340">340</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
-    <p id="t341" class="run"><span class="n"><a href="#t341">341</a></span><span class="t">    <span class="key">if</span> <span class="nam">return_</span> <span class="op">==</span> <span class="str">'dict'</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
-    <p id="t342" class="run"><span class="n"><a href="#t342">342</a></span><span class="t">        <span class="key">return</span> <span class="nam">output</span>&nbsp;</span><span class="r"></span></p>
-    <p id="t343" class="pln"><span class="n"><a href="#t343">343</a></span><span class="t">    <span class="key">else</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
-    <p id="t344" class="run"><span class="n"><a href="#t344">344</a></span><span class="t">        <span class="nam">traj</span><span class="op">.</span><span class="nam">meta</span><span class="op">[</span><span class="str">'neda'</span><span class="op">]</span> <span class="op">=</span> <span class="nam">output</span>&nbsp;</span><span class="r"></span></p>
-    <p id="t345" class="run"><span class="n"><a href="#t345">345</a></span><span class="t">        <span class="key">if</span> <span class="nam">return_</span> <span class="op">==</span> <span class="str">'traj'</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
-    <p id="t346" class="run"><span class="n"><a href="#t346">346</a></span><span class="t">            <span class="key">return</span> <span class="nam">traj</span>&nbsp;</span><span class="r"></span></p>
-    <p id="t347" class="pln"><span class="n"><a href="#t347">347</a></span><span class="t">        <span class="key">else</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
-    <p id="t348" class="run"><span class="n"><a href="#t348">348</a></span><span class="t">            <span class="key">return</span> <span class="key">None</span>&nbsp;</span><span class="r"></span></p>
+    <p id="t338" class="pln"><span class="n"><a href="#t338">338</a></span><span class="t">            <span class="str">'best_trace'</span>   <span class="op">:</span> <span class="nam">mcmcruns</span><span class="op">[</span><span class="nam">best_it</span><span class="op">]</span><span class="op">.</span><span class="nam">best_sample_L</span><span class="op">(</span><span class="op">)</span><span class="op">[</span><span class="num">0</span><span class="op">]</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
+    <p id="t339" class="pln"><span class="n"><a href="#t339">339</a></span><span class="t">            <span class="op">}</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
+    <p id="t340" class="pln"><span class="n"><a href="#t340">340</a></span><span class="t">        <span class="op">}</span>&nbsp;</span><span class="r"></span></p>
+    <p id="t341" class="pln"><span class="n"><a href="#t341">341</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
+    <p id="t342" class="run"><span class="n"><a href="#t342">342</a></span><span class="t">    <span class="key">if</span> <span class="nam">return_</span> <span class="op">==</span> <span class="str">'dict'</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
+    <p id="t343" class="run"><span class="n"><a href="#t343">343</a></span><span class="t">        <span class="key">return</span> <span class="nam">output</span>&nbsp;</span><span class="r"></span></p>
+    <p id="t344" class="pln"><span class="n"><a href="#t344">344</a></span><span class="t">    <span class="key">else</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
+    <p id="t345" class="run"><span class="n"><a href="#t345">345</a></span><span class="t">        <span class="nam">traj</span><span class="op">.</span><span class="nam">meta</span><span class="op">[</span><span class="str">'neda'</span><span class="op">]</span> <span class="op">=</span> <span class="nam">output</span>&nbsp;</span><span class="r"></span></p>
+    <p id="t346" class="run"><span class="n"><a href="#t346">346</a></span><span class="t">        <span class="key">if</span> <span class="nam">return_</span> <span class="op">==</span> <span class="str">'traj'</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
+    <p id="t347" class="run"><span class="n"><a href="#t347">347</a></span><span class="t">            <span class="key">return</span> <span class="nam">traj</span>&nbsp;</span><span class="r"></span></p>
+    <p id="t348" class="pln"><span class="n"><a href="#t348">348</a></span><span class="t">        <span class="key">else</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
+    <p id="t349" class="run"><span class="n"><a href="#t349">349</a></span><span class="t">            <span class="key">return</span> <span class="key">None</span>&nbsp;</span><span class="r"></span></p>
 </div>
 <div id="footer">
     <div class="content">
         <p>
             <a class="nav" href="index.html">&#xab; index</a> &nbsp; &nbsp; <a class="nav" href="https://coverage.readthedocs.io">coverage.py v5.2.1</a>,
-            created at 2021-04-05 16:12 -0400
+            created at 2021-04-30 08:19 -0400
         </p>
     </div>
 </div>

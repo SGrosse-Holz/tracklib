@@ -154,14 +154,19 @@ class RouseModel(Model):
         if traj.N == 2: # pragma: no cover
             traj = traj.relative()
 
+        # if not hasattr(loopingtrace, 'individual_logLs'): # interferes with model fitting
         looptrace = loopingtrace.full_valid()
-        return np.sum([ \
-                rouse.multistate_likelihood(traj[:][:, i],
-                                            self.models,
-                                            looptrace,
-                                            traj.meta['localization_error'][i],
-                                           ) \
-                for i in range(traj.d)])
+        logLs = [rouse.multistate_likelihood(traj[:][:, i],
+                                             self.models,
+                                             looptrace,
+                                             traj.meta['localization_error'][i],
+                                             return_individual_likelihoods=True,
+                                            )[1] \
+                 for i in range(traj.d)]
+        loopingtrace.individual_logLs = np.sum(logLs, axis=0)
+
+        return np.nansum(loopingtrace.individual_logLs)
+
 
     def trajectory_from_loopingtrace(self, loopingtrace, localization_error=0.1, d=3):
         arr = np.empty((loopingtrace.T, d))
