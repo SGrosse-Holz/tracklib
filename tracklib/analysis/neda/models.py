@@ -163,7 +163,7 @@ class RouseModel(Model):
                                              return_individual_likelihoods=True,
                                             )[1] \
                  for i in range(traj.d)]
-        loopingtrace.individual_logLs = np.sum(logLs, axis=0)
+        loopingtrace.individual_logLs = np.sum(logLs, axis=0)[loopingtrace.t]
 
         return np.nansum(loopingtrace.individual_logLs)
 
