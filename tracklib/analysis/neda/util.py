@@ -175,7 +175,8 @@ class Loopingtrace:
             a valid states associated with each frame in the trajectory, even
             the invalid ones.
         """
-        full = np.zeros((self.T,), dtype=int)
+        # Make sure that the last interval is extended to the end
+        full = self.state[-1]*np.ones((self.T,), dtype=int)
         last_ind = -1
         for cur_ind, cur_val in zip(self.t, self.state):
             full[(last_ind+1):(cur_ind+1)] = cur_val
