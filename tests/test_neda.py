@@ -69,6 +69,10 @@ class TestUtilLoopingtrace(myTestCase):
         lt = neda.Loopingtrace.forTrajectory(traj, thresholds=[3])
         self.assert_array_equal(lt.full_valid(), np.array([0, 0, 1, 1]))
 
+    def test_loops(self):
+        lt = neda.Loopingtrace.fromStates([1, 1, 1, 0, 0, 0, 0, 1, 1])
+        self.assert_array_equal(lt.loops(), np.array([[0, 3, 1], [3, 7, 0], [7, 9, 1]]))
+
 # class TestParametricFamily(myTestCase):
 # This is literally just an initializer, nothing to test here
 
@@ -178,6 +182,7 @@ class TestTriMCMC(myTestCase):
         tri = neda.mcmc.TriMCMC(weights=[1, 1, 1])
 
         self.assertEqual(p_step(tri, self.lt.state), 0)
+        self.assertEqual(p_step(tri, [1, 1, 0, 1, 1, 1, 0, 1, 1]), 0)
 
         p_last_interval = 0
         p_last_interval += p_step(tri, [1, 1, 1, 0, 0, 0, 0, 0, 0])
@@ -221,6 +226,11 @@ class TestTriMCMC(myTestCase):
 
         lt_from = neda.Loopingtrace.fromStates([1, 0, 1, 1, 0, 1, 1, 0, 1])
         for lt_to in tri.gen_proposal_sample_from(lt_from, nSample=10):
+            self.assertGreater(tri.stepping_probability(lt_from, lt_to), 0)
+            self.assertGreater(tri.stepping_probability(lt_to, lt_from), 0)
+
+        lt_from = neda.Loopingtrace.fromStates([1, 0, 1, 1, 0])
+        for lt_to in tri.gen_proposal_sample_from(lt_from):
             self.assertGreater(tri.stepping_probability(lt_from, lt_to), 0)
             self.assertGreater(tri.stepping_probability(lt_to, lt_from), 0)
 

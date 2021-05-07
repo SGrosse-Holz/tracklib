@@ -38,7 +38,7 @@ class Environment:
         self.MCMCconfig = MCMCconfig
         if MCMCscheme is None:
             self.MCMCscheme = mcmc.TPWMCMC()
-        else:
+        else: # pragma: no cover
             self.MCMCscheme = MCMCscheme
 
     def runMCMC(env, prior):

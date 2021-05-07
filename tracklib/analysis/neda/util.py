@@ -197,7 +197,7 @@ class Loopingtrace:
         states_padded = np.pad(states_full, (1, 1), constant_values=-1)
         breaks = np.where(states_padded[:-1] != states_padded[1:])[0]
         # Note that the `breaks` sit to the right of any change point, due to the padding.
-        return np.array([breaks[:-1], breaks[1:], states_full[breaks[:-1]]])
+        return np.stack([breaks[:-1], breaks[1:], states_full[breaks[:-1]]], axis=-1)
 
 class ParametricFamily:
     """

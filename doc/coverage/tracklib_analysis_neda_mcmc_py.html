@@ -3,7 +3,7 @@
 <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=emulateIE7" />
-    <title>Coverage for tracklib/analysis/neda/mcmc.py: 99%</title>
+    <title>Coverage for tracklib/analysis/neda/mcmc.py: 100%</title>
     <link rel="stylesheet" href="style.css" type="text/css">
     <script type="text/javascript" src="jquery.min.js"></script>
     <script type="text/javascript" src="jquery.hotkeys.js"></script>
@@ -17,13 +17,13 @@
 <div id="header">
     <div class="content">
         <h1>Coverage for <b>tracklib/analysis/neda/mcmc.py</b> :
-            <span class="pc_cov">99%</span>
+            <span class="pc_cov">100%</span>
         </h1>
         <img id="keyboard_icon" src="keybd_closed.png" alt="Show keyboard shortcuts" />
         <h2 class="stats">
             161 statements &nbsp;
-            <button type="button" class="run shortkey_r button_toggle_run" title="Toggle lines run">159 run</button>
-            <button type="button" class="mis show_mis shortkey_m button_toggle_mis" title="Toggle lines missing">2 missing</button>
+            <button type="button" class="run shortkey_r button_toggle_run" title="Toggle lines run">161 run</button>
+            <button type="button" class="mis show_mis shortkey_m button_toggle_mis" title="Toggle lines missing">0 missing</button>
             <button type="button" class="exc show_exc shortkey_x button_toggle_exc" title="Toggle lines excluded">2 excluded</button>
         </h2>
     </div>
@@ -450,7 +450,7 @@
     <p id="t397" class="run"><span class="n"><a href="#t397">397</a></span><span class="t">            <span class="key">return</span> <span class="num">0.</span>&nbsp;</span><span class="r"></span></p>
     <p id="t398" class="run"><span class="n"><a href="#t398">398</a></span><span class="t">        <span class="nam">a</span><span class="op">,</span> <span class="nam">b</span> <span class="op">=</span> <span class="nam">ind</span><span class="op">[</span><span class="op">:</span><span class="num">2</span><span class="op">]</span>&nbsp;</span><span class="r"></span></p>
     <p id="t399" class="run"><span class="n"><a href="#t399">399</a></span><span class="t">        <span class="key">if</span> <span class="nam">np</span><span class="op">.</span><span class="nam">any</span><span class="op">(</span><span class="nam">np</span><span class="op">.</span><span class="nam">diff</span><span class="op">(</span><span class="nam">lt_from</span><span class="op">[</span><span class="nam">a</span><span class="op">:</span><span class="nam">b</span><span class="op">]</span><span class="op">)</span><span class="op">)</span><span class="op">:</span> <span class="com"># don't have to check lt_to, that's already guaranteed</span>&nbsp;</span><span class="r"></span></p>
-    <p id="t400" class="mis show_mis"><span class="n"><a href="#t400">400</a></span><span class="t">            <span class="key">return</span> <span class="num">0.</span>&nbsp;</span><span class="r"></span></p>
+    <p id="t400" class="run"><span class="n"><a href="#t400">400</a></span><span class="t">            <span class="key">return</span> <span class="num">0.</span>&nbsp;</span><span class="r"></span></p>
     <p id="t401" class="pln"><span class="n"><a href="#t401">401</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
     <p id="t402" class="run"><span class="n"><a href="#t402">402</a></span><span class="t">        <span class="nam">L</span> <span class="op">=</span> <span class="nam">b</span> <span class="op">-</span> <span class="nam">a</span>&nbsp;</span><span class="r"></span></p>
     <p id="t403" class="pln"><span class="n"><a href="#t403">403</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
@@ -493,7 +493,7 @@
     <p id="t440" class="pln"><span class="n"><a href="#t440">440</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
     <p id="t441" class="run"><span class="n"><a href="#t441">441</a></span><span class="t">    <span class="key">def</span> <span class="nam">gen_proposal_sample_from</span><span class="op">(</span><span class="nam">self</span><span class="op">,</span> <span class="nam">lt</span><span class="op">,</span> <span class="nam">nSample</span><span class="op">=</span><span class="nam">float</span><span class="op">(</span><span class="str">'inf'</span><span class="op">)</span><span class="op">)</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
     <p id="t442" class="run"><span class="n"><a href="#t442">442</a></span><span class="t">        <span class="key">if</span> <span class="nam">np</span><span class="op">.</span><span class="nam">isinf</span><span class="op">(</span><span class="nam">nSample</span><span class="op">)</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
-    <p id="t443" class="mis show_mis"><span class="n"><a href="#t443">443</a></span><span class="t">            <span class="nam">nSample</span> <span class="op">=</span> <span class="nam">len</span><span class="op">(</span><span class="nam">lt</span><span class="op">)</span><span class="op">**</span><span class="num">2</span><span class="op">*</span><span class="op">(</span><span class="nam">lt</span><span class="op">.</span><span class="nam">n</span><span class="op">-</span><span class="num">1</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
+    <p id="t443" class="run"><span class="n"><a href="#t443">443</a></span><span class="t">            <span class="nam">nSample</span> <span class="op">=</span> <span class="nam">len</span><span class="op">(</span><span class="nam">lt</span><span class="op">)</span><span class="op">**</span><span class="num">2</span><span class="op">*</span><span class="op">(</span><span class="nam">lt</span><span class="op">.</span><span class="nam">n</span><span class="op">-</span><span class="num">1</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p id="t444" class="pln"><span class="n"><a href="#t444">444</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
     <p id="t445" class="run"><span class="n"><a href="#t445">445</a></span><span class="t">        <span class="key">def</span> <span class="nam">new_state</span><span class="op">(</span><span class="nam">n</span><span class="op">,</span> <span class="nam">old</span><span class="op">)</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
     <p id="t446" class="run"><span class="n"><a href="#t446">446</a></span><span class="t">            <span class="nam">s</span> <span class="op">=</span> <span class="nam">np</span><span class="op">.</span><span class="nam">random</span><span class="op">.</span><span class="nam">choice</span><span class="op">(</span><span class="nam">n</span><span class="op">-</span><span class="num">1</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
@@ -547,7 +547,7 @@
     <div class="content">
         <p>
             <a class="nav" href="index.html">&#xab; index</a> &nbsp; &nbsp; <a class="nav" href="https://coverage.readthedocs.io">coverage.py v5.2.1</a>,
-            created at 2021-05-07 16:14 -0400
+            created at 2021-05-07 16:27 -0400
         </p>
     </div>
 </div>
