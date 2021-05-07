@@ -105,7 +105,7 @@ class Loopingtrace:
         new.t = np.where(~np.isnan(states))[0].astype(int)
         new.state = states[new.t].astype(int)
         if nStates is None:
-            new.n = np.max(states)
+            new.n = np.max(states)+1
         else:
             new.n = nStates
 

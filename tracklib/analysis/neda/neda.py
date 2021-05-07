@@ -28,16 +28,18 @@ class Environment:
     model : models.Model
     MCMCconfig : dict
         see `tracklib.util.mcmc.Sampler`
-    MCMCscheme : type, optional
-        this should implement the `MCMCScheme` interface (i.e. be a subclass of
-        this abstract base class).
+    MCMCscheme : mcmc.MCMCScheme, optional
+        defaults to an instance of `mcmc.TPWMCMC`
     """
     # Here we use ``env`` instead of ``self``.
-    def __init__(self, traj, model, MCMCconfig, MCMCscheme=mcmc.TPWMCMC):
+    def __init__(self, traj, model, MCMCconfig, MCMCscheme=None):
         self.traj = traj
         self.model = model
         self.MCMCconfig = MCMCconfig
-        self.MCMCscheme = MCMCscheme
+        if MCMCscheme is None:
+            self.MCMCscheme = mcmc.TPWMCMC()
+        else:
+            self.MCMCscheme = MCMCscheme
 
     def runMCMC(env, prior):
         """
@@ -51,10 +53,9 @@ class Environment:
         -------
         mcmc.MCMCRun
         """
-        mc = env.MCMCscheme()
-        mc.setup(env.traj, env.model, prior)
-        mc.configure(**env.MCMCconfig)
-        return mc.run()
+        env.MCMCscheme.setup(env.traj, env.model, prior)
+        env.MCMCscheme.configure(**env.MCMCconfig)
+        return env.MCMCscheme.run()
 
     def posterior_density(env, mcmcrun, prior, trace_eval,
                           nSample_proposal=float('inf')):
@@ -189,7 +190,7 @@ class Environment:
                                      ref_prior.logpi_vectorized(ref_mcmcrun.samples))))
 
 def main(traj, model, priorfam,
-         MCMCconfig, MCMCscheme=mcmc.TPWMCMC,
+         MCMCconfig, MCMCscheme=None,
          max_iterations=20, min_iterations=5,
          return_ = 'nothing', # 'traj', 'dict', or anything else
          show_progress=False, assume_notebook_for_progressbar=True,
@@ -211,9 +212,9 @@ def main(traj, model, priorfam,
         a family of priors
     MCMCconfig : dict
         configuration for the MCMC runs. See `tracklib.util.mcmc.Sampler`
-    MCMCscheme : type, optional
-        a class implementing the `MCMCScheme` interface (i.e. a subclass of
-        this abstract base class). Defines the MCMC sampling scheme
+    MCMCscheme : mcmc.MCMCScheme, optional
+        the sampling scheme to use, i.e. an object implementing the
+        `mcmc.MCMCScheme` interface. Defaults to `mcmc.TPWMCMC'
     max_iterations : int, optional
         maximum number of iterations to run
     min_iterations : int, optional

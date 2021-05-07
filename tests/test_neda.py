@@ -165,6 +165,65 @@ class TestModels(myTestCase):
         for true_param, est_param in zip(true_params, fitres.x):
             self.assertAlmostEqual(true_param, est_param, delta=0.5)
 
+class TestTriMCMC(myTestCase):
+    def setUp(self):
+        self.lt = neda.Loopingtrace.fromStates([1, 1, 1, 0, 0, 0, 0, 1, 1])
+
+    def test_stepping_probability(self):
+        def p_step(tri, states):
+            return tri.stepping_probability(self.lt,
+                                            neda.Loopingtrace.fromStates(states),
+                                            )
+
+        tri = neda.mcmc.TriMCMC(weights=[1, 1, 1])
+
+        self.assertEqual(p_step(tri, self.lt.state), 0)
+
+        p_last_interval = 0
+        p_last_interval += p_step(tri, [1, 1, 1, 0, 0, 0, 0, 0, 0])
+        p_last_interval += p_step(tri, [1, 1, 1, 0, 0, 0, 0, 0, 1])
+        p_last_interval += p_step(tri, [1, 1, 1, 0, 0, 0, 0, 1, 0])
+        self.assertAlmostEqual(p_last_interval, 1/3)
+
+        tri = neda.mcmc.TriMCMC(weights=[1, 0, 0])
+        self.assertAlmostEqual(p_step(tri, [1, 1, 1, 1, 1, 1, 1, 1, 1]), 1/3)
+
+        tri = neda.mcmc.TriMCMC(weights=[0, 1, 0])
+        self.assertEqual(p_step(tri, [1, 1, 1, 0, 1, 1, 0, 1, 1]), 0)
+
+        p_mid_interval = 0
+        p_mid_interval += p_step(tri, [1, 1, 1, 0, 0, 0, 1, 1, 1])
+        p_mid_interval += p_step(tri, [1, 1, 1, 0, 0, 1, 1, 1, 1])
+        p_mid_interval += p_step(tri, [1, 1, 1, 0, 1, 1, 1, 1, 1])
+        p_mid_interval += p_step(tri, [1, 1, 1, 1, 1, 1, 1, 1, 1])
+        p_mid_interval += p_step(tri, [1, 1, 1, 1, 1, 1, 0, 1, 1])
+        p_mid_interval += p_step(tri, [1, 1, 1, 1, 1, 0, 0, 1, 1])
+        p_mid_interval += p_step(tri, [1, 1, 1, 1, 0, 0, 0, 1, 1])
+        self.assertAlmostEqual(p_mid_interval, 1/3)
+
+        tri = neda.mcmc.TriMCMC(weights=[0, 0, 1])
+        self.assertEqual(p_step(tri, [1, 0, 1, 0, 1, 1, 0, 1, 1]), 0)
+        self.assertEqual(p_step(tri, [1, 1, 1, 0, 0, 0, 1, 1, 0]), 0)
+        self.assertEqual(p_step(tri, [1, 1, 0, 0, 0, 0, 1, 1, 1]), 0)
+
+    def test_proposal_sample(self):
+        tri = neda.mcmc.TriMCMC(weights=[1, 1, 1])
+
+        lt_from = neda.Loopingtrace.fromStates([1, 1, 1, 0, 0, 0, 0, 1, 1])
+        for lt_to in tri.gen_proposal_sample_from(lt_from, nSample=10):
+            self.assertGreater(tri.stepping_probability(lt_from, lt_to), 0)
+            self.assertGreater(tri.stepping_probability(lt_to, lt_from), 0)
+
+        lt_from = neda.Loopingtrace.fromStates([1, 0, 1, 0, 0, 0, 1, 1, 1])
+        for lt_to in tri.gen_proposal_sample_from(lt_from, nSample=10):
+            self.assertGreater(tri.stepping_probability(lt_from, lt_to), 0)
+            self.assertGreater(tri.stepping_probability(lt_to, lt_from), 0)
+
+        lt_from = neda.Loopingtrace.fromStates([1, 0, 1, 1, 0, 1, 1, 0, 1])
+        for lt_to in tri.gen_proposal_sample_from(lt_from, nSample=10):
+            self.assertGreater(tri.stepping_probability(lt_from, lt_to), 0)
+            self.assertGreater(tri.stepping_probability(lt_to, lt_from), 0)
+
 class TestMCMCRun(myTestCase):
     def setUp(self):
         sample0 = [0]
