@@ -154,7 +154,7 @@ class Environment:
         posterior_density
         """
         trace_eval, L_eval = mcmcrun.best_sample_L()
-        log_post = np.log(env.posterior_density(mcmcrun, prior, trace_eval))
+        log_post = np.log(env.posterior_density(mcmcrun, prior, trace_eval, nSample_proposal=len(mcmcrun.samples)))
         log_prior = prior.logpi(trace_eval)
 
         if np.isinf(log_post):

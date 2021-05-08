@@ -134,8 +134,8 @@ class Sampler(ABC):
     
     def configure(self,
             stepsize=0.1,
-            iterations=100,
-            burn_in=50,
+            iterations=1,
+            burn_in=0,
             log_every=-1,
             best_only=False,
             show_progress=False,
