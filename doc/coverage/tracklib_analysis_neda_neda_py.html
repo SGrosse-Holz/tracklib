@@ -207,7 +207,7 @@
     <p id="t154" class="pln"><span class="n"><a href="#t154">154</a></span><span class="t"><span class="str">        posterior_density</span>&nbsp;</span><span class="r"></span></p>
     <p id="t155" class="pln"><span class="n"><a href="#t155">155</a></span><span class="t"><span class="str">        """</span>&nbsp;</span><span class="r"></span></p>
     <p id="t156" class="run"><span class="n"><a href="#t156">156</a></span><span class="t">        <span class="nam">trace_eval</span><span class="op">,</span> <span class="nam">L_eval</span> <span class="op">=</span> <span class="nam">mcmcrun</span><span class="op">.</span><span class="nam">best_sample_L</span><span class="op">(</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
-    <p id="t157" class="run"><span class="n"><a href="#t157">157</a></span><span class="t">        <span class="nam">log_post</span> <span class="op">=</span> <span class="nam">np</span><span class="op">.</span><span class="nam">log</span><span class="op">(</span><span class="nam">env</span><span class="op">.</span><span class="nam">posterior_density</span><span class="op">(</span><span class="nam">mcmcrun</span><span class="op">,</span> <span class="nam">prior</span><span class="op">,</span> <span class="nam">trace_eval</span><span class="op">)</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
+    <p id="t157" class="run"><span class="n"><a href="#t157">157</a></span><span class="t">        <span class="nam">log_post</span> <span class="op">=</span> <span class="nam">np</span><span class="op">.</span><span class="nam">log</span><span class="op">(</span><span class="nam">env</span><span class="op">.</span><span class="nam">posterior_density</span><span class="op">(</span><span class="nam">mcmcrun</span><span class="op">,</span> <span class="nam">prior</span><span class="op">,</span> <span class="nam">trace_eval</span><span class="op">,</span> <span class="nam">nSample_proposal</span><span class="op">=</span><span class="nam">len</span><span class="op">(</span><span class="nam">mcmcrun</span><span class="op">.</span><span class="nam">samples</span><span class="op">)</span><span class="op">)</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p id="t158" class="run"><span class="n"><a href="#t158">158</a></span><span class="t">        <span class="nam">log_prior</span> <span class="op">=</span> <span class="nam">prior</span><span class="op">.</span><span class="nam">logpi</span><span class="op">(</span><span class="nam">trace_eval</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p id="t159" class="pln"><span class="n"><a href="#t159">159</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
     <p id="t160" class="run"><span class="n"><a href="#t160">160</a></span><span class="t">        <span class="key">if</span> <span class="nam">np</span><span class="op">.</span><span class="nam">isinf</span><span class="op">(</span><span class="nam">log_post</span><span class="op">)</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
@@ -406,7 +406,7 @@
     <div class="content">
         <p>
             <a class="nav" href="index.html">&#xab; index</a> &nbsp; &nbsp; <a class="nav" href="https://coverage.readthedocs.io">coverage.py v5.2.1</a>,
-            created at 2021-05-07 16:24 -0400
+            created at 2021-05-07 23:47 -0400
         </p>
     </div>
 </div>

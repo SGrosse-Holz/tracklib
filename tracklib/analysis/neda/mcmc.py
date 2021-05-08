@@ -372,14 +372,14 @@ class TriMCMC(MCMCScheme):
         the weights with which to choose the different moves. Order is
         ``(cluster flip, boundary move, uniform triangular)``.  Note that the
         triangular sampling in principle also includes the other two moves.
-    boundary_alpha : float, optional
+    alpha : float, optional
         the exponent in the power law for boundary moves. We recommend ``alpha
         > 1`` such that most moves are short.
     """
-    def __init__(self, weights=(1, 1, 1), boundary_alpha=1):
+    def __init__(self, weights=(1, 1, 1), alpha=1):
         self.cum_moves = np.cumsum(weights).astype(float)
         self.cum_moves /= self.cum_moves[-1]
-        self.boundary_alpha = float(boundary_alpha)
+        self.alpha = float(alpha)
 
     def stepping_probability(self, lt_from, lt_to):
         assert len(lt_from) == len(lt_to)
@@ -410,12 +410,12 @@ class TriMCMC(MCMCScheme):
         N = b_embed - a_embed
 
         # Add up different pathways
-        p_L = 2*(N+1-L)/(N*(N+1))
-        n_start = N+1-L
-        p_uniform = p_L / n_start / (lt_from.n - 1)
+        pwl_norm = np.sum(np.arange(1, N+1)**(-self.alpha))
+        p_powerlaw = L**(-self.alpha)/pwl_norm 
 
-        boundary_norm = np.sum(np.arange(1, N+1)**(-self.boundary_alpha))
-        p_powerlaw = L**(-self.boundary_alpha)/boundary_norm 
+        n_start = N+1-L
+        p_uniform = p_powerlaw / n_start / (lt_from.n - 1)
+
         p_boundary = 0
 
         if a == 0:
@@ -461,7 +461,7 @@ class TriMCMC(MCMCScheme):
                 new_lt = deepcopy(lt)
                 new_lt.state[a_embed:b_embed] = new_state(lt.n, lt[a_embed])
             elif r_move < self.cum_moves[1]: # boundary move
-                p_L = np.cumsum(np.arange(1, N+1)**(-self.boundary_alpha))
+                p_L = np.cumsum(np.arange(1, N+1)**(-self.alpha))
                 p_L /= p_L[-1]
                 L = np.nonzero(np.random.rand() < p_L)[0][0] + 1
                 
@@ -479,7 +479,7 @@ class TriMCMC(MCMCScheme):
                 new_lt = deepcopy(lt)
                 new_lt.state[a:b] = state
             else : # uniform triangular
-                p_L = np.cumsum(np.flip(np.arange(1, N+1))).astype(float)
+                p_L = np.cumsum(np.arange(1, N+1)**(-self.alpha))
                 p_L /= p_L[-1]
                 L = np.nonzero(np.random.rand() < p_L)[0][0] + 1
 
