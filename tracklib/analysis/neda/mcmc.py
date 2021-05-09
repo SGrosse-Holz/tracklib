@@ -440,8 +440,8 @@ class TriMCMC(MCMCScheme):
 
         # Divide p_boundary by 2, since on top of choosing the boundary move,
         # we also have to choose the correct boundary
-#         print(f"({a}, {b}) c ({a_embed}, {b_embed})")
-#         print(p_cf, p_boundary, p_uniform)
+        print(f"({a}, {b}) c ({a_embed}, {b_embed})")
+        print(p_cf, p_boundary, p_uniform)
         p_interval_change = np.sum(np.diff(self.cum_moves, prepend=0)*np.array([p_cf, p_boundary/2, p_uniform]))
 
         return p_interval_change / N_interval
