@@ -298,8 +298,8 @@ class MCMCScheme(mcmc.Sampler, metaclass=abc.ABCMeta):
         # Should be overridden, but it is possible to leave it like this
         proposed = next(self.gen_proposal_sample_from(loopingtrace_cur, nSample=1))
         return (proposed,
-                self.stepping_probability(loopingtrace_cur, proposed),
-                self.stepping_probability(proposed, loopingtrace_cur),
+                np.log(self.stepping_probability(loopingtrace_cur, proposed)),
+                np.log(self.stepping_probability(proposed, loopingtrace_cur)),
                 )
 
 class TPWMCMC(MCMCScheme):
@@ -347,7 +347,8 @@ class TPWMCMC(MCMCScheme):
         cur_val = loopingtrace_prop[ind_up]
         loopingtrace_prop[ind_up] = np.random.choice(list(range(cur_val))+list(range(cur_val+1, loopingtrace_prop.n)))
 
-        return loopingtrace_prop, 1./nNeighbors, 1./nNeighbors
+        log_p_fwd_bwd = -np.log(nNeighbors)
+        return loopingtrace_prop, log_p_fwd_bwd, log_p_fwd_bwd
 
 class TriMCMC(MCMCScheme):
     """
@@ -414,7 +415,8 @@ class TriMCMC(MCMCScheme):
         p_powerlaw = L**(-self.alpha)/pwl_norm 
 
         n_start = N+1-L
-        p_uniform = p_powerlaw / n_start / (lt_from.n - 1)
+        p_L = 2*(N+1-L)/(N*(N-1))
+        p_uniform = p_L / n_start / (lt_from.n - 1)
 
         p_boundary = 0
 
@@ -479,7 +481,7 @@ class TriMCMC(MCMCScheme):
                 new_lt = deepcopy(lt)
                 new_lt.state[a:b] = state
             else : # uniform triangular
-                p_L = np.cumsum(np.arange(1, N+1)**(-self.alpha))
+                p_L = np.cumsum(np.flip(np.arange(1, N+1))
                 p_L /= p_L[-1]
                 L = np.nonzero(np.random.rand() < p_L)[0][0] + 1
 
