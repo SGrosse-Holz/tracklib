@@ -297,10 +297,13 @@ class MCMCScheme(mcmc.Sampler, metaclass=abc.ABCMeta):
     def propose_update(self, loopingtrace_cur):
         # Should be overridden, but it is possible to leave it like this
         proposed = next(self.gen_proposal_sample_from(loopingtrace_cur, nSample=1))
-        return (proposed,
-                np.log(self.stepping_probability(loopingtrace_cur, proposed)),
-                np.log(self.stepping_probability(proposed, loopingtrace_cur)),
-                )
+        p_fwd = self.stepping_probability(loopingtrace_cur, proposed)
+        p_bwd = self.stepping_probability(proposed, loopingtrace_cur)
+        if p_bwd == 0:
+            print(loopingtrace_cur.state)
+            print(proposed.state)
+            raise RuntimeError
+        return proposed, np.log(p_fwd), np.log(p_bwd)
 
 class TPWMCMC(MCMCScheme):
     """
