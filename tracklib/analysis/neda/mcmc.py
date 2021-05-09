@@ -300,9 +300,12 @@ class MCMCScheme(mcmc.Sampler, metaclass=abc.ABCMeta):
         p_fwd = self.stepping_probability(loopingtrace_cur, proposed)
         p_bwd = self.stepping_probability(proposed, loopingtrace_cur)
         if p_bwd == 0:
-            print(loopingtrace_cur.state)
-            print(proposed.state)
-            raise RuntimeError
+            print("Found irreversible move:",
+                  "\nfrom:", loopingtrace_cur.state,
+                  "\n  to:", proposed.state,
+                  "\nHamming distance =", np.count_nonzero(loopingtrace_cur.state != proposed.state),
+                  "\n")
+            raise RuntimeError("Found irreversible move")
         return proposed, np.log(p_fwd), np.log(p_bwd)
 
 class TPWMCMC(MCMCScheme):
