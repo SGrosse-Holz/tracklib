@@ -415,7 +415,7 @@ class TriMCMC(MCMCScheme):
         p_powerlaw = L**(-self.alpha)/pwl_norm 
 
         n_start = N+1-L
-        p_L = 2*(N+1-L)/(N*(N-1))
+        p_L = 2*(N+1-L)/(N*(N+1))
         p_uniform = p_L / n_start / (lt_from.n - 1)
 
         p_boundary = 0
@@ -481,7 +481,7 @@ class TriMCMC(MCMCScheme):
                 new_lt = deepcopy(lt)
                 new_lt.state[a:b] = state
             else : # uniform triangular
-                p_L = np.cumsum(np.flip(np.arange(1, N+1))
+                p_L = np.cumsum(np.flip(np.arange(1, N+1))).astype(float)
                 p_L /= p_L[-1]
                 L = np.nonzero(np.random.rand() < p_L)[0][0] + 1
 
