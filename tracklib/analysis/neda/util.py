@@ -256,6 +256,11 @@ class ParametricFamily:
     --------
     fit_model
 
+    Notes
+    -----
+    This class uses the call syntax as an alias for `get`, i.e. in the examples
+    below ``fam(...)`` is equivalent to ``fam.get(...)``.
+
     Example
     -------
     A family of `priors.GeometricPrior`:
@@ -281,6 +286,9 @@ class ParametricFamily:
         self.start_params = start_params
         self.nParams = len(start_params)
         self.bounds = bounds
+
+    def __call__(self, *args, **kwargs):
+        return self.get(*args, **kwargs)
 
     def get(self, *params):
         """
