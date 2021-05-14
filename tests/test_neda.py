@@ -60,6 +60,27 @@ class TestUtilLoopingtrace(myTestCase):
         self.lt[2] = 0
         self.assertEqual(self.lt[2], 0)
 
+        self.lt[:] = [0, 0, 0]
+        self.assert_array_equal(self.lt[:], np.array([0, 0, 0]))
+
+    def test_equality(self):
+        lt0 = neda.Loopingtrace.fromStates([1, 1, 0, 0, 1, np.nan, 0])
+
+        lt1 = neda.Loopingtrace.fromStates([1, 1, 0, 0, 1, np.nan, 0])
+        self.assertTrue(lt0 == lt1)
+        self.assertEqual(lt0, lt1)
+
+        lt1 = neda.Loopingtrace.fromStates([1, 2, 0, 0, 1, np.nan, 0])
+        self.assertFalse(lt0 == lt1)
+        self.assertNotEqual(lt0, lt1)
+
+        lt1 = neda.Loopingtrace.fromStates([1, 1, 0, 0, 1, 0, 0])
+        self.assertFalse(lt0 == lt1)
+
+        lt1 = neda.Loopingtrace.fromStates([1, 1, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0])
+        self.assertFalse(lt0 == lt1)
+
+
     def test_plottable(self):
         plt.plot(*self.lt.plottable(), color='r')
         plt.show()
@@ -407,6 +428,62 @@ class Test_plot(myTestCase):
     def test_butterfly(self):
         neda.plot.butterfly(self.traj)
         plt.show()
+
+class Test_postproc(myTestCase):
+    def setUp(self):
+        self.traj = tl.Trajectory.fromArray(np.array([1, 1, 1, 5, 5, 5, np.nan, 7, 5, 4, 5, 1, 1]), localization_error=[0.1])
+        self.model = neda.models.RouseModel(N=20, D=1, k=5, k_extra=1, looppositions=[(0, 0), (0, -1)])
+        self.prior = neda.priors.GeometricPrior(logq=0, nStates=2)
+
+        self.lt = self.model.initial_loopingtrace(self.traj)
+        # this is [1 1 1 0 0 0 0 0 0 0 1 1], which is also the optimal one (as
+        # determined by exhaustive sampling)
+
+    def test_clusterflip(self):
+        lt_cf = self.lt.copy()
+        lt_cf[1] = 0
+        lt_cf[4:7] = 1
+        lt_cf[8] = 1
+        lt_opt = neda.postproc.optimize_clusterflip(lt_cf, self.traj, self.model, self.prior)
+        self.assertEqual(lt_opt, self.lt)
+
+        lt_cf[2] = 0 # Now the boundaries are messed up
+        lt_opt = neda.postproc.optimize_clusterflip(lt_cf, self.traj, self.model, self.prior)
+        self.assertNotEqual(lt_opt, self.lt)
+
+    def test_nbit(self):
+        lt_n = self.lt.copy()
+        lt_n[2] = 0
+        lt_n[4:6] = 1
+        lt_n[9:11] = [1, 0]
+        lt_opt = neda.postproc.optimize_nbit(lt_n, self.traj, self.model, self.prior, n=3)
+        self.assertEqual(lt_opt, self.lt)
+
+    def test_boundary(self):
+        lt_b = self.lt.copy()
+        lt_b[3] = 1
+        lt_b[10] = 0
+        lt_opt = neda.postproc.optimize_boundary(lt_b, self.traj, self.model, self.prior)
+        self.assertEqual(lt_opt, self.lt)
+
+        lt_b[0] = 0
+        lt_opt = neda.postproc.optimize_boundary(lt_b, self.traj, self.model, self.prior)
+        self.assertEqual(lt_opt, self.lt)
+
+        # Boundary moves can abolish an interval
+        lt_b[6] = 1
+        lt_opt = neda.postproc.optimize_boundary(lt_b, self.traj, self.model, self.prior)
+        self.assertEqual(lt_opt, self.lt)
+
+        # But not create new boundaries
+        lt_b[:5] = 1
+        lt_b[5:] = 0
+        lt_opt = neda.postproc.optimize_boundary(lt_b, self.traj, self.model, self.prior)
+        self.assertNotEqual(lt_opt, self.lt)
+
+        lt_b[:] = 0
+        lt_opt = neda.postproc.optimize_boundary(lt_b, self.traj, self.model, self.prior)
+        self.assertNotEqual(lt_opt, self.lt)
 
 if __name__ == '__main__': # pragma: no cover
     unittest.main(module=__file__[:-3])

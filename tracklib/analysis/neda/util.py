@@ -105,7 +105,7 @@ class Loopingtrace:
         new.t = np.where(~np.isnan(states))[0].astype(int)
         new.state = states[new.t].astype(int)
         if nStates is None:
-            new.n = np.max(states)+1
+            new.n = np.nanmax(states)+1
         else:
             new.n = nStates
 
@@ -132,9 +132,21 @@ class Loopingtrace:
         return self.state[key]
 
     def __setitem__(self, key, val):
-        assert val < self.n
-        assert isinstance(val, (int, np.integer))
+        # we check type instead of casting, since trying to write float values
+        # to a Loopingtrace is more probable to indicate an error somewhere
+        val = np.asarray(val)
+        assert val.dtype == np.integer
+        assert np.all(val < self.n)
         self.state[key] = val
+
+    def __eq__(self, lt):
+        if len(self) == len(lt):
+            return np.all(self.state == lt.state) \
+                    and np.all(self.t == lt.t) \
+                    and self.T == lt.T \
+                    and self.n == lt.n
+        else:
+            return False
 
     def plottable(self):
         """
@@ -183,17 +195,35 @@ class Loopingtrace:
             last_ind = cur_ind
         return full
 
-    def loops(self):
+    def loops(self, return_='time'):
         """
         Give intervals where state stays constant
+
+        Parameters
+        ----------
+        return_ : {'time', 'index'}, optional
+            whether the returned interval boundaries should be times (i.e.
+            indices into the associated trajectory) or indices into the
+            `Loopingtrace` itself.
 
         Returns
         -------
         (N, 3) np.ndarray
             the detected loops. Each entry consists of ``(start, end, state)``,
             such that ``self[start:end] == state``.
+
+        Notes
+        -----
+        By default, this returns times, i.e. indices into the associated
+        trajectory, not indices into the `Loopingprofile`! To achieve the
+        latter, set ``return_='index'``.
         """
-        states_full = self.full_valid()
+        assert return_ in ['time', 'index']
+        if return_ == 'time':
+            states_full = self.full_valid()
+        else:
+            states_full = self.state
+
         states_padded = np.pad(states_full, (1, 1), constant_values=-1)
         breaks = np.where(states_padded[:-1] != states_padded[1:])[0]
         # Note that the `breaks` sit to the right of any change point, due to the padding.

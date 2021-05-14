@@ -299,7 +299,7 @@ class MCMCScheme(mcmc.Sampler, metaclass=abc.ABCMeta):
         proposed = next(self.gen_proposal_sample_from(loopingtrace_cur, nSample=1))
         p_fwd = self.stepping_probability(loopingtrace_cur, proposed)
         p_bwd = self.stepping_probability(proposed, loopingtrace_cur)
-        if p_bwd == 0:
+        if p_bwd == 0: # pragma: no cover
             print("Found irreversible move:",
                   "\nfrom:", loopingtrace_cur.state,
                   "\n  to:", proposed.state,
