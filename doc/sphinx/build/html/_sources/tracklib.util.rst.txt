@@ -12,6 +12,14 @@ tracklib.util.mcmc
    :undoc-members:
    :show-inheritance:
 
+tracklib.util.plotting
+----------------------
+
+.. automodule:: tracklib.util.plotting
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 tracklib.util.sweep
 -------------------
 

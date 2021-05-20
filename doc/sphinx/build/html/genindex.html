@@ -100,7 +100,7 @@
 </li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="tracklib.analysis.neda.html#tracklib.analysis.neda.priors.PriorFactory.bounds">bounds (tracklib.analysis.neda.priors.PriorFactory attribute)</a>
+      <li><a href="tracklib.analysis.neda.html#tracklib.analysis.neda.util.ParametricFamily.bounds">bounds (tracklib.analysis.neda.util.ParametricFamily attribute)</a>
 </li>
       <li><a href="tracklib.analysis.neda.html#tracklib.analysis.neda.plot.butterfly">butterfly() (in module tracklib.analysis.neda.plot)</a>
 </li>
@@ -124,14 +124,16 @@
 </li>
       <li><a href="tracklib.util.html#tracklib.util.mcmc.Sampler.config">config (tracklib.util.mcmc.Sampler attribute)</a>
 </li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="tracklib.analysis.html#tracklib.analysis.kli.LoopSequenceMCMC.configure">configure() (tracklib.analysis.kli.LoopSequenceMCMC method)</a>
+      <li><a href="tracklib.analysis.html#tracklib.analysis.bild.LoopSequenceMCMC.configure">configure() (tracklib.analysis.bild.LoopSequenceMCMC method)</a>
 
       <ul>
+        <li><a href="tracklib.analysis.html#tracklib.analysis.kli.LoopSequenceMCMC.configure">(tracklib.analysis.kli.LoopSequenceMCMC method)</a>
+</li>
         <li><a href="tracklib.util.html#tracklib.util.mcmc.Sampler.configure">(tracklib.util.mcmc.Sampler method)</a>
 </li>
       </ul></li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="tracklib.models.html#tracklib.models.rouse.Model.conformations_from_looptrace">conformations_from_looptrace() (tracklib.models.rouse.Model method)</a>
 </li>
       <li><a href="tracklib.models.html#tracklib.models.statgauss.control">control() (in module tracklib.models.statgauss)</a>
@@ -180,6 +182,8 @@
 <h2 id="E">E</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="tracklib.util.html#tracklib.util.plotting.ellipse_from_cov">ellipse_from_cov() (in module tracklib.util.plotting)</a>
+</li>
       <li><a href="tracklib.analysis.neda.html#tracklib.analysis.neda.neda.Environment">Environment (class in tracklib.analysis.neda.neda)</a>
 </li>
       <li><a href="tracklib.analysis.html#tracklib.analysis.kli.estimate_looping">estimate_looping() (in module tracklib.analysis.kli)</a>
@@ -204,15 +208,29 @@
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="tracklib.analysis.neda.html#tracklib.analysis.neda.models.FactorizedModel">FactorizedModel (class in tracklib.analysis.neda.models)</a>
 </li>
-      <li><a href="tracklib.analysis.neda.html#tracklib.analysis.neda.priors.GeometricPrior.factory">factory() (tracklib.analysis.neda.priors.GeometricPrior class method)</a>
+      <li><a href="tracklib.analysis.neda.html#tracklib.analysis.neda.priors.GeometricPrior.family">family() (tracklib.analysis.neda.priors.GeometricPrior class method)</a>
 </li>
-      <li><a href="tracklib.analysis.html#tracklib.analysis.kli.fit_RouseParams">fit_RouseParams() (in module tracklib.analysis.kli)</a>
+      <li><a href="tracklib.analysis.neda.html#tracklib.analysis.neda.models.fit">fit() (in module tracklib.analysis.neda.models)</a>
 </li>
+      <li><a href="tracklib.analysis.html#tracklib.analysis.bild.fit_RouseParams">fit_RouseParams() (in module tracklib.analysis.bild)</a>
+
+      <ul>
+        <li><a href="tracklib.analysis.html#tracklib.analysis.kli.fit_RouseParams">(in module tracklib.analysis.kli)</a>
+</li>
+      </ul></li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="tracklib.analysis.neda.html#tracklib.analysis.neda.util.Loopingtrace.forTrajectory">forTrajectory() (tracklib.analysis.neda.util.Loopingtrace class method)</a>
+</li>
       <li><a href="tracklib.html#tracklib.trajectory.Trajectory.fromArray">fromArray() (tracklib.trajectory.Trajectory class method)</a>
 </li>
-      <li><a href="tracklib.analysis.html#tracklib.analysis.kli.LoopSequence.fromLooptrace">fromLooptrace() (tracklib.analysis.kli.LoopSequence class method)</a>
+      <li><a href="tracklib.analysis.html#tracklib.analysis.bild.LoopSequence.fromLooptrace">fromLooptrace() (tracklib.analysis.bild.LoopSequence class method)</a>
+
+      <ul>
+        <li><a href="tracklib.analysis.html#tracklib.analysis.kli.LoopSequence.fromLooptrace">(tracklib.analysis.kli.LoopSequence class method)</a>
+</li>
+      </ul></li>
+      <li><a href="tracklib.analysis.neda.html#tracklib.analysis.neda.util.Loopingtrace.fromStates">fromStates() (tracklib.analysis.neda.util.Loopingtrace class method)</a>
 </li>
       <li><a href="tracklib.analysis.neda.html#tracklib.analysis.neda.util.Loopingtrace.full_valid">full_valid() (tracklib.analysis.neda.util.Loopingtrace method)</a>
 </li>
@@ -222,17 +240,19 @@
 <h2 id="G">G</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="tracklib.analysis.neda.html#tracklib.analysis.neda.mcmc.MCMCScheme.gen_proposal_sample_from">gen_proposal_sample_from() (tracklib.analysis.neda.mcmc.MCMCScheme static method)</a>
+      <li><a href="tracklib.analysis.neda.html#tracklib.analysis.neda.mcmc.MCMCScheme.gen_proposal_sample_from">gen_proposal_sample_from() (tracklib.analysis.neda.mcmc.MCMCScheme method)</a>
 
       <ul>
-        <li><a href="tracklib.analysis.neda.html#tracklib.analysis.neda.mcmc.TPWMCMC.gen_proposal_sample_from">(tracklib.analysis.neda.mcmc.TPWMCMC static method)</a>
+        <li><a href="tracklib.analysis.neda.html#tracklib.analysis.neda.mcmc.TPWMCMC.gen_proposal_sample_from">(tracklib.analysis.neda.mcmc.TPWMCMC method)</a>
+</li>
+        <li><a href="tracklib.analysis.neda.html#tracklib.analysis.neda.mcmc.TriMCMC.gen_proposal_sample_from">(tracklib.analysis.neda.mcmc.TriMCMC method)</a>
 </li>
       </ul></li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="tracklib.analysis.neda.html#tracklib.analysis.neda.priors.GeometricPrior">GeometricPrior (class in tracklib.analysis.neda.priors)</a>
 </li>
-      <li><a href="tracklib.analysis.neda.html#tracklib.analysis.neda.priors.PriorFactory.get">get() (tracklib.analysis.neda.priors.PriorFactory method)</a>
+      <li><a href="tracklib.analysis.neda.html#tracklib.analysis.neda.util.ParametricFamily.get">get() (tracklib.analysis.neda.util.ParametricFamily method)</a>
 </li>
       <li><a href="tracklib.models.html#tracklib.models.rouse.Model.give_matrices">give_matrices() (tracklib.models.rouse.Model method)</a>
 </li>
@@ -252,8 +272,12 @@
       </ul></li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="tracklib.analysis.html#tracklib.analysis.kli.LoopSequence.isLoop">isLoop (tracklib.analysis.kli.LoopSequence attribute)</a>
+      <li><a href="tracklib.analysis.html#tracklib.analysis.bild.LoopSequence.isLoop">isLoop (tracklib.analysis.bild.LoopSequence attribute)</a>
+
+      <ul>
+        <li><a href="tracklib.analysis.html#tracklib.analysis.kli.LoopSequence.isLoop">(tracklib.analysis.kli.LoopSequence attribute)</a>
 </li>
+      </ul></li>
   </ul></td>
 </tr></table>
 
@@ -282,9 +306,11 @@
       </ul></li>
       <li><a href="tracklib.util.html#tracklib.util.util.log_derivative">log_derivative() (in module tracklib.util.util)</a>
 </li>
-      <li><a href="tracklib.analysis.html#tracklib.analysis.kli.LoopSequenceMCMC.logL">logL() (tracklib.analysis.kli.LoopSequenceMCMC method)</a>
+      <li><a href="tracklib.analysis.html#tracklib.analysis.bild.LoopSequenceMCMC.logL">logL() (tracklib.analysis.bild.LoopSequenceMCMC method)</a>
 
       <ul>
+        <li><a href="tracklib.analysis.html#tracklib.analysis.kli.LoopSequenceMCMC.logL">(tracklib.analysis.kli.LoopSequenceMCMC method)</a>
+</li>
         <li><a href="tracklib.analysis.html#tracklib.analysis.kli.LoopTraceMCMC.logL">(tracklib.analysis.kli.LoopTraceMCMC method)</a>
 </li>
         <li><a href="tracklib.analysis.neda.html#tracklib.analysis.neda.mcmc.MCMCScheme.logL">(tracklib.analysis.neda.mcmc.MCMCScheme method)</a>
@@ -298,10 +324,16 @@
         <li><a href="tracklib.util.html#tracklib.util.mcmc.Sampler.logL">(tracklib.util.mcmc.Sampler method)</a>
 </li>
       </ul></li>
-      <li><a href="tracklib.analysis.neda.html#tracklib.analysis.neda.mcmc.MCMCRun.logLs">logLs (tracklib.analysis.neda.mcmc.MCMCRun attribute)</a>
+      <li><a href="tracklib.analysis.neda.html#tracklib.analysis.neda.postproc.logLR_boundary">logLR_boundary() (in module tracklib.analysis.neda.postproc)</a>
+</li>
+      <li><a href="tracklib.analysis.neda.html#tracklib.analysis.neda.postproc.logLR_clusterflip">logLR_clusterflip() (in module tracklib.analysis.neda.postproc)</a>
+</li>
+      <li><a href="tracklib.analysis.neda.html#tracklib.analysis.neda.postproc.logLR_nbit">logLR_nbit() (in module tracklib.analysis.neda.postproc)</a>
 </li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="tracklib.analysis.neda.html#tracklib.analysis.neda.mcmc.MCMCRun.logLs">logLs (tracklib.analysis.neda.mcmc.MCMCRun attribute)</a>
+</li>
       <li><a href="tracklib.analysis.neda.html#tracklib.analysis.neda.mcmc.MCMCRun.logLs_trunc">logLs_trunc() (tracklib.analysis.neda.mcmc.MCMCRun method)</a>
 </li>
       <li><a href="tracklib.analysis.neda.html#tracklib.analysis.neda.priors.GeometricPrior.logpi">logpi() (tracklib.analysis.neda.priors.GeometricPrior method)</a>
@@ -324,10 +356,20 @@
 </li>
       <li><a href="tracklib.analysis.html#tracklib.analysis.kli.looplifes">looplifes() (in module tracklib.analysis.kli)</a>
 </li>
-      <li><a href="tracklib.analysis.html#tracklib.analysis.kli.LoopSequence">LoopSequence (class in tracklib.analysis.kli)</a>
+      <li><a href="tracklib.analysis.neda.html#tracklib.analysis.neda.util.Loopingtrace.loops">loops() (tracklib.analysis.neda.util.Loopingtrace method)</a>
 </li>
-      <li><a href="tracklib.analysis.html#tracklib.analysis.kli.LoopSequenceMCMC">LoopSequenceMCMC (class in tracklib.analysis.kli)</a>
+      <li><a href="tracklib.analysis.html#tracklib.analysis.bild.LoopSequence">LoopSequence (class in tracklib.analysis.bild)</a>
+
+      <ul>
+        <li><a href="tracklib.analysis.html#tracklib.analysis.kli.LoopSequence">(class in tracklib.analysis.kli)</a>
 </li>
+      </ul></li>
+      <li><a href="tracklib.analysis.html#tracklib.analysis.bild.LoopSequenceMCMC">LoopSequenceMCMC (class in tracklib.analysis.bild)</a>
+
+      <ul>
+        <li><a href="tracklib.analysis.html#tracklib.analysis.kli.LoopSequenceMCMC">(class in tracklib.analysis.kli)</a>
+</li>
+      </ul></li>
       <li><a href="tracklib.analysis.html#tracklib.analysis.kli.LoopTraceMCMC">LoopTraceMCMC (class in tracklib.analysis.kli)</a>
 </li>
   </ul></td>
@@ -370,6 +412,8 @@
         <li><a href="tracklib.analysis.neda.html#tracklib.analysis.neda.neda.Environment.model">(tracklib.analysis.neda.neda.Environment attribute)</a>
 </li>
       </ul></li>
+      <li><a href="tracklib.analysis.html#tracklib.analysis.bild.model_likelihood_filter">model_likelihood_filter() (in module tracklib.analysis.bild)</a>
+</li>
       <li><a href="tracklib.analysis.neda.html#tracklib.analysis.neda.models.RouseModel.models">models (tracklib.analysis.neda.models.RouseModel attribute)</a>
 </li>
       <li><a href="tracklib.analysis.html#tracklib.analysis.msd.MSD">MSD() (in module tracklib.analysis.msd)</a>
@@ -402,7 +446,7 @@
 </li>
       <li><a href="tracklib.html#tracklib.trajectory.N12Error">N12Error</a>
 </li>
-      <li><a href="tracklib.analysis.neda.html#tracklib.analysis.neda.priors.PriorFactory.nParams">nParams (tracklib.analysis.neda.priors.PriorFactory attribute)</a>
+      <li><a href="tracklib.analysis.neda.html#tracklib.analysis.neda.util.ParametricFamily.nParams">nParams (tracklib.analysis.neda.util.ParametricFamily attribute)</a>
 </li>
       <li><a href="tracklib.analysis.html#tracklib.analysis.kli.LoopSequence.numLoops">numLoops() (tracklib.analysis.kli.LoopSequence method)</a>
 </li>
@@ -414,21 +458,33 @@
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="tracklib.html#tracklib.trajectory.Trajectory.offset">offset() (tracklib.trajectory.Trajectory method)</a>
 </li>
+      <li><a href="tracklib.analysis.neda.html#tracklib.analysis.neda.postproc.optimize_boundary">optimize_boundary() (in module tracklib.analysis.neda.postproc)</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="tracklib.analysis.neda.html#tracklib.analysis.neda.postproc.optimize_clusterflip">optimize_clusterflip() (in module tracklib.analysis.neda.postproc)</a>
+</li>
+      <li><a href="tracklib.analysis.neda.html#tracklib.analysis.neda.postproc.optimize_nbit">optimize_nbit() (in module tracklib.analysis.neda.postproc)</a>
+</li>
   </ul></td>
 </tr></table>
 
 <h2 id="P">P</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="tracklib.analysis.neda.html#tracklib.analysis.neda.util.ParametricFamily">ParametricFamily (class in tracklib.analysis.neda.util)</a>
+</li>
       <li><a href="tracklib.analysis.html#tracklib.analysis.kld.perezcruz">perezcruz() (in module tracklib.analysis.kld)</a>
 </li>
       <li><a href="tracklib.html#tracklib.trajectory.Trajectory.plot_spatial">plot_spatial() (tracklib.trajectory.Trajectory method)</a>
 </li>
       <li><a href="tracklib.html#tracklib.trajectory.Trajectory.plot_vstime">plot_vstime() (tracklib.trajectory.Trajectory method)</a>
 </li>
-      <li><a href="tracklib.analysis.html#tracklib.analysis.kli.LoopSequence.plottable">plottable() (tracklib.analysis.kli.LoopSequence method)</a>
+      <li><a href="tracklib.analysis.html#tracklib.analysis.bild.LoopSequence.plottable">plottable() (tracklib.analysis.bild.LoopSequence method)</a>
 
       <ul>
+        <li><a href="tracklib.analysis.html#tracklib.analysis.kli.LoopSequence.plottable">(tracklib.analysis.kli.LoopSequence method)</a>
+</li>
         <li><a href="tracklib.analysis.neda.html#tracklib.analysis.neda.util.Loopingtrace.plottable">(tracklib.analysis.neda.util.Loopingtrace method)</a>
 </li>
       </ul></li>
@@ -438,19 +494,19 @@
 </li>
       <li><a href="tracklib.analysis.neda.html#tracklib.analysis.neda.priors.Prior">Prior (class in tracklib.analysis.neda.priors)</a>
 </li>
-      <li><a href="tracklib.analysis.neda.html#tracklib.analysis.neda.mcmc.MCMCScheme.prior">prior (tracklib.analysis.neda.mcmc.MCMCScheme attribute)</a>
-</li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="tracklib.analysis.neda.html#tracklib.analysis.neda.priors.PriorFactory">PriorFactory (class in tracklib.analysis.neda.priors)</a>
+      <li><a href="tracklib.analysis.neda.html#tracklib.analysis.neda.mcmc.MCMCScheme.prior">prior (tracklib.analysis.neda.mcmc.MCMCScheme attribute)</a>
 </li>
       <li><a href="tracklib.html#tracklib.taggedset.TaggedSet.process">process() (tracklib.taggedset.TaggedSet method)</a>
 </li>
       <li><a href="tracklib.models.html#tracklib.models.rouse.Model.propagate">propagate() (tracklib.models.rouse.Model method)</a>
 </li>
-      <li><a href="tracklib.analysis.html#tracklib.analysis.kli.LoopSequenceMCMC.propose_update">propose_update() (tracklib.analysis.kli.LoopSequenceMCMC method)</a>
+      <li><a href="tracklib.analysis.html#tracklib.analysis.bild.LoopSequenceMCMC.propose_update">propose_update() (tracklib.analysis.bild.LoopSequenceMCMC method)</a>
 
       <ul>
+        <li><a href="tracklib.analysis.html#tracklib.analysis.kli.LoopSequenceMCMC.propose_update">(tracklib.analysis.kli.LoopSequenceMCMC method)</a>
+</li>
         <li><a href="tracklib.analysis.html#tracklib.analysis.kli.LoopTraceMCMC.propose_update">(tracklib.analysis.kli.LoopTraceMCMC method)</a>
 </li>
         <li><a href="tracklib.analysis.neda.html#tracklib.analysis.neda.mcmc.MCMCScheme.propose_update">(tracklib.analysis.neda.mcmc.MCMCScheme method)</a>
@@ -480,9 +536,11 @@
 </li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="tracklib.analysis.html#tracklib.analysis.kli.LoopSequenceMCMC.run">run() (tracklib.analysis.kli.LoopSequenceMCMC method)</a>
+      <li><a href="tracklib.analysis.html#tracklib.analysis.bild.LoopSequenceMCMC.run">run() (tracklib.analysis.bild.LoopSequenceMCMC method)</a>
 
       <ul>
+        <li><a href="tracklib.analysis.html#tracklib.analysis.kli.LoopSequenceMCMC.run">(tracklib.analysis.kli.LoopSequenceMCMC method)</a>
+</li>
         <li><a href="tracklib.analysis.neda.html#tracklib.analysis.neda.mcmc.MCMCScheme.run">(tracklib.analysis.neda.mcmc.MCMCScheme method)</a>
 </li>
         <li><a href="tracklib.util.html#tracklib.util.mcmc.Sampler.run">(tracklib.util.mcmc.Sampler method)</a>
@@ -508,9 +566,11 @@
 </li>
       <li><a href="tracklib.analysis.html#tracklib.analysis.msd.scaling">scaling() (in module tracklib.analysis.msd)</a>
 </li>
-      <li><a href="tracklib.analysis.html#tracklib.analysis.kli.LoopSequenceMCMC.setup">setup() (tracklib.analysis.kli.LoopSequenceMCMC method)</a>
+      <li><a href="tracklib.analysis.html#tracklib.analysis.bild.LoopSequenceMCMC.setup">setup() (tracklib.analysis.bild.LoopSequenceMCMC method)</a>
 
       <ul>
+        <li><a href="tracklib.analysis.html#tracklib.analysis.kli.LoopSequenceMCMC.setup">(tracklib.analysis.kli.LoopSequenceMCMC method)</a>
+</li>
         <li><a href="tracklib.analysis.neda.html#tracklib.analysis.neda.mcmc.MCMCScheme.setup">(tracklib.analysis.neda.mcmc.MCMCScheme method)</a>
 </li>
       </ul></li>
@@ -522,16 +582,18 @@
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="tracklib.html#tracklib.clean.split_trajectory_at_big_steps">split_trajectory_at_big_steps() (in module tracklib.clean)</a>
 </li>
-      <li><a href="tracklib.analysis.neda.html#tracklib.analysis.neda.priors.PriorFactory.start_params">start_params (tracklib.analysis.neda.priors.PriorFactory attribute)</a>
+      <li><a href="tracklib.analysis.neda.html#tracklib.analysis.neda.util.ParametricFamily.start_params">start_params (tracklib.analysis.neda.util.ParametricFamily attribute)</a>
 </li>
       <li><a href="tracklib.analysis.neda.html#tracklib.analysis.neda.util.Loopingtrace.state">state (tracklib.analysis.neda.util.Loopingtrace attribute)</a>
 </li>
       <li><a href="tracklib.models.html#tracklib.models.rouse.Model.steady_state">steady_state() (tracklib.models.rouse.Model method)</a>
 </li>
-      <li><a href="tracklib.analysis.neda.html#tracklib.analysis.neda.mcmc.MCMCScheme.stepping_probability">stepping_probability() (tracklib.analysis.neda.mcmc.MCMCScheme static method)</a>
+      <li><a href="tracklib.analysis.neda.html#tracklib.analysis.neda.mcmc.MCMCScheme.stepping_probability">stepping_probability() (tracklib.analysis.neda.mcmc.MCMCScheme method)</a>
 
       <ul>
-        <li><a href="tracklib.analysis.neda.html#tracklib.analysis.neda.mcmc.TPWMCMC.stepping_probability">(tracklib.analysis.neda.mcmc.TPWMCMC static method)</a>
+        <li><a href="tracklib.analysis.neda.html#tracklib.analysis.neda.mcmc.TPWMCMC.stepping_probability">(tracklib.analysis.neda.mcmc.TPWMCMC method)</a>
+</li>
+        <li><a href="tracklib.analysis.neda.html#tracklib.analysis.neda.mcmc.TriMCMC.stepping_probability">(tracklib.analysis.neda.mcmc.TriMCMC method)</a>
 </li>
       </ul></li>
       <li><a href="tracklib.util.html#tracklib.util.mcmc.Sampler.stepsize">stepsize (tracklib.util.mcmc.Sampler attribute)</a>
@@ -546,8 +608,12 @@
 <h2 id="T">T</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="tracklib.analysis.html#tracklib.analysis.kli.LoopSequence.t">t (tracklib.analysis.kli.LoopSequence attribute)</a>
+      <li><a href="tracklib.analysis.html#tracklib.analysis.bild.LoopSequence.t">t (tracklib.analysis.bild.LoopSequence attribute)</a>
+
+      <ul>
+        <li><a href="tracklib.analysis.html#tracklib.analysis.kli.LoopSequence.t">(tracklib.analysis.kli.LoopSequence attribute)</a>
 </li>
+      </ul></li>
       <li><a href="tracklib.analysis.neda.html#tracklib.analysis.neda.util.Loopingtrace.T">T (tracklib.analysis.neda.util.Loopingtrace attribute)</a>
 </li>
       <li><a href="tracklib.analysis.neda.html#tracklib.analysis.neda.util.Loopingtrace.t">t (tracklib.analysis.neda.util.Loopingtrace attribute)</a>
@@ -558,9 +624,15 @@
 </li>
       <li><a href="tracklib.html#tracklib.taggedset.TaggedSet.tagset">tagset() (tracklib.taggedset.TaggedSet method)</a>
 </li>
-      <li><a href="tracklib.analysis.html#tracklib.analysis.kli.LoopSequence.toLooptrace">toLooptrace() (tracklib.analysis.kli.LoopSequence method)</a>
+      <li><a href="tracklib.analysis.html#tracklib.analysis.bild.LoopSequence.toLooptrace">toLooptrace() (tracklib.analysis.bild.LoopSequence method)</a>
+
+      <ul>
+        <li><a href="tracklib.analysis.html#tracklib.analysis.kli.LoopSequence.toLooptrace">(tracklib.analysis.kli.LoopSequence method)</a>
 </li>
+      </ul></li>
       <li><a href="tracklib.analysis.neda.html#tracklib.analysis.neda.mcmc.TPWMCMC">TPWMCMC (class in tracklib.analysis.neda.mcmc)</a>
+</li>
+      <li><a href="tracklib.analysis.html#module-tracklib.analysis.bild">tracklib.analysis.bild (module)</a>
 </li>
       <li><a href="tracklib.analysis.html#module-tracklib.analysis.chi2">tracklib.analysis.chi2 (module)</a>
 </li>
@@ -578,14 +650,16 @@
 </li>
       <li><a href="tracklib.analysis.neda.html#module-tracklib.analysis.neda.plot">tracklib.analysis.neda.plot (module)</a>
 </li>
+      <li><a href="tracklib.analysis.neda.html#module-tracklib.analysis.neda.postproc">tracklib.analysis.neda.postproc (module)</a>
+</li>
       <li><a href="tracklib.analysis.neda.html#module-tracklib.analysis.neda.priors">tracklib.analysis.neda.priors (module)</a>
 </li>
       <li><a href="tracklib.analysis.neda.html#module-tracklib.analysis.neda.util">tracklib.analysis.neda.util (module)</a>
 </li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="tracklib.analysis.html#module-tracklib.analysis.plots">tracklib.analysis.plots (module)</a>
 </li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="tracklib.analysis.html#module-tracklib.analysis.vacf">tracklib.analysis.vacf (module)</a>
 </li>
       <li><a href="tracklib.html#module-tracklib.clean">tracklib.clean (module)</a>
@@ -604,6 +678,8 @@
 </li>
       <li><a href="tracklib.util.html#module-tracklib.util.mcmc">tracklib.util.mcmc (module)</a>
 </li>
+      <li><a href="tracklib.util.html#module-tracklib.util.plotting">tracklib.util.plotting (module)</a>
+</li>
       <li><a href="tracklib.util.html#module-tracklib.util.sweep">tracklib.util.sweep (module)</a>
 </li>
       <li><a href="tracklib.util.html#module-tracklib.util.util">tracklib.util.util (module)</a>
@@ -614,11 +690,25 @@
         <li><a href="tracklib.analysis.neda.html#tracklib.analysis.neda.neda.Environment.traj">(tracklib.analysis.neda.neda.Environment attribute)</a>
 </li>
       </ul></li>
-      <li><a href="tracklib.analysis.html#tracklib.analysis.kli.traj_likelihood">traj_likelihood() (in module tracklib.analysis.kli)</a>
+      <li><a href="tracklib.analysis.html#tracklib.analysis.bild.traj_likelihood">traj_likelihood() (in module tracklib.analysis.bild)</a>
+
+      <ul>
+        <li><a href="tracklib.analysis.html#tracklib.analysis.kli.traj_likelihood">(in module tracklib.analysis.kli)</a>
 </li>
+      </ul></li>
       <li><a href="tracklib.analysis.html#tracklib.analysis.plots.trajectories_spatial">trajectories_spatial() (in module tracklib.analysis.plots)</a>
 </li>
       <li><a href="tracklib.html#tracklib.trajectory.Trajectory">Trajectory (class in tracklib.trajectory)</a>
+</li>
+      <li><a href="tracklib.analysis.neda.html#tracklib.analysis.neda.models.FactorizedModel.trajectory_from_loopingtrace">trajectory_from_loopingtrace() (tracklib.analysis.neda.models.FactorizedModel method)</a>
+
+      <ul>
+        <li><a href="tracklib.analysis.neda.html#tracklib.analysis.neda.models.Model.trajectory_from_loopingtrace">(tracklib.analysis.neda.models.Model method)</a>
+</li>
+        <li><a href="tracklib.analysis.neda.html#tracklib.analysis.neda.models.RouseModel.trajectory_from_loopingtrace">(tracklib.analysis.neda.models.RouseModel method)</a>
+</li>
+      </ul></li>
+      <li><a href="tracklib.analysis.neda.html#tracklib.analysis.neda.mcmc.TriMCMC">TriMCMC (class in tracklib.analysis.neda.mcmc)</a>
 </li>
       <li><a href="tracklib.util.html#tracklib.util.util.twoLociRelativeACF">twoLociRelativeACF() (in module tracklib.util.util)</a>
 </li>

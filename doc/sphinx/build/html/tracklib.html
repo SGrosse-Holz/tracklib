@@ -52,10 +52,12 @@
 <li class="toctree-l3"><a class="reference internal" href="tracklib.analysis.neda.html#module-tracklib.analysis.neda.models">tracklib.analysis.neda.models</a></li>
 <li class="toctree-l3"><a class="reference internal" href="tracklib.analysis.neda.html#module-tracklib.analysis.neda.neda">tracklib.analysis.neda.neda</a></li>
 <li class="toctree-l3"><a class="reference internal" href="tracklib.analysis.neda.html#module-tracklib.analysis.neda.plot">tracklib.analysis.neda.plot</a></li>
+<li class="toctree-l3"><a class="reference internal" href="tracklib.analysis.neda.html#module-tracklib.analysis.neda.postproc">tracklib.analysis.neda.postproc</a></li>
 <li class="toctree-l3"><a class="reference internal" href="tracklib.analysis.neda.html#module-tracklib.analysis.neda.priors">tracklib.analysis.neda.priors</a></li>
 <li class="toctree-l3"><a class="reference internal" href="tracklib.analysis.neda.html#module-tracklib.analysis.neda.util">tracklib.analysis.neda.util</a></li>
 </ul>
 </li>
+<li class="toctree-l2"><a class="reference internal" href="tracklib.analysis.html#module-tracklib.analysis.bild">tracklib.analysis.bild</a></li>
 <li class="toctree-l2"><a class="reference internal" href="tracklib.analysis.html#module-tracklib.analysis.chi2">tracklib.analysis.chi2</a></li>
 <li class="toctree-l2"><a class="reference internal" href="tracklib.analysis.html#module-tracklib.analysis.kld">tracklib.analysis.kld</a></li>
 <li class="toctree-l2"><a class="reference internal" href="tracklib.analysis.html#module-tracklib.analysis.kli">tracklib.analysis.kli</a></li>
@@ -76,6 +78,7 @@
 </li>
 <li class="toctree-l1"><a class="reference internal" href="tracklib.util.html">tracklib.util</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="tracklib.util.html#module-tracklib.util.mcmc">tracklib.util.mcmc</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tracklib.util.html#module-tracklib.util.plotting">tracklib.util.plotting</a></li>
 <li class="toctree-l2"><a class="reference internal" href="tracklib.util.html#module-tracklib.util.sweep">tracklib.util.sweep</a></li>
 <li class="toctree-l2"><a class="reference internal" href="tracklib.util.html#module-tracklib.util.util">tracklib.util.util</a></li>
 </ul>
@@ -340,9 +343,8 @@ having to redo the whole selection from scratch.</p>
 <p><a class="reference internal" href="#tracklib.taggedset.TaggedSet.makeSelection" title="tracklib.taggedset.TaggedSet.makeSelection"><code class="xref py py-meth docutils literal notranslate"><span class="pre">makeSelection()</span></code></a>, <a class="reference internal" href="#tracklib.taggedset.TaggedSet.copySelection" title="tracklib.taggedset.TaggedSet.copySelection"><code class="xref py py-meth docutils literal notranslate"><span class="pre">copySelection()</span></code></a></p>
 </div>
 <p class="rubric">Notes</p>
-<p>Since everything in the current selection is deleted, the current
-selection of the set after calling this function will be completely
-empty.</p>
+<p>Since everything in the current selection is deleted, the selection
+will be reset.</p>
 </dd></dl>
 
 <dl class="method">

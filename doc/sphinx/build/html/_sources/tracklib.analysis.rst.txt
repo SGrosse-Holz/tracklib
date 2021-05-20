@@ -9,6 +9,14 @@ tracklib.analysis
    tracklib.analysis.neda
 
 
+tracklib.analysis.bild
+----------------------
+
+.. automodule:: tracklib.analysis.bild
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 tracklib.analysis.chi2
 ----------------------
 

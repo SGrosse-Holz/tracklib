@@ -282,7 +282,9 @@ class FactorizedModel(Model):
                                     )
 
 
-def fit(data, modelfamily, **kwargs):
+def fit(data, modelfamily,
+        show_progress=False, assume_notebook_for_progressbar=True,
+        **kwargs):
     """
     Find the best fit model to a calibration dataset
 
@@ -294,6 +296,10 @@ def fit(data, modelfamily, **kwargs):
         `Loopingtrace` for this trajectory.
     modelfamily : ParametricFamily of Models
         the family of models to consider.
+    show_progress : bool, optional
+        set to ``True`` to get progress info. Note that since we do not know
+        how many iterations we need for convergence, there is no ETA, just
+        elapsed time.
     kwargs : kwargs
         will be forwarded to `!scipy.optimize.minimize`. We use the defaults
         ``method='L-BFGS-B'``, ``maxfun=300``, ``ftol=1e-5``.
@@ -333,13 +339,29 @@ def fit(data, modelfamily, **kwargs):
        be super reliable, even if the point estimate is pretty good. Check
        initial conditions when using this.
     """
+    # Set up progressbar
+    if show_progress:
+        if assume_notebook_for_progressbar:
+            from tqdm.notebook import tqdm
+        else:
+            from tqdm import tqdm
+        pbar = tqdm()
+    else:
+        class Nullbar:
+            def update(*args): pass
+            def close(*args): pass
+        pbar = Nullbar()
+
+    # Set up minimization target
     def neg_logL_ds(params):
         model = modelfamily.get(*params)
         def neg_logL_traj(traj):
             return -model.logL(traj.meta['loopingtrace'], traj)
 
         # Parallelize?
-        return np.nansum(list(map(neg_logL_traj, data)))
+        out = np.nansum(list(map(neg_logL_traj, data)))
+        pbar.update()
+        return out
 
     minimize_kwargs = {
             'method' : 'L-BFGS-B',
@@ -354,7 +376,9 @@ def fit(data, modelfamily, **kwargs):
                 del kwargs[key]
     minimize_kwargs.update(kwargs)
 
-    return scipy.optimize.minimize(neg_logL_ds, modelfamily.start_params, **minimize_kwargs)
+    res = scipy.optimize.minimize(neg_logL_ds, modelfamily.start_params, **minimize_kwargs)
+    pbar.close()
+    return res
 
 # TODO: parallelize fitting
 # Problems: Pool.imap cannot pickle local objects, i.e. we cannot, for example,

@@ -411,7 +411,7 @@ the default behavior, this would be <code class="docutils literal notranslate"><
 
 <dl class="function">
 <dt id="tracklib.models.rouse.multistate_likelihood">
-<code class="sig-prename descclassname">tracklib.models.rouse.</code><code class="sig-name descname">multistate_likelihood</code><span class="sig-paren">(</span><em class="sig-param">trace</em>, <em class="sig-param">models</em>, <em class="sig-param">looptrace</em>, <em class="sig-param">noise</em><span class="sig-paren">)</span><a class="headerlink" href="#tracklib.models.rouse.multistate_likelihood" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">tracklib.models.rouse.</code><code class="sig-name descname">multistate_likelihood</code><span class="sig-paren">(</span><em class="sig-param">trace</em>, <em class="sig-param">models</em>, <em class="sig-param">looptrace</em>, <em class="sig-param">noise</em>, <em class="sig-param">return_individual_likelihoods=False</em><span class="sig-paren">)</span><a class="headerlink" href="#tracklib.models.rouse.multistate_likelihood" title="Permalink to this definition">¶</a></dt>
 <dd><p>Likelihood calculation for a multistate model, using the Kalman filter
 approach</p>
 <dl class="field-list simple">
@@ -423,8 +423,12 @@ approach</p>
 <li><p><strong>noise</strong> (<em>float</em>) – the localization error associated with the trace</p></li>
 </ul>
 </dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p><strong>logL</strong> (<em>float</em>) – the calculated log-likelihood</p>
+<dt class="field-even">Other Parameters</dt>
+<dd class="field-even"><p><strong>return_individual_likelihoods</strong> (<em>bool</em>) – set to True to also return the array of single point likelihoods whose
+sum is the total returned <code class="xref any docutils literal notranslate"><span class="pre">logL</span></code>.</p>
+</dd>
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p><strong>logL</strong> (<em>float</em>) – the calculated log-likelihood</p>
 </dd>
 </dl>
 <div class="admonition seealso">

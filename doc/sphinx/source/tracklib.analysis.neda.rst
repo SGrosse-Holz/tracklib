@@ -38,6 +38,14 @@ tracklib.analysis.neda.plot
    :undoc-members:
    :show-inheritance:
 
+tracklib.analysis.neda.postproc
+-------------------------------
+
+.. automodule:: tracklib.analysis.neda.postproc
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 tracklib.analysis.neda.priors
 -----------------------------
 
