@@ -1,0 +1,14 @@
+# Exclude hidden and temporary files
+# *.*~
+# .*
+# Makefile~
+
+# Python runtime stuff
+__pycache__/
+*.egg-info
+
+# Specific files
+dataset.py
+
+# Development stuff
+development/
