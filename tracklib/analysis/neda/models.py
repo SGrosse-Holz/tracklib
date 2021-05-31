@@ -3,6 +3,7 @@ The inference models, and the interface they have to conform to.
 """
 
 import abc
+import functools
 
 import numpy as np
 import scipy.optimize
@@ -281,9 +282,13 @@ class FactorizedModel(Model):
                                     loopingtrace=loopingtrace,
                                     )
 
+def _neg_logL_traj(traj, model):
+    # For internal use in parallelization
+    return -model.logL(traj.meta['loopingtrace'], traj)
 
 def fit(data, modelfamily,
         show_progress=False, assume_notebook_for_progressbar=True,
+        map_function=map,
         **kwargs):
     """
     Find the best fit model to a calibration dataset
@@ -300,6 +305,12 @@ def fit(data, modelfamily,
         set to ``True`` to get progress info. Note that since we do not know
         how many iterations we need for convergence, there is no ETA, just
         elapsed time.
+    map_function : map-like callable
+        a function to replace the built-in ``map()``, e.g. with a parallel
+        version. Will be used as
+        ``np.sum(list(map_function(likelihood_given_parameters, data)))``, i.e.
+        order does not matter. ``multiprocessing.Pool.imap_unordered`` would be
+        a good go-to.
     kwargs : kwargs
         will be forwarded to `!scipy.optimize.minimize`. We use the defaults
         ``method='L-BFGS-B'``, ``maxfun=300``, ``ftol=1e-5``.
@@ -355,11 +366,11 @@ def fit(data, modelfamily,
     # Set up minimization target
     def neg_logL_ds(params):
         model = modelfamily.get(*params)
-        def neg_logL_traj(traj):
-            return -model.logL(traj.meta['loopingtrace'], traj)
-
-        # Parallelize?
-        out = np.nansum(list(map(neg_logL_traj, data)))
+        out = np.nansum(list(map_function(functools.partial(_neg_logL_traj,
+                                                            model=model,
+                                                            ),
+                                          data,
+                                          )))
         pbar.update()
         return out
 

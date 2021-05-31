@@ -112,7 +112,7 @@ class TaggedSet():
     def __iter__(self):
         return self()
 
-    def __call__(self, giveTags=False):
+    def __call__(self, giveTags=False, randomize=False):
         """
         Iterate through the current selection of the set.
 
@@ -120,6 +120,8 @@ class TaggedSet():
         ----------
         giveTags : bool, optional
             whether to yield only data or (datum, tags) pairs.
+        randomize : bool, optional
+            set to ``True`` to randomize the order in which data are yielded.
 
         Yields
         ------
@@ -132,12 +134,16 @@ class TaggedSet():
         --------
         makeSelection
         """
-        for (datum, tags, selected) in zip(self._data, self._tags, self._selected):
-            if selected:
+        indices = range(len(self._data))
+        if randomize:
+            indices = random.sample(indices, k=len(indices))
+
+        for i in indices:
+            if self._selected[i]:
                 if giveTags:
-                    yield (datum, tags)
+                    yield (self._data[i], self._tags[i])
                 else:
-                    yield datum
+                    yield self._data[i]
 
     def __len__(self):
         return sum(self._selected)

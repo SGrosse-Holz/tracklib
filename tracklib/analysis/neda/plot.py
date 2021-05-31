@@ -6,7 +6,8 @@ from matplotlib import pyplot as plt
 import numpy as np
 
 def butterfly(traj, fig=None, title='Example trajectory',
-              ylim=[0, None], ylabel='distance', states_cmap='Greens',
+              ylim=[0, None], ylabel='distance',
+              states_cmap='Greens', ensemble_cmap='viridis',
              ):
     """
     General overview over an inference run
@@ -96,7 +97,7 @@ def butterfly(traj, fig=None, title='Example trajectory',
     pcm = ax.pcolormesh(np.arange(ensembles.shape[1]+1)-0.5,
                         np.arange(ensembles.shape[0]+1)-0.5,
                         ensembles,
-                        cmap='viridis',
+                        cmap=ensemble_cmap,
                        )
     ax.set_ylim([-0.5, ensembles.shape[0]-0.5])
     ax.set_ylabel('iteration')

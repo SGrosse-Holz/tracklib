@@ -15,19 +15,29 @@ import scipy.interpolate
 from tracklib import Trajectory, TaggedSet
 from tracklib.util.util import log_derivative
 
-def MSDtraj(traj):
+def MSDtraj(traj, TA=True, exponent=2, recalculate=False):
     """
     Calculate/give MSD for a single trajectory.
 
     The result of the MSD calculation is stored in ``traj.meta['MSD']`` and
     ``traj.meta['MSDmeta']``. This function checks whether the corresponding
     fields exist and if not calculates them. It then returns the value of the
-    `!'MSD'` entry.
+    `!'MSD'` entry. To avoid this behavior, use ``recalculate = True``.
 
     Parameters
     ----------
     traj : Trajectory
         the trajectory for which to calculate the MSD
+    TA : bool, optional
+        whether to time-average
+
+    Other Parameters
+    ----------------
+    exponent : int or float
+        the exponent to use. Mostly for debugging
+    recalculate : bool
+        set to ``True`` to ensure that the MSD is actually calculated, instead
+        of reusing an old value
 
     Returns
     -------
@@ -44,25 +54,52 @@ def MSDtraj(traj):
     This function expects a single-locus trajectory (``N=1``) and will raise a
     `!ValueError` otherwise. Preprocess accordingly.
 
-    Usually this function should always be preferred to accessing
-    ``traj.meta['MSD']`` directly.
+    This function should always be preferred to accessing ``traj.meta['MSD']``
+    directly.
+
+    Explicitly, the ``recalculate`` parameter is equivalent to
+    >>> del traj.meta['MSD']
+    ... del traj.meta['MSDmeta']
     """
-    if not traj.N == 1: # pragma: no cover
-        raise ValueError("Preprocess your trajectory to have N=1")
+    if recalculate:
+        del traj.meta['MSD']
+        del traj.meta['MSDmeta']
     
     try:
         return traj.meta['MSD']
     except KeyError:
+
+        if not traj.N == 1: # pragma: no cover
+            raise ValueError("Preprocess your trajectory to have N=1")
+
+        if exponent == 1:
+            def S(val):
+                return val
+        elif exponent == 2:
+            def S(val):
+                return val*val
+        else:
+            def S(val):
+                return val**exponent
+
         with warnings.catch_warnings():
             warnings.filterwarnings(action='ignore', message='Mean of empty slice')
 
-            traj.meta['MSD'] = np.array([0] + [ \
-                    np.nanmean(np.sum( (traj[i:] - traj[:-i])**2, axis=1), axis=0) \
-                    for i in range(1, len(traj))])
+            if TA:
+                traj.meta['MSD'] = np.array([0] + [ \
+                        np.nanmean(np.sum( S(traj[i:] - traj[:-i]) , axis=1), axis=0) \
+                        for i in range(1, len(traj))])
 
-            N = np.array([np.sum(~np.any(np.isnan(traj[:]), axis=1), axis=0)] + \
-                         [np.sum(~np.any(np.isnan(traj[i:] - traj[:-i]), axis=1), axis=0) \
-                          for i in range(1, len(traj))])
+                N = np.array([np.sum(~np.any(np.isnan(traj[:]), axis=1), axis=0)] + \
+                             [np.sum(~np.any(np.isnan(traj[i:] - traj[:-i]), axis=1), axis=0) \
+                              for i in range(1, len(traj))])
+            else:
+                traj.meta['MSD'] = np.array([0] + [ \
+                        np.sum( S(traj[0] - traj[i]) ) \
+                        for i in range(1, len(traj))])
+
+                N = (~np.isnan(traj.meta['MSD'])).astype(int)
+
         try:
             traj.meta['MSDmeta']['N'] = N
         except KeyError: # this will happen if 'MSDmeta' key doesn't exist
@@ -70,7 +107,7 @@ def MSDtraj(traj):
     
     return traj.meta['MSD']
 
-def MSDdataset(dataset, givevar=False, giveN=False, average_in_logspace=False):
+def MSDdataset(dataset, givevar=False, giveN=False, average_in_logspace=False, **kwargs):
     """
     Calculate ensemble MSD for the given dataset
 
@@ -78,14 +115,17 @@ def MSDdataset(dataset, givevar=False, giveN=False, average_in_logspace=False):
     ----------
     dataset : TaggedSet
         a list of `Trajectory` for which to calculate an ensemble MSD
+
+    Other Parameters
+    ----------------
     givevar : bool, optional
         whether to also return the variance around the mean
     giveN : bool, optional
         whether to return the sample size for each MSD data point
     average_in_logspace : bool, optional
-        if ``True``, the averages used to calculate mean and variance will be
-        taken in log-space, i.e. ``exp(mean(log(...)))`` instead of
-        ``mean(...)``
+        set to ``True`` to replace the arithmetic with a geometric mean.
+    kwargs : keyword arguments
+        are all forwarded to forwarded to `MSDtraj`, see that docstring.
 
     Returns
     -------
@@ -105,7 +145,7 @@ def MSDdataset(dataset, givevar=False, giveN=False, average_in_logspace=False):
     Corresponding to python's 0-based indexing, ``msd[0] = 0``, such that
     ``msd[dt]`` is the MSD at a time lag of `!dt` frames.
     """
-    MSDs = [MSDtraj(traj) for traj in dataset]
+    MSDs = [MSDtraj(traj, **kwargs) for traj in dataset]
     Ns = [traj.meta['MSDmeta']['N'] for traj in dataset]
 
     maxlen = max(len(MSD) for MSD in MSDs)
