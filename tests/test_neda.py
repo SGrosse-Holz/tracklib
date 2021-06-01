@@ -132,7 +132,8 @@ class TestModels(myTestCase):
         self.assertTrue(logL > -100 and logL < 0)
         self.assert_array_equal(lt.state, np.array([1, 0, 0]))
 
-        traj = model.trajectory_from_loopingtrace(neda.Loopingtrace.fromStates([0, 0, 0, 1, 1, 1]))
+        traj = model.trajectory_from_loopingtrace(neda.Loopingtrace.fromStates([0, 0, 0, 1, 1, 1]),
+                                                  localization_error=0.1)
         self.assertEqual(len(traj), 6)
 
     def test_Factorized(self):
@@ -183,7 +184,7 @@ class TestModels(myTestCase):
         mod_gen = modelfam.get(*true_params)
         for state in 3*[0, 1]:
             lt = neda.Loopingtrace.fromStates(100*[state])
-            data.add(mod_gen.trajectory_from_loopingtrace(lt))
+            data.add(mod_gen.trajectory_from_loopingtrace(lt, localization_error=0.1))
 
         fitres = neda.models.fit(data, modelfam, maxfun=200)
         self.assertTrue(fitres.success)

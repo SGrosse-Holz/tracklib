@@ -100,11 +100,22 @@ class RouseModel(Model):
         which distance to measure. The default setting "end2end" is equivalent
         to specifying a vector ``np.array([-1, 0, ..., 0, 1])``, i.e. measuring
         the distance from the first to the last monomer.
+    localization_error : float or np.array, optional
+        a global value for the localization error. By default, we use the value
+        stored in ``traj.meta['localization_error']``, which allows
+        trajectory-wise specification of error. But for example for fitting it
+        might be useful to have one global setting for localization error, at
+        which point it becomes part of the model.
 
     Attributes
     ----------
     models : list of `rouse.Model`
         the models used for inference
+    localization_error : float, array, or None
+        if ``None``, use ``traj.meta['localization_error']`` for each
+        trajectory ``traj``. If float, assume that value for each dimension of
+        the trajectory. If array, should contain values for each dimension
+        separately, i.e. ``np.array([Δx, Δy, Δz])``.
 
     Notes
     -----
@@ -121,7 +132,15 @@ class RouseModel(Model):
     --------
     Model, rouse.Model
     """
-    def __init__(self, N, D, k, looppositions=[(0, 0), (0, -1)], k_extra=None, measurement="end2end"):
+    def __init__(self, N, D, k,
+                 k_extra=None,
+                 looppositions=((0, 0), (0, -1)), # no mutable default elements! (i.e. tuple instead of list)
+                 measurement="end2end",
+                 localization_error=None,
+                 ):
+
+        self.localization_error = localization_error
+
         if k_extra is None:
             k_extra = k
         if str(measurement) == "end2end":
@@ -155,12 +174,23 @@ class RouseModel(Model):
         if traj.N == 2: # pragma: no cover
             traj = traj.relative()
 
+        if self.localization_error is not None:
+            if np.isscalar(self.localization_error):
+                localization_error = d*[self.localization_error]
+            else:
+                localization_error = self.localization_error
+        else:
+            localization_error = traj.meta['localization_error']
+        localization_error = np.asarray(localization_error)
+        assert localization_error.shape == (traj.d,)
+
+
         # if not hasattr(loopingtrace, 'individual_logLs'): # interferes with model fitting
         looptrace = loopingtrace.full_valid()
         logLs = [rouse.multistate_likelihood(traj[:][:, i],
                                              self.models,
                                              looptrace,
-                                             traj.meta['localization_error'][i],
+                                             localization_error[i],
                                              return_individual_likelihoods=True,
                                             )[1] \
                  for i in range(traj.d)]
@@ -169,7 +199,18 @@ class RouseModel(Model):
         return np.nansum(loopingtrace.individual_logLs)
 
 
-    def trajectory_from_loopingtrace(self, loopingtrace, localization_error=0.1, d=3):
+    def trajectory_from_loopingtrace(self, loopingtrace, localization_error=None, d=3):
+        if localization_error is None:
+            if self.localization_error is None:
+                raise ValueError("Need to specify either localization_error or model.localization_error")
+            else:
+                localization_error = self.localization_error
+        if np.isscalar(localization_error):
+            localization_error = d*[localization_error]
+        localization_error = np.asarray(localization_error)
+        if localization_error.shape != (d,):
+            raise ValueError("Did not understand localization_error")
+
         arr = np.empty((loopingtrace.T, d))
         arr[:] = np.nan
 
@@ -182,8 +223,8 @@ class RouseModel(Model):
             conf = cur_mod.evolve(conf, True, loopingtrace.t[i]-loopingtrace.t[i-1])
             arr[loopingtrace.t[i], :] = cur_mod.measurement @ conf
 
-        return Trajectory.fromArray(arr + localization_error*np.random.normal(size=arr.shape),
-                                    localization_error=np.array(d*[localization_error]),
+        return Trajectory.fromArray(arr + localization_error[np.newaxis, :]*np.random.normal(size=arr.shape),
+                                    localization_error=localization_error,
                                     loopingtrace=loopingtrace,
                                     )
 
