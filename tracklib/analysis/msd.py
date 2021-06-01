@@ -62,8 +62,11 @@ def MSDtraj(traj, TA=True, exponent=2, recalculate=False):
     ... del traj.meta['MSDmeta']
     """
     if recalculate:
-        del traj.meta['MSD']
-        del traj.meta['MSDmeta']
+        try:
+            del traj.meta['MSD']
+            del traj.meta['MSDmeta']
+        except:
+            pass
     
     try:
         return traj.meta['MSD']
