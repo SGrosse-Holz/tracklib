@@ -124,7 +124,7 @@ class RouseModel(Model):
     def __init__(self, N, D, k, looppositions=[(0, 0), (0, -1)], k_extra=None, measurement="end2end"):
         if k_extra is None:
             k_extra = k
-        if measurement == "end2end":
+        if str(measurement) == "end2end":
             measurement = np.zeros((N,))
             measurement[0]  = -1
             measurement[-1] =  1
@@ -332,6 +332,14 @@ def fit(data, modelfamily,
     ... relative_uncertainty = ( np.sqrt(np.linalg.det(res.hess_inv.todense())) \
     ...                        / np.prod(res.x) )**(1/modelfam.nParams)
 
+    The function being minimized here is the negative log-likelihood of the
+    data set, given parameters to the `modelfamily`. Specifically, this
+    function is
+
+    >>> def minimization_target(params):
+    ...     mappable = functools.partial(_neg_logL_traj, model=modelfamily(*params))
+    ...     return np.nansum(list(map_function(mappable, data)))
+
     See also
     --------
     ParametricFamily
@@ -365,12 +373,8 @@ def fit(data, modelfamily,
 
     # Set up minimization target
     def neg_logL_ds(params):
-        model = modelfamily.get(*params)
-        out = np.nansum(list(map_function(functools.partial(_neg_logL_traj,
-                                                            model=model,
-                                                            ),
-                                          data,
-                                          )))
+        mappable = functools.partial(_neg_logL_traj, model=modelfamily(*params))
+        out = np.nansum(list(map_function(mappable, data)))
         pbar.update()
         return out
 
@@ -390,31 +394,3 @@ def fit(data, modelfamily,
     res = scipy.optimize.minimize(neg_logL_ds, modelfamily.start_params, **minimize_kwargs)
     pbar.close()
     return res
-
-# TODO: parallelize fitting
-# Problems: Pool.imap cannot pickle local objects, i.e. we cannot, for example,
-#   simply replace the ``nansum`` in `fit` with a parallelized version, since
-#   ``fit.<locals>.neg_logL_ds.<locals>.neg_logL_traj`` can't be pickled.
-#   What does work is to use member functions of a class, but it turns out to
-#   be hard to do this right, since then the question is where the ``model``
-#   would come from, and how to make it such that it is still consistent with
-#   usage of python's ``map()`` instead, if no parallelization needed/wanted.
-#   Therefore left open for now.
-#
-# class Fitter:
-#     def __init__(self, imap=map, method='L-BFGS-B', options={'maxfun' : 300, 'ftol' : 1e-5}, **kwargs):
-#         self.imap = imap
-# 
-#         self.fitting_kwargs = {
-#                 'method' : method,
-#                 'options' : options,
-#                 }
-#         for key in self.fitting_kwargs['options']:
-#             if key in kwargs:
-#                 self.fitting_kwargs['options'][key] = kwargs[key]
-#                 del kwargs[key]
-#         self.fitting_kwargs.update(kwargs)
-# 
-#     def neg_logL_traj(traj):
-# 
-#     def neg_logL_ds(params):
