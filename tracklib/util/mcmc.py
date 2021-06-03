@@ -8,6 +8,145 @@ from abc import ABC, abstractmethod
 
 import numpy as np
 
+class MCMCRun:
+    """
+    The results of an MCMC run
+
+    Attributes
+    ----------
+    logLs : np.array(dtype=float)
+        the likelihoods from the run
+    samples : list of <sample data type>)
+        the actual MCMC sample
+
+    Notes
+    -----
+    The list of samples is not automatically copied upon initialization.
+    """
+    # Implementation note: `samples` should be a list, such that we can take
+    # advantage of mutable objects not being copied.
+    def __init__(self, logLs=None, samples=None):
+        if logLs is None:
+            logLs = np.array([])
+        self.logLs = np.asarray(logLs)
+
+        if samples is None:
+            samples = []
+        self.samples = samples
+
+    def logLs_trunc(self):
+        """
+        Give only the likelihoods associated with the samples
+
+        `Sampler.run` returns likelihoods starting at the first iteration, but
+        samples only after a given burn-in period. This function cuts this
+        initial overhang from the likelihood array
+
+        Returns
+        -------
+        (len(samples),) np.ndarray
+        """
+        return self.logLs[-len(self.samples):]
+
+    def best_sample_logL(self):
+        """
+        Give the best sample (and log-likelihood)
+
+        Returns
+        -------
+        sample : <sample data type>
+            the maximum likelihood estimate
+        logL : float
+            the maximum likelihood value
+        """
+        logLs = self.logLs_trunc()
+        i_best = np.argmax(logLs)
+        return self.samples[i_best], logLs[i_best]
+
+    def acceptance_rate(self, criterion='sample_identity', comp_fun=None):
+        """
+        Calculate fraction of accepted moves
+
+        We can see whether a move was accepted or rejected by checking whether
+        the samples are actually different. There are three different ways to
+        do so: syntactically correct would be sample comparison (using ``==``).
+        However, since samples have a user-defined data type, we do not
+        necessarily have the == operator defined. For mutable objects we can
+        exploit that they would not be copied for an unaccepted step, i.e. we
+        can use identity check (``is``). As a last resort, we can use the
+        likelihood as a proxy: it is very unlikeliy that we did a move where
+        the likelihood remained exactly the same.
+
+        Alternatively, you can provide a comparison function
+        ``comp_fun(sample0, sample1)->bool`` that provides the comparison. This
+        overrides the `!criterion` setting.
+
+        Parameters
+        ----------
+        criterion : {'sample_equality', 'sample_identity', 'likelihood_equality'}
+            which method to use to determine whether a step was accepted or
+            rejected.
+        comp_fun : callable, optional
+            should return ``True`` if the two arguments compare equal,
+            ``False`` otherwise
+
+        Returns
+        -------
+        float
+            the calculated acceptance rate
+        """
+        if comp_fun is None:
+            if criterion == 'sample_equality':
+                def comp_fun(sample0, sample1): return sample0 == sample1
+            elif criterion == 'sample_identity':
+                def comp_fun(sample0, sample1): return sample0 is sample1
+
+        if comp_fun is not None:
+            n_reject = np.count_nonzero([comp_fun(sample0, sample1)
+                                         for sample0, sample1 in zip(self.samples[:-1],
+                                                                     self.samples[1:])])
+        elif criterion == 'likelihood_equality':
+            logLs = self.logLs_trunc()
+            n_reject = np.sum(logLs[:-1] == logLs[1:])
+        else: # pragma: no cover
+            raise ValueError("Did not understand inputs")
+
+        return 1 - ( float(n_reject) / (len(self.samples)-1) )
+
+    def evaluate(self, fun):
+        """
+        Evaluate a function on all samples
+
+        This exploits that (if the sample data type is e.g. a user-defined
+        class) many samples will actually be identical and we have to evaluate
+        the function significantly fewer than ``len(samples)`` times.
+
+        Parameters
+        ----------
+        fun : callable of signature ``fun(sample) --> object``
+            the function to evaluate. It should expect a single sample as input
+            and return something.
+
+        Returns
+        -------
+        list
+            a list of output values, in the order of `samples`.
+
+        Notes
+        -----
+        This function is supposed to decrease computational cost. It is usually
+        quicker however, to use a vectorized function ``fun`` instead.
+        """
+        last_val = fun(self.samples[0])
+        last_sample = self.samples[0]
+        out = [last_val]
+        for sample in self.samples[1:]:
+            if sample is not last_sample:
+                last_sample = sample
+                last_val = fun(sample)
+            out.append(last_val)
+        return out
+
 class Sampler(ABC):
     """
     Abstract base class for MCMC sampling
@@ -17,6 +156,7 @@ class Sampler(ABC):
     - `propose_update`
     - `logL`
     - `callback_logging` (optional)
+    - `callback_stopping` (optional)
     
     See their documentations in this base class for more details.
 
@@ -29,8 +169,6 @@ class Sampler(ABC):
 
     Attributes
     ----------
-    stepsize : float
-        a generic stepsize variable that can be used in `propose_update`.
     config : dict
         some configuration values. See `configure`.
 
@@ -41,6 +179,9 @@ class Sampler(ABC):
     ... import scipy.stats
 
     >>> class normMCMC(Sampler):
+    ...     def __init__(self, stepsize=0.1):
+    ...         self.stepsize = stepsize
+    ...
     ...     def propose_update(self, current_value):
     ...         proposed_value = current_value + np.random.normal(scale=self.stepsize)
     ...         logp_forward = -0.5*(proposed_value - current_value)**2/self.stepsize**2 - 0.5*np.log(2*np.pi*self.stepsize**2)
@@ -64,8 +205,6 @@ class Sampler(ABC):
         """
         Propose an update step.
 
-        You can use ``self.stepsize`` for the proposal.
-        
         Parameters
         ----------
         params : <user-specified parameter structure>
@@ -131,12 +270,34 @@ class Sampler(ABC):
         propose_update, logL
         """
         pass # pragma: no cover
+
+    def callback_stopping(self, myrun):
+        """
+        Callback to enable early stopping
+
+        This function will be called at well-defined intervals to check whether
+        sampling should abort. Judgement is to be made based on the data so
+        far, which is handed over as the `!myrun` argument. This is an
+        `MCMCRun` object.
+
+        Parameters
+        ----------
+        myrun : MCMCRun
+            the data generated so far
+
+        Returns
+        -------
+        stop : bool
+            should be ``True`` if the sampling is to stop, ``False`` otherwise
+        """
+        pass # pragma: no cover
     
     def configure(self,
             stepsize=0.1,
             iterations=1,
             burn_in=0,
             log_every=-1,
+            check_stopping_every=-1,
             best_only=False,
             show_progress=False,
             assume_notebook_for_progress_display=True,
@@ -147,11 +308,8 @@ class Sampler(ABC):
         Note that after calling this function once, you can also access single
         configuration entries via the attribute `config`.
 
-        Keyword arguments
-        -----------------
-        stepsize : float
-            this will be written to `stepsize` and can then be used e.g. in
-            `propose_update`.
+        Parameters
+        ----------
         iterations : int
             how many MCMC iterations to run total
         burn_in : int
@@ -159,9 +317,9 @@ class Sampler(ABC):
         log_every : int
             print a status line every ... steps. Set to ``-1`` (default) to
             disable status lines.
-        best_only : bool
-            instead of the whole sampling history, have `run` return only the
-            best fit.
+        check_stopping_every : int
+            how often to call the `callback_stopping`. Set to ``-1`` (default)
+            to never check.
         show_progress : bool
             whether to show a progress bar using `!tqdm`
         assume_notebook_for_progress_display : bool
@@ -174,11 +332,10 @@ class Sampler(ABC):
         run
         """
         self.config = {
-                'stepsize' : stepsize,
                 'iterations' : iterations,
                 'burn_in' : burn_in,
                 'log_every' : log_every,
-                'best_only' : best_only,
+                'check_stopping_every' : check_stopping_every,
                 'show_progress' : show_progress,
                 'assume_notebook_for_progress_display' : assume_notebook_for_progress_display,
                 }
@@ -196,10 +353,10 @@ class Sampler(ABC):
             
         Returns
         -------
-        logL : np.ndarray
-            log-likelihood for the parameters at each step.
-        params : list of <user-specified parameter structure>
-            list of the sampled parameter sets, after the burn-in period
+        MCMCRun
+            the output data of the run. This is essentially a wrapper class for
+            an array of likelihoods and the associated samples. Plus some
+            convenience functions.
 
         See also
         --------
@@ -207,17 +364,16 @@ class Sampler(ABC):
 
         Notes
         -----
-        The returned list of log-likelihoods contains likelihoods for all steps
-        starting at initialization, while the list of sampled parameters starts
-        only after the burn-in period.
+        The returned `MCMCRun` contains likelihoods for all steps starting at
+        initialization, while the list of sampled parameters starts only after
+        the burn-in period.
         """
         # Input processing
         try:
             config = self.config
         except AttributeError: # pragma: no cover
             raise RuntimeError("Trying to run MCMC sampler before calling configure()")
-        config['_logging'] = config['log_every'] > 0
-        self.stepsize = config['stepsize']
+#         config['_logging'] = config['log_every'] > 0
         
         current_values = initial_values
             
@@ -225,9 +381,13 @@ class Sampler(ABC):
         cur_logL = -np.inf
         max_logL = -np.inf
         cnt_accept = 0
-        if not config['best_only']:
-            logL = -np.inf*np.ones((config['iterations'],))
-            params = []
+        cnt_logging = config['log_every']
+        cnt_stopping = config['check_stopping_every']
+
+        # Have both of these be lists for now, because appending is easier
+        # Converted to np.array when handed to MCMCRun
+        logLs = []
+        params = []
         
         Mrange = range(config['iterations'])
         if config['show_progress']: # pragma: no cover
@@ -240,11 +400,15 @@ class Sampler(ABC):
 
         # Run
         for i in Mrange:
+            # Update counters
+            cnt_logging -= 1
+            cnt_stopping -= 1
+                
             # Proposal
-            proposed_values, p_forward, p_backward = self.propose_update(current_values)
+            proposed_values, logp_forward, logp_backward = self.propose_update(current_values)
             new_logL = self.logL(proposed_values)
             with np.errstate(under='ignore', over='ignore'):
-                p_accept = np.exp(new_logL - cur_logL - p_forward + p_backward)
+                p_accept = np.exp(new_logL - cur_logL - logp_forward + logp_backward)
 
             # Acceptance
             if np.random.rand() < p_accept:
@@ -254,9 +418,8 @@ class Sampler(ABC):
             accept_rate = cnt_accept / (i+1)
             
             # Output
-            if not config['best_only']:
-                params.append(current_values)
-                logL[i] = cur_logL
+            params.append(current_values)
+            logLs.append(cur_logL)
             
             # Keeping track of best parameters
             if cur_logL > max_logL:
@@ -264,13 +427,17 @@ class Sampler(ABC):
                 best_values = deepcopy(current_values)
             
             # Logging
-            if config['_logging'] and ( (i+1) % config['log_every'] == 0 or i+1 == config['iterations'] ):
+            if cnt_logging == 0 or (i+1 == config['iterations'] and config['log_every'] > 0):
+                cnt_logging = config['log_every']
                 logstring = "iteration {}: acceptance = {:.0f}%, logL = {}".format(i+1, accept_rate*100, cur_logL)
                 print(logstring)
                 self.callback_logging(current_values, best_values)
-                
-        if config['best_only']:
-            return max_logL, best_values
-        else:
-            s = slice(config['burn_in'], None)
-            return logL, params[s]
+
+            # Check early stopping
+            if cnt_stopping == 0:
+                cnt_stopping = config['check_stopping_every']
+                if self.callback_stopping(MCMCRun(logLs, params)):
+                    break
+
+        # Return
+        return MCMCRun(logLs, params[config['burn_in']:])

@@ -409,12 +409,51 @@ class TestUtilSweep(myTestCase):
         res = self.sweep.run([{'what' : 10.0}, {'what' : 1.5, 'factor' : 2}])
         self.assertDictEqual(res, {'what' : [10.0, 1.5], 'factor' : [None, 2], 'result' : [1, 1]})
 
+class TestMCMCRun(myTestCase):
+    def setUp(self):
+        sample0 = [0]
+        sample1 = [1]
+        sample2 = [2]
+
+        self.samples = 5*[sample0] + 2*[sample1] + 3*[sample2]
+        self.logLs = np.array(10*[-10] + 5*[-5] + 2*[-2] + 3*[-3])
+        self.myrun = tl.util.mcmc.MCMCRun(self.logLs, self.samples)
+
+    def test_init_noparams(self):
+        myrun = tl.util.mcmc.MCMCRun()
+        self.assertEqual(len(myrun.samples), 0)
+        myrun.samples.append(1)
+        myrun = tl.util.mcmc.MCMCRun()
+        self.assertEqual(len(myrun.samples), 0)
+
+    def test_logLs_trunc(self):
+        self.assert_array_equal(self.myrun.logLs_trunc(), self.logLs[10:20])
+
+    def test_best_sample_logL(self):
+        best, bestL = self.myrun.best_sample_logL()
+        self.assertEqual(bestL, -2)
+        self.assertListEqual(best, [1])
+
+    def test_acceptance_rate(self):
+        acc = 2/9
+        self.assertEqual(self.myrun.acceptance_rate('sample_equality'), acc)
+        self.assertEqual(self.myrun.acceptance_rate('sample_identity'), acc)
+        self.assertEqual(self.myrun.acceptance_rate('likelihood_equality'), acc)
+
+    def test_evaluate(self):
+        tmp = self.myrun.evaluate(lambda sample : 2*sample)
+        self.assertIs(tmp[0], tmp[1])
+        self.assertTupleEqual(np.array(tmp).shape, (10, 2))
+
 class TestUtilmcmc(myTestCase):
     @patch('builtins.print')
     def test_mcmc(self, mock_print):
         # Simply use the example from the docs
         class normMCMC(tl.util.mcmc.Sampler):
             callback_tracker = 0
+
+            def __init__(self, stepsize=0.1):
+                self.stepsize = stepsize
 
             def propose_update(self, current_value):
                 proposed_value = current_value + np.random.normal(scale=self.stepsize)
@@ -428,20 +467,27 @@ class TestUtilmcmc(myTestCase):
             def callback_logging(self, current_value, best_value):
                 self.callback_tracker += np.abs(current_value) + np.abs(best_value)
                 print("test")
+
+            def callback_stopping(self, myrun):
+                return len(myrun.logLs) > 7
         
         mc = normMCMC()
-        mc.configure(iterations=10, burn_in=5, log_every=2, show_progress=False)
-        logL, vals = mc.run(1)
+        mc.configure(iterations=10,
+                     burn_in=5,
+                     log_every=2,
+                     show_progress=False,)
+        myrun = mc.run(1)
 
         self.assertEqual(mock_print.call_count, 10)
-        self.assertEqual(len(logL), 10)
-        self.assertEqual(len(vals), 5)
+        self.assertEqual(len(myrun.logLs), 10)
+        self.assertEqual(len(myrun.samples), 5)
         self.assertGreater(mc.callback_tracker, 0)
 
-        mc.config['best_only'] = True
-        logL, val = mc.run(1)
-        self.assertIsInstance(logL, float)
-        self.assertIsInstance(val, float)
+        mc.config['check_stopping_every'] = 2
+        myrun = mc.run(1)
+
+        self.assertEqual(len(myrun.logLs), 8)
+        self.assertEqual(len(myrun.samples), 3)
 
 class TestModelsRouse(myTestCase):
     def setUp(self):
@@ -753,7 +799,7 @@ class TestAnalysisPlots(myTestCase):
         _ = tl.analysis.plots.distance_distribution(self.ds)
         _ = tl.analysis.plots.distance_distribution(self.ds2)
 
-from test_neda import *
+# from test_neda import *
 
 if __name__ == '__main__':
     unittest.main(module=__file__[:-3])
