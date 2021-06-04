@@ -12,7 +12,9 @@ from tracklib import Trajectory
 from tracklib.models import rouse
 from .util import Loopingtrace
 
-class Model(metaclass=abc.ABCMeta):
+LOG_SQRT_2_PI = 0.5*np.log(2*np.pi)
+
+class MultiStateModel(metaclass=abc.ABCMeta):
     """
     Abstract base class for inference models
 
@@ -22,13 +24,28 @@ class Model(metaclass=abc.ABCMeta):
 
     The method `trajectory_from_loopingtrace` is considered an optional part of
     the interface, since it is not important to the inference, but might come
-    in handy when working with a `Model`. So it is recommended but not
+    in handy when working with a `MultiStateModel`. So it is recommended but not
     required.
     """
-    @abc.abstractmethod
+    @property
+    def nStates(self):
+        """
+        How many internal states does this model have?
+        """
+        raise NotImplementedError # pragma: no cover
+
+    @property
+    def d(self):
+        """
+        Spatial dimension
+        """
+        raise NotImplementedError # pragma: no cover
+
     def initial_loopingtrace(self, traj):
         """
         Give a quick guess for a good `Loopingtrace` for a `Trajectory`.
+
+        The default implementation gives a random `Loopingtrace`.
 
         Parameters
         ----------
@@ -38,7 +55,9 @@ class Model(metaclass=abc.ABCMeta):
         -------
         Loopingtrace
         """
-        raise NotImplementedError # pragma: no cover
+        lt = Loopingtrace.forTrajectory(traj, nStates=self.nStates)
+        lt.state = np.random.choice(self.nStates, size=lt.state.shape)
+        return lt
 
     @abc.abstractmethod
     def logL(self, loopingtrace, traj):
@@ -57,17 +76,15 @@ class Model(metaclass=abc.ABCMeta):
         """
         raise NotImplementedError # pragma: no cover
 
-    def trajectory_from_loopingtrace(self, loopingtrace, localization_error=0.1, d=3):
+    def trajectory_from_loopingtrace(self, loopingtrace, localization_error):
         """
-        Generate a `Trajectory` from this `Model` and the given `Loopingtrace`
+        Generate a `Trajectory` from this `MultiStateModel` and the given `Loopingtrace`
 
         Parameters
         ----------
         loopingtrace : Loopingtrace
         localization_error : float, optional
             how much Gaussian noise to add to the trajectory.
-        d : int, optional
-            number of spatial dimensions
 
         Returns
         -------
@@ -75,27 +92,35 @@ class Model(metaclass=abc.ABCMeta):
         """
         raise NotImplementedError # pragma: no cover
 
-class RouseModel(Model):
+class MultiStateRouse(MultiStateModel):
     """
-    Inference with Rouse models
+    A multi-state Rouse model
 
     This inference model uses a given number of `rouse.Model` instances to
     choose from for each propagation interval. In the default use case this
     switches between a looped and unlooped model, but it could be way more
     general than that, e.g. incorporating different looped states, loop
-    positions, numbers of loop, etc.
+    positions, numbers of loops, etc.
 
     Parameters
     ----------
-    N, D, k : float
-        parameters for the `rouse.Model`. `!N` is the number of monomers, `!D`
-        the diffusion constant of a free monomer, `k` the backbone strength.
+    N : int
+        number of monomers
+    D, k : float
+        Rouse parameters: 1d diffusion constant of free monomers and backbone
+        spring constant
+    d : int, optional
+        spatial dimension
     looppositions : list of 2-tuples of int, optional
         list of positions of the extra bond. For each entry, a new
         `rouse.Model` instance will be set up. Remember to include an unlooped
-        model (if wanted) by including a position like ``(0, 0)``.
-    k_extra : float, optional
-        the strength of the extra bond. By default equal to `k`
+        model (if wanted) by including a position like ``(0, 0)``. Each entry
+        can alternatively be a 3-tuple, where the 3rd entry then specifies the
+        strength of the extra bond relative to the backbone, e.g. ``(0, 5,
+        0.5)`` introduces an additional bond between monomers 0 and 5 with
+        strength ``0.5*k``. Finally, instead of a single tuple, each bond
+        specification can be a list of such tuples if multiple added bonds are
+        needed.
     measurement : "end2end" or (N,) np.ndarray
         which distance to measure. The default setting "end2end" is equivalent
         to specifying a vector ``np.array([-1, 0, ..., 0, 1])``, i.e. measuring
@@ -105,130 +130,162 @@ class RouseModel(Model):
         stored in ``traj.meta['localization_error']``, which allows
         trajectory-wise specification of error. But for example for fitting it
         might be useful to have one global setting for localization error, at
-        which point it becomes part of the model.
+        which point it becomes part of the model. Give a scalar value to have
+        the same error apply to all dimensions
 
     Attributes
     ----------
     models : list of `rouse.Model`
         the models used for inference
-    localization_error : float, array, or None
+    measurement : (N,) np.ndarray
+        the measurement vector for this model
+    localization_error : array or None
         if ``None``, use ``traj.meta['localization_error']`` for each
-        trajectory ``traj``. If float, assume that value for each dimension of
-        the trajectory. If array, should contain values for each dimension
-        separately, i.e. ``np.array([Δx, Δy, Δz])``.
+        trajectory ``traj``.
 
     Notes
     -----
-    By default, this model assumes that the difference between the models is
-    the position of the extra bond. It is easy to generalize this, by editing
-    the `models` attribute after initialization. The only thing to pay
-    attention to is that each model needs to have a `!measurement` vector.
-
-    The `initial_loopingtrace` for this `Model` is the MLE assuming time scale
+    The `initial_loopingtrace` for this `MultiStateModel` is the MLE assuming time scale
     separation. I.e. we calculate the timepoint-wise MLE using the exact steady
     state distributions of each model.
 
     See also
     --------
-    Model, rouse.Model
+    MultiStateModel, rouse.Model
     """
-    def __init__(self, N, D, k,
-                 k_extra=None,
-                 looppositions=((0, 0), (0, -1)), # no mutable default elements! (i.e. tuple instead of list)
+    def __init__(self, N, D, k, d=3,
+                 looppositions=((0, 0), (0, -1)), # no mutable default parameters!
+                                                  # (thus tuple instead of list)
                  measurement="end2end",
                  localization_error=None,
                  ):
+        self._d = d
 
-        self.localization_error = localization_error
-
-        if k_extra is None:
-            k_extra = k
         if str(measurement) == "end2end":
-            measurement = np.zeros((N,))
+            measurement = np.zeros(N)
             measurement[0]  = -1
             measurement[-1] =  1
+        self.measurement = measurement
+
+        if localization_error is not None and np.isscalar(localization_error):
+            localization_error = np.array(d*[localization_error])
+        self.localization_error = localization_error
 
         self.models = []
         for loop in looppositions:
-            mod = rouse.Model(N, D, k, k_extra, extrabond=loop)
-            mod.measurement = measurement
+            if np.isscalar(loop[0]):
+                loop = [loop]
+            mod = rouse.Model(N, D, k, d, add_bonds=loop)
             self.models.append(mod)
+
+    @property
+    def nStates(self):
+        return len(self.models)
+
+    @property
+    def d(self):
+        return self._d
+
+    def _get_noise(self, traj):
+        if self.localization_error is not None:
+            return np.asarray(self.localization_error)
+        else:
+            return np.asarray(traj.meta['localization_error'])
 
     def initial_loopingtrace(self, traj):
         # We give the MLE assuming time scale separation
         # This is exactly the same procedure as for FactorizedModel, where we
         # utilize the steady state distributions of the individual Rouse
         # models.
-        loopingtrace = Loopingtrace.forTrajectory(traj, len(self.models))
-        distances = traj.abs()[loopingtrace.t][:, 0]
+        lt = Loopingtrace.forTrajectory(traj, self.nStates)
+        noise = self._get_noise(traj)
 
-        ss_variances = np.array([mod.measurement @ mod.steady_state(True)[1] @ mod.measurement \
-                                 for mod in self.models])
-        ss_likelihoods = -0.5*(distances[:, np.newaxis]**2 / ss_variances[np.newaxis, :] \
-                                + traj.d*np.log(2*np.pi*ss_variances)[np.newaxis, :])
+        Ms = []
+        Cs = []
+        for mod in self.models:
+            M, C = mod.steady_state()
+            Ms.append(self.measurement @ M)
+            Cs.append(self.measurement @ C @ self.measurement)
+        Ms = np.expand_dims(Ms, 0)                # (1, n, d)
+        Cs = np.expand_dims(Cs, (0, 2))           # (1, n, 1)
+        Cs += np.expand_dims(noise*noise, (0, 1)) # (1, n, d)
 
-        loopingtrace.state = np.argmax(ss_likelihoods, axis=1)
-        return loopingtrace
+        # assemble (T, n, d) array
+        chi2s = (traj[lt.t][:, np.newaxis, :] - Ms)**2 / Cs
+
+        logLs = -0.5*(chi2s + np.log(Cs)) - 0.5*np.log(2*np.pi)*np.ones(chi2s.shape)
+        logLs = np.sum(logLs, axis=2) # (T, n)
+
+        lt.state = np.argmax(logLs, axis=1)
+        return lt
 
     def logL(self, loopingtrace, traj):
-        if traj.N == 2: # pragma: no cover
-            traj = traj.relative()
+        localization_error = self._get_noise(traj)
 
-        if self.localization_error is not None:
-            if np.isscalar(self.localization_error):
-                localization_error = d*[self.localization_error]
-            else:
-                localization_error = self.localization_error
-        else:
-            localization_error = traj.meta['localization_error']
-        localization_error = np.asarray(localization_error)
-        assert localization_error.shape == (traj.d,)
-
-
-        # if not hasattr(loopingtrace, 'individual_logLs'): # interferes with model fitting
         looptrace = loopingtrace.full_valid()
-        logLs = [rouse.multistate_likelihood(traj[:][:, i],
-                                             self.models,
-                                             looptrace,
-                                             localization_error[i],
-                                             return_individual_likelihoods=True,
-                                            )[1] \
-                 for i in range(traj.d)]
-        loopingtrace.individual_logLs = np.sum(logLs, axis=0)[loopingtrace.t]
+        T = len(looptrace)
 
+        for model in self.models:
+            model.check_dynamics()
+
+        M, C_single = self.models[looptrace[0]].steady_state()
+        C = self.d * [C_single]
+
+        logL = np.empty((T,), dtype=float)
+        logL[:] = np.nan
+        for t, model_id in enumerate(looptrace):
+            # Pick the model for propagation to the next data point
+            model = self.models[model_id]
+
+            # Propagate
+            M = model.propagate_M(M, check_dynamics=False)
+            C = [model.propagate_C(myC, check_dynamics=False) for myC in C]
+
+            # Update
+            if not np.any(np.isnan(traj[t])):
+                M, C, logL[t] = model.update_ensemble_with_observation_nd(
+                                        M, C, traj[t], localization_error, self.measurement)
+
+        loopingtrace.individual_logLs = logL[loopingtrace.t]
         return np.nansum(loopingtrace.individual_logLs)
 
-
-    def trajectory_from_loopingtrace(self, loopingtrace, localization_error=None, d=3):
+    def trajectory_from_loopingtrace(self, loopingtrace, localization_error=None):
         if localization_error is None:
             if self.localization_error is None:
                 raise ValueError("Need to specify either localization_error or model.localization_error")
             else:
                 localization_error = self.localization_error
         if np.isscalar(localization_error):
-            localization_error = d*[localization_error]
+            localization_error = self.d*[localization_error]
         localization_error = np.asarray(localization_error)
-        if localization_error.shape != (d,):
+        if localization_error.shape != (self.d,):
             raise ValueError("Did not understand localization_error")
 
-        arr = np.empty((loopingtrace.T, d))
+        looptrace = loopingtrace.full_valid()
+
+        arr = np.empty((len(looptrace), self.d), dtype=float)
         arr[:] = np.nan
 
-        cur_mod = self.models[loopingtrace[0]]
-        conf = cur_mod.conf_ss(True, d)
-        arr[loopingtrace.t[0], :] = cur_mod.measurement @ conf
+        model = self.models[looptrace[0]]
+        conf = model.conf_ss()
+        arr[0, :] = self.measurement @ conf
 
-        for i in range(1, len(loopingtrace)):
-            cur_mod = self.models[loopingtrace[i]]
-            conf = cur_mod.evolve(conf, True, loopingtrace.t[i]-loopingtrace.t[i-1])
-            arr[loopingtrace.t[i], :] = cur_mod.measurement @ conf
+        for i in range(1, len(looptrace)):
+            model = self.models[looptrace[i]]
+            conf = model.evolve(conf)
+            arr[i, :] = self.measurement @ conf
 
-        return Trajectory.fromArray(arr + localization_error[np.newaxis, :]*np.random.normal(size=arr.shape),
+        data = np.empty(arr.shape, dtype=float)
+        data[:] = np.nan
+        data[loopingtrace.t, :] = arr[loopingtrace.t, :]
+
+        noise = localization_error[np.newaxis, :]
+        return Trajectory.fromArray(data + noise*np.random.normal(size=data.shape),
                                     localization_error=localization_error,
                                     loopingtrace=loopingtrace,
                                     )
 
-class FactorizedModel(Model):
+class FactorizedModel(MultiStateModel):
     """
     A simplified model, assuming time scale separation
 
@@ -275,9 +332,18 @@ class FactorizedModel(Model):
     reading ``- inf + inf`` at the first MCMC iteration, if `logL` returns
     ``-inf``.
     """
-    def __init__(self, distributions):
+    def __init__(self, distributions, d=3):
         self.distributions = distributions
+        self._d = d
         self._known_trajs = dict()
+
+    @property
+    def nStates(self):
+        return len(self.distributions)
+
+    @property
+    def d(self):
+        return self._d
 
     def _memo(self, traj):
         """
@@ -298,7 +364,7 @@ class FactorizedModel(Model):
 
     def initial_loopingtrace(self, traj):
         self._memo(traj)
-        loopingtrace = Loopingtrace.forTrajectory(traj, len(self.distributions))
+        loopingtrace = Loopingtrace.forTrajectory(traj, self.nStates)
         loopingtrace.state = np.argmax(self._known_trajs[traj]['logL_table'][:, loopingtrace.t], axis=0)
         return loopingtrace
 
@@ -306,20 +372,21 @@ class FactorizedModel(Model):
         self._memo(traj)
         return np.sum(self._known_trajs[traj]['logL_table'][loopingtrace.state, loopingtrace.t])
 
-    def trajectory_from_loopingtrace(self, loopingtrace, localization_error=0., d=3):
+    def trajectory_from_loopingtrace(self, loopingtrace, localization_error=0.):
         # Note that the distributions in the model give us only the length, not
         #   the orientation. So we also have to sample unit vectors
         # Furthermore, localization_error should not be added, since
-        #   self.distributions already contain it
-        arr = np.empty((loopingtrace.T, d))
+        #   self.distributions already contain it. It will be written to the
+        #   meta entry though!
+        arr = np.empty((loopingtrace.T, self.d))
         arr[:] = np.nan
         magnitudes = np.array([self.distributions[state].rvs() for state in loopingtrace.state])
-        vectors = np.random.normal(size=(len(magnitudes), d))
+        vectors = np.random.normal(size=(len(magnitudes), self.d))
         vectors *= np.expand_dims(magnitudes / np.linalg.norm(vectors, axis=1), 1)
         arr[loopingtrace.t, :] = vectors
 
         return Trajectory.fromArray(arr,
-                                    localization_error=np.array(d*[localization_error]),
+                                    localization_error=np.array(self.d*[localization_error]),
                                     loopingtrace=loopingtrace,
                                     )
 

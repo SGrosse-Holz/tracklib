@@ -293,12 +293,10 @@ class Sampler(ABC):
         pass # pragma: no cover
     
     def configure(self,
-            stepsize=0.1,
             iterations=1,
             burn_in=0,
             log_every=-1,
             check_stopping_every=-1,
-            best_only=False,
             show_progress=False,
             assume_notebook_for_progress_display=True,
             ):

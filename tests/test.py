@@ -491,100 +491,96 @@ class TestUtilmcmc(myTestCase):
 
 class TestModelsRouse(myTestCase):
     def setUp(self):
-        self.model = tl.models.Rouse(5, 1, 1, 1)
+        self.model = tl.models.Rouse(5, 1, 1)
+        self.model_nosetup = tl.models.Rouse(5, 1, 1, setup_dynamics=False)
+
+    def test_setup(self):
+        mod = tl.models.Rouse(5, 1, 1, setup_dynamics=False)
+        mod.F[-1] = [1, 0, 0]
+        mod.update_dynamics()
+        mod.add_tether(0, 1, 0)
+        mod.update_dynamics()
 
     def test_operators(self):
-        self.assertTrue(self.model == tl.models.Rouse(5, 1, 1, 1, setup=False))
-        self.assertFalse(self.model == tl.models.Rouse(6, 1, 1, 1, setup=False))
+        self.assertTrue(self.model == self.model_nosetup)
+        self.model_nosetup.F[-1] = 1
+        self.assertFalse(self.model == self.model_nosetup)
+        self.assertTrue(self.model != self.model_nosetup) # we have != as mixin for == :)
+        self.assertFalse(self.model == tl.models.Rouse(6, 1, 1, setup_dynamics=False))
 
-        self.assertEqual(repr(self.model), "rouse.Model(N=5, D=1, k=1, k_extra=1)")
-        self.assertEqual(repr(tl.models.Rouse(5, 1, 1, 1, extrabond=(2, 4))), "rouse.Model(N=5, D=1, k=1, k_extra=1, extrabond=(2, 4))")
+        self.assertEqual(repr(self.model), "rouse.Model(N=5, D=1, k=1)")
+        self.assertEqual(repr(tl.models.Rouse(5, 1, 1, add_bonds=[(2, 4), (1, 3, 0.5)])),
+                         "rouse.Model(N=5, D=1, k=1) with 2 additional bonds")
 
-    def test_matrices(self):
-        A, S = self.model.give_matrices(False)
-        self.assert_array_equal(A, np.array([
-            [-1,  1,  0,  0,  0],
-            [ 1, -2,  1,  0,  0],
-            [ 0,  1, -2,  1,  0],
-            [ 0,  0,  1, -2,  1],
-            [ 0,  0,  0,  1, -1]]))
-        self.assert_array_equal(S, 2*np.eye(5))
+    def test_check_dynamics(self):
+        self.model.check_dynamics(dt=1)
 
-        A, S = self.model.give_matrices(True)
-        self.assert_array_equal(A, np.array([
-            [-2,  1,  0,  0,  1],
-            [ 1, -2,  1,  0,  0],
-            [ 0,  1, -2,  1,  0],
-            [ 0,  0,  1, -2,  1],
-            [ 1,  0,  0,  1, -2]]))
-        self.assert_array_equal(S, 2*np.eye(5))
-
-        A, S = self.model.give_matrices(False, tethered=True)
-        self.assert_array_equal(A, np.array([
-            [-2,  1,  0,  0,  0],
-            [ 1, -2,  1,  0,  0],
-            [ 0,  1, -2,  1,  0],
-            [ 0,  0,  1, -2,  1],
-            [ 0,  0,  0,  1, -1]]))
-        self.assert_array_equal(S, 2*np.eye(5))
-
-    def test_check_setup(self):
-        self.model.check_setup_called(dt=1)
-
-        mod = tl.models.Rouse(5, 1, 1, 1, setup=False)
         with self.assertRaises(RuntimeError):
-            mod.check_setup_called()
+            self.model_nosetup.check_dynamics()
 
-        mod.check_setup_called(dt=1, run_if_necessary=True)
-        mod.k = 2
+        self.model_nosetup.check_dynamics(dt=1, run_if_necessary=True)
+        self.model_nosetup.k = 2
         with self.assertRaises(RuntimeError):
-            mod.check_setup_called(dt=1)
+            self.model_nosetup.check_dynamics(dt=1, run_if_necessary=False)
+
+    def test_steady_state(self):
+        with self.assertRaises(RuntimeError):
+            self.model_nosetup.steady_state(additional_tether=False)
+
+        M, C = self.model_nosetup.steady_state()
+        self.assert_array_equal(M, np.zeros_like(M))
 
     def test_propagate(self):
-        _, C0 = self.model.steady_state(False)
-        M0 = np.linspace(0, 1, self.model.N)
+        _, C0 = self.model.steady_state()
+        M0 = np.array(3*[np.linspace(0, 1, self.model.N)]).T
+        M1, C1 = self.model.propagate(M0, C0, 0.1)
 
-        self.model.propagate = self.model._propagate_ode
-        M1, C1 = self.model.propagate(M0, C0, 1, True)
+        self.assertTrue(np.allclose(M1, M0, atol=1))
+        self.assertTrue(np.allclose(C1, C0, atol=1))
 
-        self.model.propagate = self.model._propagate_exp
-        M2, C2 = self.model.propagate(M0, C0, 1, True)
+        self.model.D = 0
+        M2, C2 = self.model.propagate(M0, np.zeros_like(C0), 0.1)
 
-        self.assertTrue(np.allclose(M1, M2, atol=0.01))
-        self.assertTrue(np.allclose(C1, C2, atol=0.01))
+        self.assertEqual(self.model._dynamics['D'], self.model.D)
+        self.assertTrue(np.allclose(M2, M0, atol=1))
+        self.assert_array_equal(C2, np.zeros_like(C2))
+
+    def test_conf_ss(self):
+        conf = self.model.conf_ss()
+        self.assertTupleEqual(conf.shape, (self.model.N,3))
 
     def test_evolve(self):
-        conf = self.model.conf_ss(False, d=2)
-        self.assertTupleEqual(conf.shape, (5, 2))
-        conf = self.model.evolve(conf, True)
-        self.assertTupleEqual(conf.shape, (5, 2))
+        conf = self.model.conf_ss()
+        conf = self.model.evolve(conf)
+        self.assertTupleEqual(conf.shape, (5,3))
 
-    def test_confs_from_looptrace(self):
-        confs = list(self.model.conformations_from_looptrace([False, True, False, True]))
-        self.assertEqual(len(confs), 4)
-
-    def test_likelihood(self):
-        looptrace = [False, False, True, True]
-        trace = np.array([conf[-1][0] - conf[0][0] for conf in self.model.conformations_from_looptrace(looptrace)])
-        trace[2] = np.nan
-
-        logL = tl.models.rouse.likelihood(trace, self.model, looptrace, noise=1)
-        self.assertIsInstance(logL, float)
-        logL = tl.models.rouse._likelihood_filter(trace, self.model, looptrace, noise=1)
-        self.assertIsInstance(logL, float)
-        logL = tl.models.rouse._likelihood_direct(trace, self.model, looptrace, noise=1)
-        self.assertIsInstance(logL, float)
-
-    def test_multistate_likelihood(self):
-        mod0 = tl.models.Rouse(20, 1, 5, 0) # unlooped
-        mod1 = tl.models.Rouse(20, 1, 5, 1) # looped
-        looptrace = np.array([True, False, True, True, False, False, False, True, False])
-        trace = np.array([conf[-1]-conf[0] for conf in mod1.conformations_from_looptrace(looptrace, d=1)])
-        
-        multi_L = tl.models.rouse.multistate_likelihood(trace, [mod0, mod1], looptrace.astype(int), 0.1)
-        binary_L = tl.models.rouse.likelihood(trace, mod1, looptrace, 0.1)
-
-        self.assertAlmostEqual(multi_L, binary_L, delta=1e-12)
+### Keep these for later
+#     def test_confs_from_looptrace(self):
+#         confs = list(self.model.conformations_from_looptrace([False, True, False, True]))
+#         self.assertEqual(len(confs), 4)
+# 
+#     def test_likelihood(self):
+#         looptrace = [False, False, True, True]
+#         trace = np.array([conf[-1][0] - conf[0][0] for conf in self.model.conformations_from_looptrace(looptrace)])
+#         trace[2] = np.nan
+# 
+#         logL = tl.models.rouse.likelihood(trace, self.model, looptrace, noise=1)
+#         self.assertIsInstance(logL, float)
+#         logL = tl.models.rouse._likelihood_filter(trace, self.model, looptrace, noise=1)
+#         self.assertIsInstance(logL, float)
+#         logL = tl.models.rouse._likelihood_direct(trace, self.model, looptrace, noise=1)
+#         self.assertIsInstance(logL, float)
+# 
+#     def test_multistate_likelihood(self):
+#         mod0 = tl.models.Rouse(20, 1, 5, 0) # unlooped
+#         mod1 = tl.models.Rouse(20, 1, 5, 1) # looped
+#         looptrace = np.array([True, False, True, True, False, False, False, True, False])
+#         trace = np.array([conf[-1]-conf[0] for conf in mod1.conformations_from_looptrace(looptrace, d=1)])
+#         
+#         multi_L = tl.models.rouse.multistate_likelihood(trace, [mod0, mod1], looptrace.astype(int), 0.1)
+#         binary_L = tl.models.rouse.likelihood(trace, mod1, looptrace, 0.1)
+# 
+#         self.assertAlmostEqual(multi_L, binary_L, delta=1e-12)
 
 class TestModelsStatgauss(myTestCase):
     def test_sampleMSD(self):
@@ -610,79 +606,6 @@ class TestModelsStatgauss(myTestCase):
                              # the above might or might not work, just want to
                              # check the internal MSD calculation
             pass
-
-class TestAnalysisKLILoopSequence(myTestCase):
-    def setUp(self):
-        self.lt = tl.analysis.kli.LoopSequence(T=100, numInt=10)
-
-    def test_setup(self):
-        self.assertEqual(len(self.lt.t), 9)
-        self.assertEqual(len(self.lt.isLoop), 10)
-
-    def test_fromLooptrace(self):
-        mylt = tl.analysis.kli.LoopSequence.fromLooptrace([True, False, False, True, True, True, False])
-        self.assert_array_equal(mylt.t, np.array([1, 3, 6]))
-        self.assert_array_equal(mylt.isLoop, np.array([True, False, True, False]))
-
-    def test_toLooptrace(self):
-        ltrace = self.lt.toLooptrace()
-        self.assertEqual(len(ltrace), self.lt.T)
-        self.assertIs(ltrace.dtype, np.dtype('bool'))
-    
-    def test_numLoops(self):
-        mylt = tl.analysis.kli.LoopSequence.fromLooptrace([True, False, False, True, True, True, False])
-        self.assertEqual(mylt.numLoops(), 2)
-
-    def test_plottable(self):
-        plt.plot(*self.lt.plottable())
-
-class TestAnalysisKLI(myTestCase):
-    def setUp(self):
-        self.traj = tl.Trajectory.fromArray([[1, 0], [2, 0.5], [3, 0.2], [4, 0.7]], localization_error=np.array([1, 1]))
-        self.model = tl.models.Rouse(5, 1, 1, 1)
-    
-    def test_traj_likelihood(self):
-        logL = tl.analysis.kli.traj_likelihood(self.traj, self.model)
-        self.assertIsInstance(logL, float)
-
-    def test_fit_RouseParams(self):
-        ds = tl.TaggedSet([self.traj], hasTags=False)
-        fitres = tl.analysis.kli.fit_RouseParams(ds, self.model, unknown_params=['D'])
-        self.assertTrue(fitres.success)
-        fitres = tl.analysis.kli.fit_RouseParams(ds, self.model, unknown_params=['k'])
-        self.assertTrue(fitres.success)
-
-    def test_LoopSequenceMCMC(self):
-        # Note: the actual sampling is tested on mcmc.Sampler directly. Here we
-        # only check that the overridden methods work
-        mc = tl.analysis.kli.LoopSequenceMCMC()
-        mc.setup(self.traj, self.model)
-        mc.stepsize = 0.1 # Workaround: usually this is set in mc.run()
-        seq = tl.analysis.kli.LoopSequence(T=len(self.traj), numInt=2)
-
-        newSeq, pf, pb = mc.propose_update(seq)
-        self.assertIsInstance(newSeq, tl.analysis.kli.LoopSequence)
-        self.assertIsInstance(pf, float)
-        self.assertIsInstance(pb, float)
-
-        logL = mc.logL(seq)
-        self.assertIsInstance(logL, float)
-
-    def test_LoopTraceMCMC(self):
-        # Note: the actual sampling is tested on mcmc.Sampler directly. Here we
-        # only check that the overridden methods work
-        mc = tl.analysis.kli.LoopTraceMCMC()
-        mc.setup(self.traj, self.model)
-        mc.stepsize = 0.1 # Workaround: usually this is set in mc.run()
-        ltrace = tl.analysis.kli.LoopSequence(T=len(self.traj), numInt=2).toLooptrace()
-
-        newltrace, pf, pb = mc.propose_update(ltrace)
-        self.assertEqual(len(newltrace), len(self.traj))
-        self.assertIsInstance(pf, float)
-        self.assertIsInstance(pb, float)
-
-        logL = mc.logL(ltrace)
-        self.assertIsInstance(logL, float)
 
 class TestAnalysisChi2(myTestCase):
     def setUp(self):
@@ -799,7 +722,7 @@ class TestAnalysisPlots(myTestCase):
         _ = tl.analysis.plots.distance_distribution(self.ds)
         _ = tl.analysis.plots.distance_distribution(self.ds2)
 
-# from test_neda import *
+from test_bild import *
 
 if __name__ == '__main__':
     unittest.main(module=__file__[:-3])

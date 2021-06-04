@@ -97,7 +97,8 @@ class GeometricPrior(Prior):
         self.n = nStates
 
         self._log_n = np.log(self.n)
-        self._log_norm_per_dof = np.log(1+np.exp(self.logq)*(self.n-1))
+        with np.errstate(under='ignore'):
+            self._log_norm_per_dof = np.log(1+np.exp(self.logq)*(self.n-1))
 
     def logpi(self, loopingtrace):
         # optimized
