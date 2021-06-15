@@ -363,7 +363,7 @@ class Trajectory(ABC):
 
     ### Plotting ###
 
-    def plot_vstime(self, ax=None, **kwargs):
+    def plot_vstime(self, ax=None, maskNaNs=True, **kwargs):
         """
         Plot the trajectory / spatial components versus time.
 
@@ -377,6 +377,13 @@ class Trajectory(ABC):
         ax : axes, optional
             the axes in which to plot. Can be ``None``, in which case we plot
             to ``plt.gca()``
+        maskNaNs : bool, optional
+            if ``True``, remove invalid frames before plotting. This means that
+            the plot will be one continuous line, as opposed to breaking off at
+            missing frames. The latter might be useful to draw attention to a
+            few missing frames in otherwise mostly dense trajectories, but for
+            trajectories with many missing frames we would not see any frames
+            that lie isolated between two missing ones.
 
         Returns
         -------
@@ -428,7 +435,7 @@ class Trajectory_1N(Trajectory):
     """
     Single-locus trajectory
     """
-    def plot_vstime(self, ax=None, **kwargs):
+    def plot_vstime(self, ax=None, maskNaNs=True, **kwargs):
         """
         Plot spatial components vs. time
         """
@@ -436,7 +443,9 @@ class Trajectory_1N(Trajectory):
             ax = plt.gca()
 
         tplot = np.arange(self.T)
-        return ax.plot(tplot, self.data[0], **kwargs)
+        if maskNaNs:
+            tplot = tplot[~np.any(np.isnan(self.data), axis=(0, 2))]
+        return ax.plot(tplot, self[tplot], **kwargs)
 
     def _raw_plot_spatial(self, ax, dims, **kwargs):
         """ internal method for spatial plotting """
@@ -470,10 +479,11 @@ class Trajectory_2N(Trajectory):
 
         return traj
 
-    def plot_vstime(self, ax=None, **kwargs):
+    def plot_vstime(self, ax=None, maskNaNs=True, **kwargs):
         """
         Plot spatial components of connection vector vs. time
         """
+        # TODO: come up with something more useful here
         if ax is None:
             ax = plt.gca()
 

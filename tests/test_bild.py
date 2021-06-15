@@ -91,8 +91,9 @@ class TestUtilLoopingtrace(myTestCase):
         self.assert_array_equal(lt.full_valid(), np.array([0, 0, 1, 1]))
 
     def test_loops(self):
-        lt = bild.Loopingtrace.fromStates([1, 1, 1, 0, 0, 0, 0, 1, 1])
+        lt = bild.Loopingtrace.fromStates([1, 1, 1, 0, np.nan, 0, 0, 1, 1])
         self.assert_array_equal(lt.loops(), np.array([[0, 3, 1], [3, 7, 0], [7, 9, 1]]))
+        self.assert_array_equal(lt.loops(return_='index'), np.array([[0, 3, 1], [3, 6, 0], [6, 8, 1]]))
 
 # class TestParametricFamily(myTestCase):
 # This is literally just an initializer, nothing to test here
@@ -124,6 +125,14 @@ class TestModels(myTestCase):
     def setUp(self):
         self.traj = tl.Trajectory.fromArray(np.array([1, 2, np.nan, 4]), localization_error=[0.5])
         self.lt = bild.Loopingtrace.forTrajectory(self.traj, thresholds=[3])
+
+    def test_base(self):
+        model = bild.models.MultiStateRouse(20, 1, 5, d=1)
+        traj = tl.Trajectory.fromArray([1, 2, 3])
+
+        # Check base implementation
+        lt = bild.models.MultiStateModel.initial_loopingtrace(model, traj)
+        self.assertEqual(len(lt), 3)
 
     def test_Rouse(self):
         model = bild.models.MultiStateRouse(20, 1, 5, d=1)
@@ -191,56 +200,72 @@ class TestModels(myTestCase):
         for true_param, est_param in zip(true_params, fitres.x):
             self.assertAlmostEqual(true_param, est_param, delta=0.3)
 
-# class TestMCMCSchemes(myTestCase):
-#     def setUp(self):
-#         self.traj = tl.Trajectory.fromArray(np.array([1, 2, np.nan, 4]), localization_error=[0.5])
-#         self.model = bild.models.FactorizedModel([
-#             scipy.stats.maxwell(scale=1),
-#             scipy.stats.maxwell(scale=4),
-#             ])
-#         self.prior = bild.priors.GeometricPrior(-1, nStates=2)
-# 
-#         self.tpw = bild.mcmc.TPWMCMC()
-#         self.tpw.setup(self.traj, self.model, self.prior)
-#         self.tpw.configure(iterations=10, burn_in=5)
-# 
-#     def test_acceptance_probability(self):
-#         self.assertEqual(self.tpw.acceptance_probability(1, 2), 1)
-#         self.assertEqual(self.tpw.acceptance_probability(1, 0), np.exp(-1))
-# 
-#     def test_run(self):
-#         myrun = self.tpw.run()
-#         self.assertEqual(len(myrun.samples), 5)
-#         self.assertEqual(len(myrun.logLs), 10)
-# 
-#         bild.mcmc.TPWMCMC.propose_update = bild.mcmc.MCMCScheme.propose_update
-#         tpw = bild.mcmc.TPWMCMC()
-#         tpw.setup(self.traj, self.model, self.prior)
-#         tpw.configure(iterations=10, burn_in=5)
-# 
-#         myrun = tpw.run()
-#         self.assertEqual(len(myrun.samples), 5)
-#         self.assertEqual(len(myrun.logLs), 10)
-# 
-#     def test_stepping_probability(self):
-#         myrun = self.tpw.run()
-#         for i in range(1, len(myrun.samples)):
-#             self.assertGreaterEqual(self.tpw.stepping_probability(myrun.samples[i-1], myrun.samples[i]), 0)
-# 
-#     def test_gen_proposal_sample(self):
-#         myrun = self.tpw.run()
-#         lt = myrun.samples[0]
-# 
-#         for newlt in self.tpw.gen_proposal_sample_from(lt, nSample=1):
-#             self.assertEqual(np.count_nonzero(newlt.state != lt.state), 1)
-#         for newlt in self.tpw.gen_proposal_sample_from(lt, nSample=5):
-#             self.assertEqual(np.count_nonzero(newlt.state != lt.state), 1)
-# 
-#         cnt = 0
-#         for newlt in self.tpw.gen_proposal_sample_from(lt):
-#             cnt += 1
-#             self.assertEqual(np.count_nonzero(newlt.state != lt.state), 1)
-#         self.assertEqual(cnt, 3)
+class TestGeometricPriorScheme(myTestCase):
+    def setUp(self):
+        self.scheme = bild.mcmc.GeometricPriorScheme(nStates=3, stepsize=0.5)
+
+    def test_all(self):
+        self.assertEqual(self.scheme.nStates, 3)
+        prior = self.scheme(-1)
+        self.assertIsInstance(prior, bild.priors.GeometricPrior)
+        self.assertAlmostEqual(self.scheme.stepping_probability(-1, -1), 0.5413, delta=1e-3)
+        self.assertGreater(0, next(self.scheme.gen_proposal_sample_from()))
+        self.assertAlmostEqual(np.mean(list(self.scheme.gen_proposal_sample_from(-1, nSample=100))), -1.5, delta=0.3)
+
+class TestFullMCMC(myTestCase):
+    def setUp(self):
+        self.traj = tl.Trajectory.fromArray(np.array([1, 2, np.nan, 4]), localization_error=[0.5])
+        self.model = bild.models.FactorizedModel([
+            scipy.stats.maxwell(scale=1),
+            scipy.stats.maxwell(scale=4),
+            ], d=1)
+        self.priorscheme = bild.mcmc.GeometricPriorScheme(nStates=2)
+
+        self.sampler = bild.mcmc.FullMCMC(initialize_from='random')
+        self.sampler.setup(self.traj, self.model, self.priorscheme)
+
+    def test_configure(self):
+        self.sampler.configure(min_approaches_to_best_sample=23)
+        self.assertEqual(self.sampler.config['min_approaches_to_best_sample'], 23)
+        self.assertNotEqual(self.sampler.config['check_stopping_every'], -1)
+
+    def test_stopping(self):
+        self.sampler.configure(min_approaches_to_best_sample=5)
+        run_all_different = tl.util.mcmc.MCMCRun(np.linspace(0, 5, 10), [([], -1) for _ in range(10)])
+        run_all_same = tl.util.mcmc.MCMCRun(np.linspace(0, 5, 10), 10*[([], -1)])
+
+        self.assertTrue(self.sampler.callback_stopping(run_all_different))
+        self.assertFalse(self.sampler.callback_stopping(run_all_same))
+
+    def test_lt_stepping_probability_and_proposal_sample(self):
+        def num2binlist(num, nbits):
+            ls = list(bin(num + (1<<nbits)))[3:] # bin() gives '0b1...'
+            return [int(oi) for oi in ls]
+
+        nbit = 6
+        lts = [bild.Loopingtrace.fromStates(num2binlist(num, nbit), nStates=2) for num in range(1<<nbit)]
+
+        for lt_from_ind in np.random.choice(len(lts), 5, replace=False):
+            self.assertAlmostEqual(np.sum([self.sampler.lt_stepping_probability(lts[lt_from_ind], lt) for lt in lts]), 1, delta=1e-10)
+
+        lt_prop = lts[np.random.choice(len(lts))]
+        p_next = np.array([self.sampler.lt_stepping_probability(lt_prop, lt) for lt in lts])
+        ind_best_next = np.argmax(p_next)
+        lt_best_next = lts[ind_best_next]
+        N = 100/p_next[ind_best_next]
+        if N > 10000: # pragma: no cover
+            raise RuntimeError(f"Don't want to sample {N} profiles")
+        N_best_next = np.count_nonzero([lt == lt_best_next for lt in self.sampler.lt_gen_proposal_sample_from(lt_prop, nSample=int(N))])
+        self.assertAlmostEqual(N_best_next, 100, delta=30) # 3 sigma
+
+    def test_run(self):
+        self.sampler.configure(iterations=10, burn_in=5)
+        run = self.sampler.run()
+        self.assertEqual(len(run.samples), 5)
+
+        self.sampler.initialize_from = 'random'
+        run = self.sampler.run()
+        self.assertEqual(len(run.samples), 5)
 
 class Test_main(myTestCase):
     def setUp(self):
@@ -259,6 +284,9 @@ class Test_main(myTestCase):
         ret_dict = bild.main(self.traj, self.model, self.MCMCconfig, return_='dict')
         self.assertEqual(ret_dict.keys(), self.traj.meta['bild'].keys()) # cheat, we have the dict
                                                                          # from previous runs
+
+        bild.main(self.traj, self.model, self.MCMCconfig, return_='None', return_mcmcrun=True)
+        self.assertIn('mcmcrun', self.traj.meta['bild'].keys())
 
 # class Test_plot(myTestCase):
 #     @patch("builtins.print")

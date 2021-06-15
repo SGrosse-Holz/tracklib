@@ -172,6 +172,11 @@ class Test1TaggedSet(unittest.TestCase):
             self.assertEqual(val, self.ls._data[ind])
             self.assertSetEqual(tags, self.ls._tags[ind])
 
+        all_values = {1, 2, 3}
+        for val in self.ls(randomize=True):
+            all_values.remove(val)
+        self.assertSetEqual(all_values, set())
+
     def test_elementaccess(self):
         self.assertEqual(self.ls[1], 2)
 
@@ -369,6 +374,10 @@ class TestIOWrite(myTestCase):
             self.assertTrue(f.read() == 'id\tframe\tx\ty\tx2\ty2\n0\t0\t0\t1\t10\t11\n0\t1\t2\t3\t12\t13\n0\t2\t4\t5\t14\t15\n0\t3\t6\t7\t16\t17\n0\t4\t8\t9\t18\t19\n')
 
 class TestUtilUtil(myTestCase):
+    def test_distribute_noiselevel(self):
+        self.assert_array_equal(tl.util.util.distribute_noiselevel(14, [5, 10, 15]),
+                                [1, 2, 3])
+
     def test_log_derivative(self):
         x = [1, 2, 5, np.nan, 30]
         y = np.array(x)**1.438
@@ -538,6 +547,9 @@ class TestModelsRouse(myTestCase):
         self.assertTrue(np.allclose(M1, M0, atol=1))
         self.assertTrue(np.allclose(C1, C0, atol=1))
 
+        self.assertTrue(np.allclose(M1, self.model.propagate_M(M0)))
+        self.assertTrue(np.allclose(C1, self.model.propagate_C(C0)))
+
         self.model.D = 0
         M2, C2 = self.model.propagate(M0, np.zeros_like(C0), 0.1)
 
@@ -554,33 +566,27 @@ class TestModelsRouse(myTestCase):
         conf = self.model.evolve(conf)
         self.assertTupleEqual(conf.shape, (5,3))
 
-### Keep these for later
-#     def test_confs_from_looptrace(self):
-#         confs = list(self.model.conformations_from_looptrace([False, True, False, True]))
-#         self.assertEqual(len(confs), 4)
+#     def test_update_ensemble_with_observation_1d(self):
+#         # these are generic formulae, so have nothing to do with a specific model
+#         l, m, c = tl.models.rouse.Model.update_ensemble_with_observation_1d(
+#                         np.array([1]), np.array([[1]]), np.array([0]), 1, np.array([1]))
+#         self.assertAlmostEqual(l, -1/4-1/2*np.log(4*np.pi), delta=1e-10)
+#         self.assertEqual(m[0], 0.5)
+#         self.assertEqual(c[0, 0], 0.5)
 # 
-#     def test_likelihood(self):
-#         looptrace = [False, False, True, True]
-#         trace = np.array([conf[-1][0] - conf[0][0] for conf in self.model.conformations_from_looptrace(looptrace)])
-#         trace[2] = np.nan
+#         for _ in range(10):
+#             M = np.random.rand(1)
+#             C = np.eye(1)
+#             x = np.random.rand(1) - 1
+#             s = np.random.rand() + 1
+#             w = np.array([1.])
 # 
-#         logL = tl.models.rouse.likelihood(trace, self.model, looptrace, noise=1)
-#         self.assertIsInstance(logL, float)
-#         logL = tl.models.rouse._likelihood_filter(trace, self.model, looptrace, noise=1)
-#         self.assertIsInstance(logL, float)
-#         logL = tl.models.rouse._likelihood_direct(trace, self.model, looptrace, noise=1)
-#         self.assertIsInstance(logL, float)
-# 
-#     def test_multistate_likelihood(self):
-#         mod0 = tl.models.Rouse(20, 1, 5, 0) # unlooped
-#         mod1 = tl.models.Rouse(20, 1, 5, 1) # looped
-#         looptrace = np.array([True, False, True, True, False, False, False, True, False])
-#         trace = np.array([conf[-1]-conf[0] for conf in mod1.conformations_from_looptrace(looptrace, d=1)])
-#         
-#         multi_L = tl.models.rouse.multistate_likelihood(trace, [mod0, mod1], looptrace.astype(int), 0.1)
-#         binary_L = tl.models.rouse.likelihood(trace, mod1, looptrace, 0.1)
-# 
-#         self.assertAlmostEqual(multi_L, binary_L, delta=1e-12)
+#             l0, m0, c0 = tl.models.rouse.Model.update_ensemble_with_observation_1d(M, C, x, s, w)
+#             l1, m1, c1 = tl.models.rouse.Model.Kalman_update_1d(M, C, x, s, w)
+#             print(l0, l1, m0, m1, c0, c1)
+#             self.assertAlmostEqual(l0, l1, delta=1e-10)
+#             self.assertAlmostEqual(m0, m1, delta=1e-10)
+#             self.assertAlmostEqual(c0, c1, delta=1e-10)
 
 class TestModelsStatgauss(myTestCase):
     def test_sampleMSD(self):
@@ -634,7 +640,16 @@ class TestAnalysisMSD(myTestCase):
         self.assert_array_equal(msd, np.array([0, 1, 4, 9, 16, 25]))
         self.assert_array_equal(self.traj.meta['MSDmeta']['N'], np.array([5, 3, 3, 2, 1, 1]))
 
-        self.assert_array_equal(msd, tl.analysis.MSD(self.traj))
+        self.assertIs(msd, tl.analysis.MSD(self.traj))
+
+        for ex in [1, 3]:
+            self.assert_array_equal(tl.analysis.msd.MSDtraj(self.traj, exponent=ex, recalculate=True),
+                                    np.arange(len(self.traj))**ex)
+
+        del self.traj.meta['MSD']
+        msd = tl.analysis.msd.MSDtraj(self.traj, TA=False, recalculate=True)
+        self.assert_array_equal(msd, np.array([0, 1, 4, 9, np.nan, 25]))
+        self.assert_array_equal(self.traj.meta['MSDmeta']['N'], np.array([1, 1, 1, 1, 0, 1]))
 
     def test_MSDdataset(self):
         msd, N = tl.analysis.msd.MSDdataset(self.ds, giveN=True)

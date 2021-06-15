@@ -208,7 +208,7 @@ class MultiStateRouse(MultiStateModel):
             Cs.append(self.measurement @ C @ self.measurement)
         Ms = np.expand_dims(Ms, 0)                # (1, n, d)
         Cs = np.expand_dims(Cs, (0, 2))           # (1, n, 1)
-        Cs += np.expand_dims(noise*noise, (0, 1)) # (1, n, d)
+        Cs = Cs + np.expand_dims(noise*noise, (0, 1)) # (1, n, d)
 
         # assemble (T, n, d) array
         chi2s = (traj[lt.t][:, np.newaxis, :] - Ms)**2 / Cs
@@ -243,8 +243,23 @@ class MultiStateRouse(MultiStateModel):
 
             # Update
             if not np.any(np.isnan(traj[t])):
-                M, C, logL[t] = model.update_ensemble_with_observation_nd(
-                                        M, C, traj[t], localization_error, self.measurement)
+#                 M, C, logL[t] = model.update_ensemble_with_observation_nd(
+#                                         M, C, traj[t], localization_error, self.measurement)
+                Ms = []
+                Cs = []
+                logLs = []
+                for d in range(self.d):
+                    l, m, c = model.Kalman_update_1d(
+                                    M[:, d], C[d],
+                                    traj[t][d], localization_error[d],
+                                    self.measurement)
+                    logLs.append(l)
+                    Ms.append(m)
+                    Cs.append(c)
+
+                M = np.stack(Ms, axis=1)
+                C = Cs
+                logL[t] = np.sum(logLs)
 
         loopingtrace.individual_logLs = logL[loopingtrace.t]
         return np.nansum(loopingtrace.individual_logLs)
@@ -252,14 +267,14 @@ class MultiStateRouse(MultiStateModel):
     def trajectory_from_loopingtrace(self, loopingtrace, localization_error=None):
         if localization_error is None:
             if self.localization_error is None:
-                raise ValueError("Need to specify either localization_error or model.localization_error")
+                raise ValueError("Need to specify either localization_error or model.localization_error") # pragma: no cover
             else:
                 localization_error = self.localization_error
         if np.isscalar(localization_error):
             localization_error = self.d*[localization_error]
         localization_error = np.asarray(localization_error)
         if localization_error.shape != (self.d,):
-            raise ValueError("Did not understand localization_error")
+            raise ValueError("Did not understand localization_error") # pragma: no cover
 
         looptrace = loopingtrace.full_valid()
 
@@ -467,7 +482,7 @@ def fit(data, modelfamily,
        initial conditions when using this.
     """
     # Set up progressbar
-    if show_progress:
+    if show_progress: # pragma: no cover
         if assume_notebook_for_progressbar:
             from tqdm.notebook import tqdm
         else:

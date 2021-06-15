@@ -225,46 +225,74 @@ class Model:
 
 ####### Likelihood evaluation
 
-    @staticmethod # This actually doesn't have anything to do with the model at hand
-    def update_ensemble_with_observation_1d(M, C, x, s, w):
-        # Important: M is (N,) only, no d!
+# This is 14x faster than update_ensemble_from_observation_1d, since we're not
+# inverting the covariance matrix
+# It's the updating as done on Wikipedia: Kalman filter
+    @staticmethod
+    def Kalman_update_1d(M, C, x, s, w):
         s2 = s*s
-
-        invC = scipy.linalg.inv(C)
-        invCpost = invC + w[:, np.newaxis]*w[np.newaxis, :] / s2
-        Cpost = scipy.linalg.inv(invCpost)
-        Mpost = Cpost @ (invC @ M + w*x / s2)
 
         m = w @ M
         c = w @ C @ w
-        cs = c+s2
-        logL = -0.5*((x-m)*(x-m)/cs + np.log(cs)) - LOG_SQRT_2_PI
+        S = c + s2
 
-        return Mpost, Cpost, logL
+        xmm = x-m
+        logL = -0.5*(xmm*xmm/S + np.log(S)) - LOG_SQRT_2_PI
 
-    @staticmethod
-    def update_ensemble_with_observation_nd(M, C, x, s, w):
-        # now: M is (N, d), C is d*[(N, N)], x is (d,), s is (d,), w is (N,)
-        # We take advantage of the fact that the update on C depends only on
-        # the localization error, i.e. if some errors are the same, we can skip
-        # some computation:)
-        uni_s, uni_ind, rev_ind = np.unique(s, return_index=True, return_inverse=True)
-        uni_s2 = uni_s*uni_s
+        K = C @ (w / S)
+        
+        Mpost = M + K*xmm
+        Cpost = C - K[:, np.newaxis] * (w @ C)[np.newaxis, :]
 
-        assert all([np.all(C[d] == C[i]) for d, i in enumerate(rev_ind)])
+        return logL, Mpost, Cpost
 
-        uni_invC = [scipy.linalg.inv(C[i]) for i in uni_ind]
-        uni_Cpost = [scipy.linalg.inv(invC + w[:, np.newaxis]*w[np.newaxis, :] / s2) for invC, s2 in zip(uni_invC, uni_s2)]
+# This is what I originally copied from Chris
+#     @staticmethod # This actually doesn't have anything to do with the model at hand
+#     def update_ensemble_with_observation_1d(M, C, x, s, w):
+# #     def Kalman_update_1d(M, C, x, s, w):
+#         # Important: M is (N,) only, no d!
+#         s2 = s*s
+# 
+#         # Likelihood for the new data point
+#         m = w @ M
+#         c = w @ C @ w
+#         cs = c+s2
+#         logL = -0.5*((x-m)*(x-m)/cs + np.log(cs)) - LOG_SQRT_2_PI
+# 
+#         # Propagated ensemple, given the new data
+#         invC = scipy.linalg.inv(C)
+#         invCpost = invC + w[:, np.newaxis]*w[np.newaxis, :] / s2
+#         Cpost = scipy.linalg.inv(invCpost)
+#         Mpost = Cpost @ (invC @ M + w*x / s2)
+# 
+#         return logL, Mpost, Cpost
 
-        Mpost = np.stack([uni_Cpost[i] @ (uni_invC[i] @ M[:, d] + w*x[d] / uni_s2[i]) \
-                          for d, i in enumerate(rev_ind)], axis=1)
-        Cpost = [uni_Cpost[i] for i in rev_ind]
-
-        m = w @ M
-        cs = np.array([w @ myC @ w + s*s for myC, s in zip(C, s)])
-        logL = -0.5*np.sum((x-m)*(x-m)/cs + np.log(cs)) - len(cs)*LOG_SQRT_2_PI
-
-        return Mpost, Cpost, logL
+# There is some optimization potential here, since the evolution of the
+# covariance matrix for dimensions with identical localization error is the
+# same. But it's a bit tricky to implement correctly.
+#     @staticmethod
+#     def update_ensemble_with_observation_nd(M, C, x, s, w):
+#         # now: M is (N, d), C is d*[(N, N)], x is (d,), s is (d,), w is (N,)
+#         # We take advantage of the fact that the update on C depends only on
+#         # the localization error, i.e. if some errors are the same, we can skip
+#         # some computation:)
+#         uni_s, uni_ind, rev_ind = np.unique(s, return_index=True, return_inverse=True)
+#         uni_s2 = uni_s*uni_s
+# 
+#         assert all([np.all(C[d] == C[i]) for d, i in enumerate(rev_ind)])
+# 
+#         uni_invC = [scipy.linalg.inv(C[i]) for i in uni_ind]
+#         uni_Cpost = [scipy.linalg.inv(invC + w[:, np.newaxis]*w[np.newaxis, :] / s2) for invC, s2 in zip(uni_invC, uni_s2)]
+# 
+#         Mpost = np.stack([uni_Cpost[i] @ (uni_invC[i] @ M[:, d] + w*x[d] / uni_s2[i]) \
+#                           for d, i in enumerate(rev_ind)], axis=1)
+#         Cpost = [uni_Cpost[i] for i in rev_ind]
+# 
+#         m = w @ M
+#         cs = np.array([w @ myC @ w + s*s for myC, s in zip(C, s)])
+#         logL = -0.5*np.sum((x-m)*(x-m)/cs + np.log(cs)) - len(cs)*LOG_SQRT_2_PI
+# 
+#         return Mpost, Cpost, logL
 
 ####### Auxiliary things
 

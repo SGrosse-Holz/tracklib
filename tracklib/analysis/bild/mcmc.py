@@ -9,20 +9,21 @@ import numpy as np
 import scipy.stats
 
 from tracklib.util import mcmc
-from .util import Loopingtrace
+from .util import Loopingtrace, ParametricFamily
 from .priors import GeometricPrior
 
-class PriorScheme(metaclass=abc.ABCMeta):
+class PartScheme(ParametricFamily, metaclass=abc.ABCMeta):
     """
     "Beefy ParametricFamily" for MCMC sampling
     Similar to the old MCMCScheme
+    Note that here we assume that ``get()`` takes a single tuple as argument,
+    instead of individual parameters. This makes handling in the MCMC easier.
+    Also here the idea is to subclass and implement members, whereas for
+    ParametricFamily we would instantiate and simply overwrite the `!get`
+    attribute.
     """
-    @abc.abstractmethod
-    def get(self, params):
-        raise NotImplementedError # pragma: no cover
-
-    def __call__(self, *args, **kwargs):
-        return self.get(*args, **kwargs)
+    def get(self, params): # pragma: no cover
+        return params
 
     @property
     def nStates(self):
@@ -37,10 +38,11 @@ class PriorScheme(metaclass=abc.ABCMeta):
         # without params give initial values
         raise NotImplementedError # pragma: no cover
 
-class GeometricPriorScheme(PriorScheme):
-    def __init__(self, nStates=2, stepsize=0.1):
+class GeometricPriorScheme(PartScheme):
+    def __init__(self, nStates=2, stepsize=0.1, initial_logq=-1e-5):
         self._nStates = nStates
         self.stepsize = stepsize
+        self.initial_logq = initial_logq
 
     @property
     def nStates(self):
@@ -55,10 +57,18 @@ class GeometricPriorScheme(PriorScheme):
 
     def gen_proposal_sample_from(self, logq=None, nSample=1):
         if logq is None:
-            return iter(nSample * [-1e5])
+            return iter(nSample * [self.initial_logq])
         else:
             return iter(-scipy.stats.gamma(a = -logq/self.stepsize + 1,
                                            scale = self.stepsize).rvs(nSample))
+
+class GeometricPriorSchemeFixed(GeometricPriorScheme):
+    def stepping_probability(self, logq_from, logq_to):
+        return float(logq_from == logq_to)
+
+    def gen_proposal_sample_from(self, logq=None, nSample=1):
+        return iter(nSample*[self.initial_logq])
+
 
 class FullMCMC(mcmc.Sampler):
     def __init__(self, move_weights=(0.1, 1, 1), alpha=2, initialize_from='model'):
@@ -90,10 +100,16 @@ class FullMCMC(mcmc.Sampler):
         self.config['min_approaches_to_best_sample'] = min_approaches_to_best_sample
 
     def callback_stopping(self, myrun):
-        (best_trace, best_pp), max_logL = myrun.best_sample_logL()
-        best_trace_set = {trace for trace, _ in myrun.samples if trace == best_trace}
-        n_indep_approaches = len(best_trace_set)
-        return n_indep_approaches >= self.config['min_approaches_to_best_sample']
+        (best_trace, _), max_logL = myrun.best_sample_logL()
+        traces = [trace for trace, _ in myrun.samples if trace == best_trace]
+
+        n = 1
+        curtrace = traces[0]
+        for trace in traces:
+            if trace is not curtrace:
+                n += 1
+                curtrace = trace
+        return n >= self.config['min_approaches_to_best_sample']
 
     def run(self, *args, **kwargs):
         if self.initialize_from == 'model':
@@ -190,9 +206,6 @@ class FullMCMC(mcmc.Sampler):
         return p_interval_change / N_interval
 
     def lt_gen_proposal_sample_from(self, lt, nSample=1):
-        if np.isinf(nSample):
-            nSample = len(lt)**2*(lt.n-1)
-
         def new_state(n, old):
             s = np.random.choice(n-1)
             if s >= old:
