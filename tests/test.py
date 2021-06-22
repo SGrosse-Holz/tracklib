@@ -635,21 +635,15 @@ class TestAnalysisMSD(myTestCase):
         self.ds = tl.models.statgauss.dataset(msd=np.linspace(0, 5, 10), Ts=10*[None])
 
     def test_MSDtraj(self):
-        msd = tl.analysis.msd.MSDtraj(self.traj)
-        self.assert_array_equal(msd, self.traj.meta['MSD'])
+        tl.analysis.msd.MSDtraj(self.traj)
+        msd = self.traj.meta['MSD']['data']
         self.assert_array_equal(msd, np.array([0, 1, 4, 9, 16, 25]))
-        self.assert_array_equal(self.traj.meta['MSDmeta']['N'], np.array([5, 3, 3, 2, 1, 1]))
-
-        self.assertIs(msd, tl.analysis.MSD(self.traj))
-
-        for ex in [1, 3]:
-            self.assert_array_equal(tl.analysis.msd.MSDtraj(self.traj, exponent=ex, recalculate=True),
-                                    np.arange(len(self.traj))**ex)
+        self.assert_array_equal(self.traj.meta['MSD']['N'], np.array([5, 3, 3, 2, 1, 1]))
 
         del self.traj.meta['MSD']
-        msd = tl.analysis.msd.MSDtraj(self.traj, TA=False, recalculate=True)
+        msd = tl.analysis.MSD(self.traj, TA=False, recalculate=True)
         self.assert_array_equal(msd, np.array([0, 1, 4, 9, np.nan, 25]))
-        self.assert_array_equal(self.traj.meta['MSDmeta']['N'], np.array([1, 1, 1, 1, 0, 1]))
+        self.assert_array_equal(self.traj.meta['MSD']['N'], np.array([1, 1, 1, 1, 0, 1]))
 
     def test_MSDdataset(self):
         msd, N = tl.analysis.msd.MSDdataset(self.ds, giveN=True)
@@ -660,6 +654,19 @@ class TestAnalysisMSD(myTestCase):
         self.assert_array_equal(np.isnan(var), 10*[False])
 
         self.assert_array_equal(msd, tl.analysis.MSD(self.ds))
+
+    def test_MSD_functions(self):
+        md = tl.analysis.MSD(self.traj, TA=False, function='D', writeto='MD')
+        self.assertIs(md, self.traj.meta['MD']['data'])
+        self.assert_array_equal(md, [0, 1, 2, 3, np.nan, 5])
+
+        acf = tl.analysis.MSD(self.traj, TA=False, function='SP', writeto='ACF')
+        self.assert_array_equal(acf, [1, 2, 3, 4, np.nan, 6])
+
+        mcd = tl.analysis.MSD(self.traj, TA=False,
+                              function=lambda xm, xn : np.sum((xm-xn)**3, axis=-1),
+                              writeto='MCD')
+        self.assert_array_equal(mcd, [0, 1, 8, 27, np.nan, 125])
 
     def test_dMSD(self):
         t, scal = tl.analysis.msd.dMSD(self.ds)

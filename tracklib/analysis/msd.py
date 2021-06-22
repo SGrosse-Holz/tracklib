@@ -15,7 +15,9 @@ import scipy.interpolate
 from tracklib import Trajectory, TaggedSet
 from tracklib.util.util import log_derivative
 
-def MSDtraj(traj, TA=True, exponent=2, recalculate=False):
+DEFKEY='MSD'
+
+def MSDtraj(traj, TA=True, recalculate=False, function='SD', writeto=DEFKEY):
     """
     Calculate/give MSD for a single trajectory.
 
@@ -33,17 +35,34 @@ def MSDtraj(traj, TA=True, exponent=2, recalculate=False):
 
     Other Parameters
     ----------------
-    exponent : int or float
-        the exponent to use. Mostly for debugging
     recalculate : bool
         set to ``True`` to ensure that the MSD is actually calculated, instead
         of reusing an old value
+    function : {'SD', 'D', 'SP'} or callable
+        the function to evaluate. This extends the machinery of the `!msd`
+        module to arbitrary two-point functions: generically, `!function`
+        should be ``fun(traj[m], traj[n]) --> float``, where ``m >= n``, and it
+        should be vectorized (i.e. work on numpy arrays and return the
+        corresponding arrays). The available presets are
+         - "Square Dispacement" ``'SD'`` : ``fun(xm, xn) = (xm-xn)**2``. This
+           gives MSD.
+         - "Displacement" ``'D'`` : ``fun(xm, xn) = xm-xn``. No squaring,
+           mostly for sanity checks. Note peculiarities here though: if
+           ``TA=True``, the averaging collapses in a telescope sum such that
+           e.g. ``<x(t+1)-x(t)> = (x(T)-x(0))/(T-1)``.
+         - "Scalar Product" ``'SP'`` : ``fun(xm, xn) = xm.xn``. Produces
+           autocorrelation.
+    writeto : hashable or None
+        where to store the output of the calculation in the ``traj.meta`` dict.
+        Set to ``None`` to return the output dict instead of storing it.
+        Defaults to ``'MSD'``.
 
     Returns
     -------
-    MSD : np.ndarray
-        the MSD of the trajectory, where ``MSD[0] = 0``, ``MSD[1]`` is lag time
-        of 1 frame, etc.
+    dict, optional
+        A dict with keys ``'data', 'N'`` giving the averaged data and the count
+        of valid data points for each lag time. This is usually written into
+        the ``traj.meta`` dict, but returned if ``writeto is None``.
 
     See also
     --------
@@ -58,57 +77,52 @@ def MSDtraj(traj, TA=True, exponent=2, recalculate=False):
     directly.
 
     Explicitly, the ``recalculate`` parameter is equivalent to
-    >>> del traj.meta['MSD']
-    ... del traj.meta['MSDmeta']
+    >>> del traj.meta[writeto]
     """
     if recalculate:
-        for key in ['MSD', 'MSDmeta']:
+        for key in [writeto]:
             try:
                 del traj.meta[key]
             except:
                 pass
     
-    try:
-        return traj.meta['MSD']
-    except KeyError:
+    if writeto not in traj.meta.keys():
 
-        if not traj.N == 1: # pragma: no cover
-            raise ValueError("Preprocess your trajectory to have N=1")
+        if not callable(function):
+            if traj.N != 1: # pragma: no cover
+                raise ValueError("Preprocess your trajectory to have N=1")
 
-        if exponent == 1:
-            def S(val):
-                return val
-        elif exponent == 2:
-            def S(val):
-                return val*val
+            if function == 'SD':
+                def function(xm, xn):
+                    return np.sum((xm-xn)**2, axis=-1)
+            elif function == 'D':
+                def function(xm, xn):
+                    return np.sum(xm-xn, axis=-1)
+            elif function == 'SP':
+                def function(xm, xn):
+                    return np.sum(xm*xn, axis=-1)
+            else:
+                raise ValueError("invalid argument 'function' : {}".format(function))
+
+        if TA:
+            data = [function(traj[:], traj[:])]
+            data += [function(traj[i:], traj[:-i]) for i in range(1, len(traj))]
         else:
-            def S(val):
-                return val**exponent
+            istart = np.min(np.nonzero(~np.any(np.isnan(traj.data), (0, 2))))
+            data = [[function(traj[i], traj[istart])] for i in range(istart, len(traj))]
 
         with warnings.catch_warnings():
             warnings.filterwarnings(action='ignore', message='Mean of empty slice')
 
-            if TA:
-                traj.meta['MSD'] = np.array([0] + [ \
-                        np.nanmean(np.sum( S(traj[i:] - traj[:-i]) , axis=1), axis=0) \
-                        for i in range(1, len(traj))])
+            out = {
+                'N' : np.array([np.count_nonzero(~np.isnan(dat)) for dat in data]),
+                'data' : np.array([np.nanmean(dat) for dat in data]),
+            }
 
-                N = np.array([np.sum(~np.any(np.isnan(traj[:]), axis=1), axis=0)] + \
-                             [np.sum(~np.any(np.isnan(traj[i:] - traj[:-i]), axis=1), axis=0) \
-                              for i in range(1, len(traj))])
-            else:
-                traj.meta['MSD'] = np.array([0] + [ \
-                        np.sum( S(traj[0] - traj[i]) ) \
-                        for i in range(1, len(traj))])
-
-                N = (~np.isnan(traj.meta['MSD'])).astype(int)
-
-        try:
-            traj.meta['MSDmeta']['N'] = N
-        except KeyError: # this will happen if 'MSDmeta' key doesn't exist
-            traj.meta['MSDmeta'] = {'N' : N}
-    
-    return traj.meta['MSD']
+        if writeto is None:
+            return out
+        else:
+            traj.meta[writeto] = out
 
 def MSDdataset(dataset, givevar=False, giveN=False, average_in_logspace=False, **kwargs):
     """
@@ -148,8 +162,16 @@ def MSDdataset(dataset, givevar=False, giveN=False, average_in_logspace=False, *
     Corresponding to python's 0-based indexing, ``msd[0] = 0``, such that
     ``msd[dt]`` is the MSD at a time lag of `!dt` frames.
     """
-    MSDs = [MSDtraj(traj, **kwargs) for traj in dataset]
-    Ns = [traj.meta['MSDmeta']['N'] for traj in dataset]
+    try:
+        msdkey = kwargs['writeto']
+    except KeyError:
+        msdkey = DEFKEY
+
+    for traj in dataset:
+        MSDtraj(traj, **kwargs)
+
+    MSDs = [traj.meta[msdkey]['data'] for traj in dataset]
+    Ns = [traj.meta[msdkey]['N'] for traj in dataset]
 
     maxlen = max(len(MSD) for MSD in MSDs)
     allMSD = np.empty((len(MSDs), maxlen), dtype=float)
@@ -170,11 +192,13 @@ def MSDdataset(dataset, givevar=False, giveN=False, average_in_logspace=False, *
     with warnings.catch_warnings():
         warnings.filterwarnings(action='ignore', message=r'(invalid value|divide by zero) encountered in true_divide')
         eMSD = np.nansum(allMSD*allN, axis=0) / N
-        var = np.nansum((allMSD-eMSD)**2 * allN, axis=0) / (N-meanN)
+        if givevar:
+            var = np.nansum((allMSD-eMSD)**2 * allN, axis=0) / (N-meanN)
 
     if average_in_logspace: # pragma: no cover
         eMSD = np.insert(np.exp(eMSD), 0, 0)
-        var = np.insert(np.exp(var), 0, 0)
+        if givevar:
+            var = np.insert(np.exp(var), 0, 0)
         N = np.insert(N, 0, N0)
 
     if givevar and giveN: # pragma: no cover
@@ -198,7 +222,12 @@ def MSD(*args, **kwargs):
     MSDtraj, MSDdataset, tl.util.util.log_derivative
     """
     if issubclass(type(args[0]), Trajectory):
-        return MSDtraj(*args, **kwargs)
+        MSDtraj(*args, **kwargs)
+        if 'writeto' in kwargs:
+            writeto = kwargs['writeto']
+        else:
+            writeto = DEFKEY
+        return args[0].meta[writeto]['data']
     elif issubclass(type(args[0]), TaggedSet):
         return MSDdataset(*args, **kwargs)
     else: # pragma: no cover
@@ -246,21 +275,21 @@ def scaling(traj, n=5):
 
     "first `!n` points of the MSD" means time lags 1 through `!n`.
     """
-    nMSD = MSDtraj(traj)[1:(n+1)]
+    nMSD = MSD(traj)[1:(n+1)]
     t = np.arange(len(nMSD))+1
     ind = ~np.isnan(nMSD)
     if np.sum(ind) < 2:
-        traj.meta['MSDmeta'].update({
+        traj.meta['MSD'].update({
                 'alpha' : np.nan,
                 'logG' : np.nan,
                 'fit_covariance' : np.nan*np.ones((2, 2)),
                 })
     else:
         popt, pcov = scipy.optimize.curve_fit(lambda x, a, b : x*a + b, np.log(t[ind]), np.log(nMSD[ind]))
-        traj.meta['MSDmeta'].update({
+        traj.meta['MSD'].update({
                 'alpha' : popt[0],
                 'logG' : popt[1],
                 'fit_covariance' : pcov,
                 })
 
-    return traj.meta['MSDmeta']['alpha']
+    return traj.meta['MSD']['alpha']
