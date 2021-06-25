@@ -90,14 +90,21 @@ class FullMCMC(mcmc.Sampler):
 ####### Overwrite the necessary mcmc.Sampler functions
 
     def configure(self,
-            check_stopping_every=1000,
-            min_approaches_to_best_sample=10,
+            min_approaches_to_best_sample=None,
             **kwargs,
             ):
-        mcmc.Sampler.configure(self,
-                               check_stopping_every=check_stopping_every,
-                               **kwargs)
-        self.config['min_approaches_to_best_sample'] = min_approaches_to_best_sample
+        if 'check_stopping_every' not in kwargs:
+            try:
+                _ = self.config['check_stopping_every']
+            except:
+                kwargs['check_stopping_every'] = 1000
+
+        mcmc.Sampler.configure(self, **kwargs)
+        if min_approaches_to_best_sample is None:
+            if 'min_approaches_to_best_sample' not in self.config:
+                self.config['min_approaches_to_best_sample'] = 10
+        else:
+            self.config['min_approaches_to_best_sample'] = min_approaches_to_best_sample
 
     def callback_stopping(self, myrun):
         (best_trace, _), max_logL = myrun.best_sample_logL()

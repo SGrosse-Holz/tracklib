@@ -360,5 +360,7 @@ class Test_main(myTestCase):
 #         lt_opt = bild.postproc.optimize_boundary(lt_b, self.traj, self.model, self.prior)
 #         self.assertNotEqual(lt_opt, self.lt)
 
+from test_bild_neda import *
+
 if __name__ == '__main__': # pragma: no cover
     unittest.main(module=__file__[:-3])

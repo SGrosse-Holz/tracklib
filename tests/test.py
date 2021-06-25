@@ -645,6 +645,11 @@ class TestAnalysisMSD(myTestCase):
         self.assert_array_equal(msd, np.array([0, 1, 4, 9, np.nan, 25]))
         self.assert_array_equal(self.traj.meta['MSD']['N'], np.array([1, 1, 1, 1, 0, 1]))
 
+        traj3d = tl.Trajectory.fromArray(np.arange(30).reshape(-1, 3))
+        tl.analysis.msd.MSDtraj(traj3d)
+        msd = traj3d.meta['MSD']['data']
+        self.assert_array_equal(msd, 27*np.arange(len(traj3d))**2)
+
     def test_MSDdataset(self):
         msd, N = tl.analysis.msd.MSDdataset(self.ds, giveN=True)
         self.assertEqual(len(msd), 10)

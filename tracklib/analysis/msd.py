@@ -108,7 +108,7 @@ def MSDtraj(traj, TA=True, recalculate=False, function='SD', writeto=DEFKEY):
             data = [function(traj[:], traj[:])]
             data += [function(traj[i:], traj[:-i]) for i in range(1, len(traj))]
         else:
-            istart = np.min(np.nonzero(~np.any(np.isnan(traj.data), (0, 2))))
+            istart = np.min(np.nonzero(~np.any(np.isnan(traj.data), (0, 2)))[0])
             data = [[function(traj[i], traj[istart])] for i in range(istart, len(traj))]
 
         with warnings.catch_warnings():

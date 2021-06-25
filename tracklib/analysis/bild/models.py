@@ -7,6 +7,7 @@ import functools
 
 import numpy as np
 import scipy.optimize
+import scipy.stats
 
 from tracklib import Trajectory
 from tracklib.models import rouse
@@ -299,6 +300,25 @@ class MultiStateRouse(MultiStateModel):
                                     localization_error=localization_error,
                                     loopingtrace=loopingtrace,
                                     )
+
+    def toFactorized(self):
+        """
+        Give the corresponding `FactorizedModel`
+
+        This is the model that simply calculates likelihoods from the steady
+        state probabilities of each of the individual states.
+
+        Returns
+        -------
+        FactorizedModel
+        """
+        distributions = []
+        for mod in self.models:
+            _, C = mod.steady_state()
+            s2 = self.measurement @ C @ self.measurement + np.sum(self.localization_error**2)/self.d
+            distributions.append(scipy.stats.maxwell(scale=np.sqrt(s2)))
+
+        return FactorizedModel(distributions, d=self.d)
 
 class FactorizedModel(MultiStateModel):
     """
