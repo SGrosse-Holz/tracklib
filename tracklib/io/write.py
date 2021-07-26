@@ -2,6 +2,7 @@
 Some functions for writing trajectories / data sets to file
 """
 import numpy as np
+import scipy.io
 import csv as csv_mod
 
 def csv(data, filename, header=True, delimiter='\t'):
@@ -57,3 +58,25 @@ def csv(data, filename, header=True, delimiter='\t'):
                     coords += traj.data[n, frame, :].tolist()
 
                 writer.writerow(head + coords)
+
+def mat(data, filename):
+    """
+    Write a dataset to MATLAB's .mat format
+
+    This will produce a cell array containing the individual trajectories as
+    structs. All the meta-data is passed along as well. The tags associated
+    with the trajectory will be written to an entry ``'tracklib_tags'``.
+
+    Parameters
+    ----------
+    data : TaggedSet of Trajectory
+        the data set to write
+    filename : str
+        the file to write to
+    """
+    trajs = np.empty(len(data), dtype=object)
+    for i, (traj, tags) in enumerate(data(giveTags=True)):
+        traj.tracklib_tags = list(tags)
+        trajs[i] = traj
+
+    scipy.io.savemat(filename, {'trajs' : trajs})

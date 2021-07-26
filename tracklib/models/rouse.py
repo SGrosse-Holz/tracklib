@@ -247,25 +247,25 @@ class Model:
         return logL, Mpost, Cpost
 
 # This is what I originally copied from Chris
-#     @staticmethod # This actually doesn't have anything to do with the model at hand
-#     def update_ensemble_with_observation_1d(M, C, x, s, w):
-# #     def Kalman_update_1d(M, C, x, s, w):
-#         # Important: M is (N,) only, no d!
-#         s2 = s*s
-# 
-#         # Likelihood for the new data point
-#         m = w @ M
-#         c = w @ C @ w
-#         cs = c+s2
-#         logL = -0.5*((x-m)*(x-m)/cs + np.log(cs)) - LOG_SQRT_2_PI
-# 
-#         # Propagated ensemple, given the new data
-#         invC = scipy.linalg.inv(C)
-#         invCpost = invC + w[:, np.newaxis]*w[np.newaxis, :] / s2
-#         Cpost = scipy.linalg.inv(invCpost)
-#         Mpost = Cpost @ (invC @ M + w*x / s2)
-# 
-#         return logL, Mpost, Cpost
+    @staticmethod # This actually doesn't have anything to do with the model at hand
+    def update_ensemble_with_observation_1d(M, C, x, s, w):
+#     def Kalman_update_1d(M, C, x, s, w):
+        # Important: M is (N,) only, no d!
+        s2 = s*s
+
+        # Likelihood for the new data point
+        m = w @ M
+        c = w @ C @ w
+        cs = c+s2
+        logL = -0.5*((x-m)*(x-m)/cs + np.log(cs)) - LOG_SQRT_2_PI
+
+        # Propagated ensemple, given the new data
+        invC = scipy.linalg.inv(C)
+        invCpost = invC + w[:, np.newaxis]*w[np.newaxis, :] / s2
+        Cpost = scipy.linalg.inv(invCpost)
+        Mpost = Cpost @ (invC @ M + w*x / s2)
+
+        return logL, Mpost, Cpost
 
 # There is some optimization potential here, since the evolution of the
 # covariance matrix for dimensions with identical localization error is the

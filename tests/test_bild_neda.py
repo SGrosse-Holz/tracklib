@@ -36,11 +36,13 @@ class test_Environment(myTestCase):
         sampler = bild.mcmc.FullMCMC()
         sampler.configure(iterations=10, burn_in=5)
 
-        self.env = bild.neda.Environment(self.traj, self.model, sampler)
+        priorfam = bild.ParametricFamily((-1e-5,), ([None, -1e-10]))
+        priorfam.get = lambda logq : bild.priors.GeometricPrior(logq=logq, nStates=2)
+        self.env = bild.neda.Environment(self.traj, self.model, sampler, priorfam)
 
         # random seeds are set such that the first run does not collapse, the
         # second does
-        np.random.seed(5)
+        np.random.seed(6)
         self.mcmcrun = self.env.runMCMC(-1)
         np.random.seed(0)
         self.mcmcrun_collapsed = self.env.runMCMC(-1)

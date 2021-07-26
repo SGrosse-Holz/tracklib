@@ -234,6 +234,8 @@ class MultiStateRouse(MultiStateModel):
 
         logL = np.empty((T,), dtype=float)
         logL[:] = np.nan
+        ftraj = np.empty((2, T, self.d), dtype=float)
+        ftraj[:] = np.nan
         for t, model_id in enumerate(looptrace):
             # Pick the model for propagation to the next data point
             model = self.models[model_id]
@@ -261,8 +263,11 @@ class MultiStateRouse(MultiStateModel):
                 M = np.stack(Ms, axis=1)
                 C = Cs
                 logL[t] = np.sum(logLs)
+                ftraj[0, t, :] = self.measurement @ M
+                ftraj[1, t, :] = [self.measurement @ c @ self.measurement for c in C]
 
         loopingtrace.individual_logLs = logL[loopingtrace.t]
+        loopingtrace.filtered_trajectory = Trajectory.fromArray(ftraj[0], variances=ftraj[1])
         return np.nansum(loopingtrace.individual_logLs)
 
     def trajectory_from_loopingtrace(self, loopingtrace, localization_error=None):
@@ -366,6 +371,17 @@ class FactorizedModel(MultiStateModel):
     encountered in double_scalars``. This is caused by ``new_logL - cur_logL``
     reading ``- inf + inf`` at the first MCMC iteration, if `logL` returns
     ``-inf``.
+
+    Examples
+    --------
+    Experimentally measured distributions can be used straightforwardly using
+    ``scipy.stats.gaussian_kde``: assuming we have measured ensembles of
+    distances ``dists_i`` for reference states ``i``, we can use
+
+    >>> model = FactorizedModel([scipy.stats.gaussian_kde(dists_0),
+    ...                          scipy.stats.gaussian_kde(dists_1),
+    ...                          scipy.stats.gaussian_kde(dists_1)])
+
     """
     def __init__(self, distributions, d=3):
         self.distributions = distributions

@@ -376,11 +376,13 @@ class Sampler(ABC):
         current_values = initial_values
             
         # Setup
-        cur_logL = -np.inf
-        max_logL = -np.inf
+        cur_logL = self.logL(current_values)
         cnt_accept = 0
         cnt_logging = config['log_every']
         cnt_stopping = config['check_stopping_every']
+
+        max_logL = cur_logL
+        best_values = deepcopy(current_values)
 
         # Have both of these be lists for now, because appending is easier
         # Converted to np.array when handed to MCMCRun

@@ -110,10 +110,10 @@ class Test1Trajectory(myTestCase):
                     lines = traj.plot_spatial(label='test plot')
 
             # Modifiers
-            traj.meta['MSD'] = np.array([5])
+            traj.meta['MSD'] = {'data' : np.array([5])}
             times2 = traj.rescale(2)
             self.assert_array_equal(traj.data*2, times2.data)
-            self.assert_array_equal(traj.meta['MSD']*4, times2.meta['MSD'])
+            self.assert_array_equal(traj.meta['MSD']['data']*4, times2.meta['MSD']['data'])
             plus1 = traj.offset(1)
             self.assert_array_equal(traj.data+1, plus1.data)
             plus1 = traj.offset([1])
@@ -629,13 +629,13 @@ class TestAnalysisChi2(myTestCase):
         dof = tl.analysis.chi2.chi2vsMSD(self.ds2, n=5, msd=self.msd)
         tl.analysis.chi2.summary_plot(self.ds2, dof)
 
-class TestAnalysisMSD(myTestCase):
+class TestAnalysisP2(myTestCase):
     def setUp(self):
         self.traj = tl.Trajectory.fromArray([1, 2, 3, 4, np.nan, 6])
         self.ds = tl.models.statgauss.dataset(msd=np.linspace(0, 5, 10), Ts=10*[None])
 
     def test_MSDtraj(self):
-        tl.analysis.msd.MSDtraj(self.traj)
+        tl.analysis.MSD(self.traj)
         msd = self.traj.meta['MSD']['data']
         self.assert_array_equal(msd, np.array([0, 1, 4, 9, 16, 25]))
         self.assert_array_equal(self.traj.meta['MSD']['N'], np.array([5, 3, 3, 2, 1, 1]))
@@ -646,64 +646,32 @@ class TestAnalysisMSD(myTestCase):
         self.assert_array_equal(self.traj.meta['MSD']['N'], np.array([1, 1, 1, 1, 0, 1]))
 
         traj3d = tl.Trajectory.fromArray(np.arange(30).reshape(-1, 3))
-        tl.analysis.msd.MSDtraj(traj3d)
+        tl.analysis.MSD(traj3d)
         msd = traj3d.meta['MSD']['data']
         self.assert_array_equal(msd, 27*np.arange(len(traj3d))**2)
 
     def test_MSDdataset(self):
-        msd, N = tl.analysis.msd.MSDdataset(self.ds, giveN=True)
+        msd, N = tl.analysis.MSD(self.ds, giveN=True)
         self.assertEqual(len(msd), 10)
         self.assert_array_equal(N, len(self.ds)*np.linspace(10, 1, 10))
 
-        msd, var = tl.analysis.msd.MSDdataset(self.ds, givevar=True)
+        msd, var = tl.analysis.MSD(self.ds, givevar=True)
         self.assert_array_equal(np.isnan(var), 10*[False])
 
         self.assert_array_equal(msd, tl.analysis.MSD(self.ds))
 
-    def test_MSD_functions(self):
-        md = tl.analysis.MSD(self.traj, TA=False, function='D', writeto='MD')
-        self.assertIs(md, self.traj.meta['MD']['data'])
-        self.assert_array_equal(md, [0, 1, 2, 3, np.nan, 5])
-
-        acf = tl.analysis.MSD(self.traj, TA=False, function='SP', writeto='ACF')
-        self.assert_array_equal(acf, [1, 2, 3, 4, np.nan, 6])
-
-        mcd = tl.analysis.MSD(self.traj, TA=False,
-                              function=lambda xm, xn : np.sum((xm-xn)**3, axis=-1),
-                              writeto='MCD')
-        self.assert_array_equal(mcd, [0, 1, 8, 27, np.nan, 125])
-
-    def test_dMSD(self):
-        t, scal = tl.analysis.msd.dMSD(self.ds)
-        t, scal = tl.analysis.msd.dMSD(self.traj)
-
-    def test_scaling(self):
-        alpha = tl.analysis.msd.scaling(self.traj, n=5)
-        self.assertAlmostEqual(alpha, 2, places=5)
-        self.assertTrue(np.isnan(tl.analysis.msd.scaling(tl.Trajectory.fromArray([np.nan, np.nan]), n=1)))
-
-class TestAnalysisVACF(myTestCase):
-    def setUp(self):
-        self.traj = tl.Trajectory.fromArray([1, 2, 3, 4, np.nan, 6])
-        self.ds = tl.models.statgauss.dataset(msd=np.linspace(0, 5, 10), Ts=10*[None])
-
-    def test_VACFtraj(self):
-        vacf = tl.analysis.vacf.VACFtraj(self.traj)
-        self.assert_array_equal(vacf, self.traj.meta['VACF'])
-        self.assert_array_equal(vacf, np.array([1, 1, 1, np.nan, np.nan]))
-        self.assert_array_equal(self.traj.meta['VACFmeta']['N'], np.array([3, 2, 1, 0, 0]))
-
-        self.assert_array_equal(vacf, tl.analysis.VACF(self.traj))
-
-    def test_VACFdataset(self):
-        vacf, N = tl.analysis.vacf.VACFdataset(self.ds, giveN=True, dt=2)
-        self.assertEqual(len(vacf), 4)
-        self.assert_array_equal(N, len(self.ds)*np.array([8, 6, 4, 2]))
-
-        vacf, var = tl.analysis.vacf.VACFdataset(self.ds, givevar=True, dt=2)
-        self.assert_array_equal(np.isnan(var), 4*[False])
-
-        self.assert_array_equal(vacf, tl.analysis.VACF(self.ds, dt=2))
+#     def test_MSD_functions(self):
+#         md = tl.analysis.MSD(self.traj, TA=False, function='D', writeto='MD')
+#         self.assertIs(md, self.traj.meta['MD']['data'])
+#         self.assert_array_equal(md, [0, 1, 2, 3, np.nan, 5])
+# 
+#         acf = tl.analysis.MSD(self.traj, TA=False, function='SP', writeto='ACF')
+#         self.assert_array_equal(acf, [1, 2, 3, 4, np.nan, 6])
+# 
+#         mcd = tl.analysis.MSD(self.traj, TA=False,
+#                               function=lambda xm, xn : np.sum((xm-xn)**3, axis=-1),
+#                               writeto='MCD')
+#         self.assert_array_equal(mcd, [0, 1, 8, 27, np.nan, 125])
 
 class TestAnalysisKLD(myTestCase):
     def setUp(self):

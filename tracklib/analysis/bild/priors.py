@@ -5,6 +5,7 @@ Everything to do with priors
 import abc
 
 import numpy as np
+import scipy.stats
 
 from .util import Loopingtrace, ParametricFamily
 
@@ -131,3 +132,61 @@ class GeometricPrior(Prior):
         fam = ParametricFamily((0,), [(None, 0)])
         fam.get = lambda logq : cls(logq, nStates)
         return fam
+
+class UniformKPrior_NONORM(Prior):
+    """
+    A prior that has uniform distribution of #switches
+    """
+    def logpi(self, loopingtrace):
+        p = 1 - 1/loopingtrace.n
+        k = np.count_nonzero(loopingtrace.state[1:] != loopingtrace.state[:-1])
+        return -scipy.stats.binom(n=len(loopingtrace)-1, p=p).logpmf(k)
+
+class FixedSwitchPrior(Prior):
+    """
+    Prior for a fixed number of switches
+    """
+    def __init__(self, k):
+        self.k = k
+
+    def logpi(self, loopingtrace):
+        k = np.count_nonzero(np.diff(loopingtrace.state))
+        if k == self.k:
+            N = len(loopingtrace)
+            n = loopingtrace.n
+            return -np.log( n*(n-1)**k * scipy.special.binom(N-1, k) )
+        else:
+            return -np.inf
+
+class MaxSwitchPrior(Prior):
+    """
+    Prior for limiting number of switches
+    """
+    def __init__(self, kmax):
+        self.kmax = kmax
+
+    def logpi(self, loopingtrace):
+        k = np.count_nonzero(np.diff(loopingtrace.state))
+        if k <= self.kmax:
+            N = len(loopingtrace)
+            n = loopingtrace.n
+            return -np.log( np.sum([n*(n-1)**k * scipy.special.binom(N-1, k) for k in range(self.kmax+1)]) )
+        else:
+            return -np.inf
+
+class NumIntPrior_NONORM(Prior):
+    """
+    Prior designed to reproduce the effects of Chris' numInt scheme
+    """
+    def __init__(self, numInt, logq):
+        self.numInt = numInt
+        self.logq = logq
+
+    def logpi(self, loopingtrace):
+        k = np.count_nonzero(np.diff(loopingtrace.state))
+        if k < self.numInt:
+            p = 1 - 1/loopingtrace.n
+            return (self.numInt-1 - k)*np.log(len(loopingtrace)-1) + k*self.logq
+            # return -scipy.stats.binom(n=len(loopingtrace)-1, p=p).logpmf(k) + k*self.logq
+        else:
+            return -np.inf

@@ -267,6 +267,44 @@ class TestFullMCMC(myTestCase):
         run = self.sampler.run()
         self.assertEqual(len(run.samples), 5)
 
+class TestFixedSwitchMCMC(myTestCase):
+    def setUp(self):
+        self.traj = tl.Trajectory.fromArray(np.array([1, 2, np.nan, 4, 3, 2, 1, 2, 3, 4]), localization_error=[0.5])
+        self.model = bild.models.FactorizedModel([
+            scipy.stats.maxwell(scale=1),
+            scipy.stats.maxwell(scale=4),
+            ], d=1)
+
+        self.sampler = bild.mcmc.FixedSwitchMCMC(k=3, move_weights=(2, 1))
+        self.sampler.setup(self.traj, self.model)
+
+    def test_lt_stepping_probability_and_proposal_sample(self):
+        def num2binlist(num, nbits):
+            ls = list(bin(num + (1<<nbits)))[3:] # bin() gives '0b1...'
+            return [int(oi) for oi in ls]
+
+        nbit = 8
+        lts = [bild.Loopingtrace.fromStates(num2binlist(num, nbit), nStates=2) for num in range(1<<nbit)]
+        lts = [lt for lt in lts if np.count_nonzero(np.diff(lt.state)) == self.sampler.k]
+
+        for lt_from_ind in np.random.choice(len(lts), 5, replace=False):
+            self.assertAlmostEqual(np.sum([self.sampler.lt_stepping_probability(lts[lt_from_ind], lt) for lt in lts]), 1, delta=1e-10)
+
+        lt_prop = lts[np.random.choice(len(lts))]
+        p_next = np.array([self.sampler.lt_stepping_probability(lt_prop, lt) for lt in lts])
+        ind_best_next = np.argmax(p_next)
+        lt_best_next = lts[ind_best_next]
+        N = int(100/p_next[ind_best_next])
+        if N > 10000: # pragma: no cover
+            raise RuntimeError(f"Don't want to sample {N} profiles")
+        N_best_next = np.count_nonzero([lt == lt_best_next for lt in self.sampler.lt_gen_proposal_sample_from(lt_prop, nSample=N)])
+        self.assertAlmostEqual(N_best_next, 100, delta=30) # 3 sigma
+
+    def test_run(self):
+        self.sampler.configure(iterations=10, burn_in=5)
+        run = self.sampler.run()
+        self.assertEqual(len(run.samples), 5)
+
 class Test_main(myTestCase):
     def setUp(self):
         self.traj = tl.Trajectory.fromArray(np.array([1, 2, np.nan, 4]), localization_error=[0.5])

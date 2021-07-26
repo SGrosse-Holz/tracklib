@@ -297,3 +297,21 @@ class ParametricFamily:
         This function should be overwritten upon instantiation
         """
         raise NotImplementedError # pragma: no cover
+
+def stateProbabilities(loopingtraces):
+    """
+    Calculate marginal probabilities for an ensemble of profiles
+
+    Parameters
+    ----------
+    loopingtraces : iterable of Loopingtrace
+        the traces to use
+
+    Returns
+    -------
+    (n, T) np.ndarray
+        the marginal probabilities for each state at each time point
+    """
+    allstates = np.array([trace.full_valid() for trace in loopingtraces])
+    counts = np.array([np.count_nonzero(allstates == i, axis=0) for i in range(loopingtraces[0].n)])
+    return counts / allstates.shape[0]

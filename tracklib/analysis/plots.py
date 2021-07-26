@@ -6,7 +6,7 @@ import numpy as np
 from matplotlib import pyplot as plt
 
 from tracklib import Trajectory, TaggedSet
-from .msd import MSD
+from .p2 import MSD
 
 def length_distribution(dataset, **kwargs):
     """

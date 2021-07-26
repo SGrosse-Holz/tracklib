@@ -14,7 +14,7 @@ import scipy.linalg
 import scipy.stats
 
 from tracklib import Trajectory, TaggedSet
-from .msd import MSD
+from .p2 import MSD
 
 def chi2vsMSD(dataset, n=10, msd=None):
     """
