@@ -66,7 +66,7 @@ class UniformPrior(Prior):
     is the number of states and :math:`N` the number of (valid) frames.
     """
     def logpi(self, loopingtrace):
-        return -len(loopingtrace.t)*np.log(loopingtrace.n)
+        return -len(loopingtrace)*np.log(loopingtrace.n)
 
 class GeometricPrior(Prior):
     r"""
@@ -104,7 +104,7 @@ class GeometricPrior(Prior):
     def logpi(self, loopingtrace):
         # optimized
         k = np.count_nonzero(loopingtrace.state[1:] != loopingtrace.state[:-1])
-        return k*self.logq - (len(loopingtrace.t)-1)*self._log_norm_per_dof  - self._log_n
+        return k*self.logq - (len(loopingtrace)-1)*self._log_norm_per_dof  - self._log_n
 
     def logpi_vectorized(self, loopingtraces):
         loopingtraces = np.array([trace.state for trace in loopingtraces])
@@ -162,31 +162,54 @@ class MaxSwitchPrior(Prior):
     """
     Prior for limiting number of switches
     """
-    def __init__(self, kmax):
+    def __init__(self, kmax, logq=0, nStates=2):
         self.kmax = kmax
+        self.logq = logq
+        self.q = np.exp(logq)
+        self.n = nStates
 
     def logpi(self, loopingtrace):
         k = np.count_nonzero(np.diff(loopingtrace.state))
         if k <= self.kmax:
             N = len(loopingtrace)
-            n = loopingtrace.n
-            return -np.log( np.sum([n*(n-1)**k * scipy.special.binom(N-1, k) for k in range(self.kmax+1)]) )
+            lognorm = np.log( np.sum([self.n*(self.q*(self.n-1))**kk * scipy.special.binom(N-1, kk) for kk in range(self.kmax+1)]) )
+            return k*self.logq - lognorm
         else:
             return -np.inf
 
-class NumIntPrior_NONORM(Prior):
+class NumIntPrior(Prior):
     """
     Prior designed to reproduce the effects of Chris' numInt scheme
     """
-    def __init__(self, numInt, logq):
-        self.numInt = numInt
+    def __init__(self, numInt, logq=0, nStates=2):
+        self.K = numInt - 1
         self.logq = logq
+        self.n = nStates
+
+        self._lognorm = + self.K * np.log(1 + np.exp(self.logq)*(self.n - 1)) + np.log(self.n)
 
     def logpi(self, loopingtrace):
         k = np.count_nonzero(np.diff(loopingtrace.state))
-        if k < self.numInt:
-            p = 1 - 1/loopingtrace.n
-            return (self.numInt-1 - k)*np.log(len(loopingtrace)-1) + k*self.logq
-            # return -scipy.stats.binom(n=len(loopingtrace)-1, p=p).logpmf(k) + k*self.logq
+        if k <= self.K:
+            i = np.arange(k)
+            N = len(loopingtrace)
+            return k * self.logq + np.log(np.prod((self.K-i)/(N-1-i))) - self._lognorm
         else:
             return -np.inf
+
+# class NumIntPrior_NONORM(Prior):
+#     """
+#     Prior designed to reproduce the effects of Chris' numInt scheme
+#     """
+#     def __init__(self, numInt, logq):
+#         self.numInt = numInt
+#         self.logq = logq
+# 
+#     def logpi(self, loopingtrace):
+#         k = np.count_nonzero(np.diff(loopingtrace.state))
+#         if k < self.numInt:
+#             p = 1 - 1/loopingtrace.n
+#             return (self.numInt-1 - k)*np.log(len(loopingtrace)-1) + k*self.logq
+#             # return -scipy.stats.binom(n=len(loopingtrace)-1, p=p).logpmf(k) + k*self.logq
+#         else:
+#             return -np.inf

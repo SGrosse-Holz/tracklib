@@ -407,8 +407,22 @@ class Sampler(ABC):
             # Proposal
             proposed_values, logp_forward, logp_backward = self.propose_update(current_values)
             new_logL = self.logL(proposed_values)
-            with np.errstate(under='ignore', over='ignore'):
-                p_accept = np.exp(new_logL - cur_logL - logp_forward + logp_backward)
+            if np.isfinite(cur_logL):
+                with np.errstate(under='ignore', over='ignore'):
+                    p_accept = np.exp(new_logL - cur_logL - logp_forward + logp_backward)
+            else:
+                if cur_logL == -np.inf:
+                    # Always move on, even if new_logL might be -inf as well
+                    p_accept = 1
+                elif cur_logL == np.inf:
+                    print("Encountered absorbing state (L = inf) at {}".format(current_values))
+                    if i > config['burn_in']:
+                        print("Aborting here")
+                        break
+                    else:
+                        raise RuntimeError("Absorbing state during burn-in")
+                else: # i.e. nan
+                    raise RuntimeError("Encountered invalid state (L = NaN) at {}".format(current_values))
 
             # Acceptance
             if np.random.rand() < p_accept:
