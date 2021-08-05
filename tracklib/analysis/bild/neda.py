@@ -5,6 +5,7 @@ Reimplement the evidence based scheme
 import numpy as np
 
 from . import mcmc, priors
+from .util import ParametricFamily
 
 class Environment:
     def __init__(self, traj, model, MCMCSampler, priorfam):
@@ -13,6 +14,13 @@ class Environment:
         self.model = model
         self.sampler = MCMCSampler
         self.priorfam = priorfam
+
+    @classmethod
+    def for_numInt_pruning(cls, traj, model, MCMCSampler):
+        priorfam = ParametricFamily((10, 0.3), [(0, None), (0, 1)])
+        priorfam.get = lambda K, q : priors.NumIntPrior(K+1, logq=np.log(q), nStates=model.nStates)
+
+        return cls(traj, model, MCMCSampler, priorfam)
     
     def runMCMC(self, *prior_params):
         self.sampler.setup(self.traj, self.model,
@@ -66,3 +74,48 @@ class Environment:
             return L_eval
         else:
             return L_eval + log_prior - log_post
+
+def numInt_pruning(env, q=0.3, max_iteration=20):
+    geometric_prior = priors.GeometricPrior(logq=np.log(q), nStates=env.model.nStates)
+
+    runs = []
+    cur_K = len(env.traj) - 1
+    for _ in range(max_iteration):
+        # Do the current run
+        mcmcrun = env.runMCMC(cur_K, q)
+        
+        # Add geometric likelihoods
+        cur_prior = env.priorfam(cur_K, q)
+        mcmcrun.geometric_logLs_trunc = np.array([ \
+                logL - cur_prior.logpi(profile) + geometric_prior.logpi(profile) \
+                for (profile, _), logL in zip(mcmcrun.samples, mcmcrun.logLs_trunc()) \
+        ])
+
+        # Find best profile
+        i = np.argmax(mcmcrun.geometric_logLs_trunc)
+        profile = mcmcrun.samples[i][0]
+        k = profile.count_switches()
+        geom_logL = mcmcrun.geometric_logLs_trunc[i]
+
+        # Save
+        runs.append({
+            'mcmcrun' : mcmcrun,
+            'K' : cur_K,
+            'best_profile' : profile,
+            'best_k' : k,
+            'best_logL' : geom_logL,
+        })
+
+        if k == cur_K:
+            break
+        else:
+            cur_K = k
+
+    else:
+        print("Run with q = {:.3g} did not converge after {} iterations\nThe K sampled so far are {}".format(q, max_iteration, str([run['K'] for run in runs])))
+        raise RuntimeError
+
+    i_best_run = np.argmax([run['best_logL'] for run in runs])
+    final_profile = runs[i_best_run]['best_profile']
+
+    return final_profile, runs

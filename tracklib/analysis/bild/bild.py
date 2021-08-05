@@ -24,7 +24,7 @@ def main(traj, model, MCMCconfig,
     myrun = sampler.run()
 
     out = {'valid' : len(myrun.logLs) < sampler.config['iterations']}
-    (out['loopingtrace'], out['prior_params']), _ = myrun.best_sample_logL()
+    (out['loopingprofile'], out['prior_params']), _ = myrun.best_sample_logL()
     if return_mcmcrun:
         out['mcmcrun'] = myrun
 

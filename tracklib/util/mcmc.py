@@ -380,6 +380,8 @@ class Sampler(ABC):
         cnt_accept = 0
         cnt_logging = config['log_every']
         cnt_stopping = config['check_stopping_every']
+        if cnt_stopping > 0:
+            cnt_stopping += config['burn_in']
 
         max_logL = cur_logL
         best_values = deepcopy(current_values)
