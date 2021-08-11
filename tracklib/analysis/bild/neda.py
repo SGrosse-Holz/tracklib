@@ -75,8 +75,11 @@ class Environment:
         else:
             return L_eval + log_prior - log_post
 
-def numInt_pruning(env, q=0.3, max_iteration=20):
+def numInt_pruning(env, q=0.3, max_iteration=20, update='K'):
+    assert update in {'K', 'mean k'}
+
     geometric_prior = priors.GeometricPrior(logq=np.log(q), nStates=env.model.nStates)
+    geometric_p = 1/(1 + 1/((env.model.nStates - 1)*q))
 
     runs = []
     cur_K = len(env.traj) - 1
@@ -106,10 +109,17 @@ def numInt_pruning(env, q=0.3, max_iteration=20):
             'best_logL' : geom_logL,
         })
 
-        if k == cur_K:
-            break
+        if update == 'K':
+            if k == cur_K:
+                break
+            else:
+                cur_K = k
         else:
-            cur_K = k
+            if k >= cur_K*geometric_p:
+                break
+            else:
+                cur_K = int(np.floor(k / geometric_p))
+
 
     else:
         print("Run with q = {:.3g} did not converge after {} iterations\nThe K sampled so far are {}".format(q, max_iteration, str([run['K'] for run in runs])))
