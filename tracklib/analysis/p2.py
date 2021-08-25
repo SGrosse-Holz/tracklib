@@ -14,7 +14,7 @@ from tracklib import Trajectory, TaggedSet
 DEFKEY='P2'
 
 def P2traj(traj, TA=True, recalculate=False,
-           function=None, postproc=None,
+           function=None, preproc=None, postproc=None,
            writeto=DEFKEY,
            ):
     """
@@ -39,6 +39,9 @@ def P2traj(traj, TA=True, recalculate=False,
         the function to evaluate. Should be ``fun(traj[m], traj[n]) -->
         float``, where ``m >= n``, and it should be vectorized (i.e. work on
         numpy arrays and return the corresponding arrays).
+    preproc : callable or None
+        will be applied to the trajectory before processing. Example: ``lambda
+        traj: traj.diff()`` gives the increment trajectory
     postproc : callable or None
         will be applied to the final result, i.e. should take a (T,) array and
         return such.
@@ -72,12 +75,19 @@ def P2traj(traj, TA=True, recalculate=False,
     
     if writeto not in traj.meta.keys():
 
-        if TA:
-            data = [function(traj[:], traj[:])]
-            data += [function(traj[i:], traj[:-i]) for i in range(1, len(traj))]
+        if callable(preproc):
+            proc_traj = preproc(traj)
         else:
-            istart = np.min(np.nonzero(~np.any(np.isnan(traj.data), (0, 2)))[0])
-            data = [[function(traj[i], traj[istart])] for i in range(istart, len(traj))]
+            proc_traj = traj
+
+        if TA:
+            data = [function(proc_traj[:], proc_traj[:])]
+            data += [function(proc_traj[i:], proc_traj[:-i]) for i in range(1, len(proc_traj))]
+        else:
+            istart = np.min(np.nonzero(~np.any(np.isnan(proc_traj.data), (0, 2)))[0])
+            data = [[function(proc_traj[i], proc_traj[istart])] for i in range(istart, len(proc_traj))]
+
+        del proc_traj # just for clarity
 
         with warnings.catch_warnings():
             warnings.filterwarnings(action='ignore', message='Mean of empty slice')
@@ -206,10 +216,30 @@ def MSD(*args, **kwargs):
 
     return P2(*args, **kwargs, function=SD, writeto='MSD')
 
-def ACF(*args, **kwargs):
+def ACovF(*args, **kwargs):
+    def SP(xm, xn):
+        return np.sum(xm*xn, axis=-1)
+
+    return P2(*args, **kwargs, function=SP, writeto='ACovF')
+
+def ACorrF(*args, **kwargs):
     def SP(xm, xn):
         return np.sum(xm*xn, axis=-1)
     def normalize(data):
         return data / data[0]
 
-    return P2(*args, **kwargs, function=SP, postproc=normalize, writeto='ACF')
+    return P2(*args, **kwargs, function=SP, postproc=normalize, writeto='ACorrF')
+
+def VACovF(*args, **kwargs):
+    def SP(xm, xn):
+        return np.sum(xm*xn, axis=-1)
+
+    return P2(*args, **kwargs, function=SP, preproc=lambda traj: traj.diff(), writeto='ACovF')
+
+def VACorrF(*args, **kwargs):
+    def SP(xm, xn):
+        return np.sum(xm*xn, axis=-1)
+    def normalize(data):
+        return data / data[0]
+
+    return P2(*args, **kwargs, function=SP, preproc=lambda traj: traj.diff(), postproc=normalize, writeto='ACorrF')

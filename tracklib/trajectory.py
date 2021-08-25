@@ -277,6 +277,8 @@ class Trajectory(ABC):
             # here we do not have to worry about vanishing dimensions.
         if 'parity' in traj.meta.keys():
             pass # Parity doesn't change
+        if 'MSD' in traj.meta.keys():
+            del traj.meta['MSD']
 
         return traj
 

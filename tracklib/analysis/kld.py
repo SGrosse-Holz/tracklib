@@ -56,7 +56,8 @@ def perezcruz(dataset, n=10, k=20, dt=1):
     snips = np.array(snips)
 
     if dataset.map_unique(lambda traj : traj.N) > 1: # pragma: no cover
-        snips = snips.swapaxes(2, 1)
+        snips = snips.swapaxes(2, 1) # (N_snips, N, n, d) --> (N_snips, n, N, d)
+    # (N_snips, n), (N_snips, n, d), or (N_snips, n, N, d) --> (N_snips, n, N*d)
     snips = snips.reshape((snips.shape[0], snips.shape[1], -1))
 
     # DCT seems to speed up neighbor search. Analytically it is irrelevant, as
@@ -72,6 +73,9 @@ def perezcruz(dataset, n=10, k=20, dt=1):
     sample_snips = snips[ind[halfN:]]
 
     # Note that time reversal in DCT space means multiplying all odd modes by -1
+    # Note also that time reversal now happens *before* flattening over the
+    # different dimensions, meaning we can now properly handle
+    # multi-dimensional trajectories
     rev_estimation_snips = estimation_snips * ((-1)**np.arange(estimation_snips.shape[1])).reshape(1, -1, 1)
     if parity == 'odd':
         rev_estimation_snips *= -1
