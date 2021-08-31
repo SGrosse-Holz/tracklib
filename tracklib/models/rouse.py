@@ -174,17 +174,15 @@ class Model:
 
 ####### Propagation of an ensemble
 
-    def steady_state(self, additional_tether=True):
-        if additional_tether:
-            self.A[0, 0] += float(additional_tether)
+    def steady_state(self):
+        # automatically introduce tether if there is no steady state
+        if not 'invA' in self._dynamics.keys():
+            self.update_invA()
+        invA = self._dynamics['invA']
+        if invA is None:
+            self.A[0, 0] += 1.0
             invA = scipy.linalg.inv(self.A)
-            self.A[0, 0] -= float(additional_tether)
-        else:
-            if not 'invA' in self._dynamics.keys():
-                self.update_invA()
-            invA = self._dynamics['invA']
-            if invA is None:
-                raise RuntimeError("Free chain does not have a steady state")
+            self.A[0, 0] -= 1.0
 
         return (invA @ self.F / self.k,
                 invA * self.D / self.k)
@@ -212,8 +210,8 @@ class Model:
 
 ####### Evolution of a single conformation
 
-    def conf_ss(self, additional_tether=True):
-        M, C = self.steady_state(additional_tether)
+    def conf_ss(self):
+        M, C = self.steady_state()
         L = scipy.linalg.cholesky(C, lower=True)
         return M + L @ np.random.normal(size=(self.N, self.d))
 
@@ -296,8 +294,8 @@ class Model:
 
 ####### Auxiliary things
 
-    def contact_probability(self, additional_tether=True):
-        _, J = self.steady_state(additional_tether)
+    def contact_probability(self):
+        _, J = self.steady_state()
         Jii = np.tile(np.diagonal(J), (len(J), 1))
         return (Jii + Jii.T - 2*J)**(-3/2)
 
@@ -326,12 +324,57 @@ class Model:
                                 axis = 0)
                     for dt in dts]
 
+        # Note: to quickly check this formula, use the "dirty trick" of
+        # assuming a steady state where there is none, i.e. replace <xx> with
+        # (1-B^2)^(-1)Σ and eliminate factors. The final expression, as opposed
+        # to the steady state itself, does not diverge as B --> 1 and can thus
+        # be analytically continued, i.e. stays valid even if the steady state
+        # we had to assume intermittently does not exist
         xxs = [2*scipy.linalg.inv(np.eye(self.N) + B) @ Sig for B, Sig in zip(Bs, Sigs)]
 
         if w is None:
             return self.d * np.array(xxs)
         else:
             return self.d * np.array([w @ xx @ w for xx in xxs])
+
+    def MSD(self, dts, w=None):
+        if w is None or np.sum(w) != 0:
+            # COM motion is relevant. Do we have a steady state?
+            try:
+                self.check_dynamics(run_if_necessary=False)
+            except:
+                self.update_invA()
+            if self._dynamics['invA'] is None:
+                return self.analytical_MSD(dts, w)
+        else:
+            return 2*( self.ss_ACF([0], w) - self.ss_ACF(dts, w) )
+
+    def ss_ACF(self, dts, w=None):
+        # Note that this is valid also if there is no actual steady state for
+        # the chain, but for the variable we're interested in, such as when
+        # we're looking at end to end distances.
+        dts = np.sort(dts)
+        Bs = []
+        i_start, i_end = 0, len(dts)
+        if dts[0] < 0:
+            raise ValueError("dt should be > 0")
+        while i_start < i_end and dts[i_start] == 0:
+            Bs += [np.eye(self.N)]
+            i_start += 1
+        while i_end > i_start and dts[i_end-1] == np.inf:
+            i_end -= 1
+
+        Bs += [scipy.linalg.expm(-self.k*self.A*dt) for dt in dts[i_start:i_end]]
+        Bs += [np.zeros((self.N, self.N)) for _ in range(len(dts)-i_end)]
+
+        _, C = self.steady_state()
+
+        if w is None:
+            Bs = np.array(Bs)
+            return self.d * Bs @ C
+        else:
+            Cw = C @ w
+            return self.d * np.array([(w @ B) @ Cw for B in Bs])
 
 ####### Length & Time scales
 
