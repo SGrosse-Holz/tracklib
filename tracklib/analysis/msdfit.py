@@ -62,12 +62,25 @@ Other than the model free version, so far we have
    `tracklib.models.Rouse`.
 """
 from copy import deepcopy
+import itertools
 
 import numpy as np
 from scipy import linalg, optimize, interpolate, special
 
 from tracklib.models import rouse
 from .p2 import MSD
+
+_imap_function = map
+class Parallelize:
+    def __init__(self, imap_unordered):
+        self.imapu = imap_unordered
+    def __enter__(self):
+        global _imap_function
+        _imap_function = self.imapu
+    def __exit__(self, type, value, traceback):
+        global _imap_function
+        _imap_function = map
+        return False # raise anything that might have happened
 
 ################## Converting between msd, acf, vacf ##########################
 
@@ -112,7 +125,8 @@ def GP_logL_x(trace, C, m=0):
     s, logdet = np.linalg.slogdet(myC)
     if s <= 0:
         raise BadCovarianceError("Covariance not positive definite. slogdet = ({}, {})".format(s, logdet))
-    xCx = trace @ linalg.inv(myC) @ trace
+    # xCx = trace @ linalg.inv(myC) @ trace
+    xCx = trace @ linalg.solve(myC, trace, assume_a='pos')
 
     return -0.5*(xCx + logdet) - len(myC)*LOG_SQRT_2_PI
 
@@ -138,33 +152,55 @@ def GP_logL_dx(trace, C, m=0):
     s, logdet = np.linalg.slogdet(myC)
     if s <= 0:
         raise BadCovarianceError("Covariance not positive definite. slogdet = ({}, {})".format(s, logdet))
-    DCD = steps @ linalg.inv(myC) @ steps
+    # DCD = steps @ linalg.inv(myC) @ steps
+    DCD = steps @ linalg.solve(myC, steps, assume_a='pos')
     
     return -0.5*(DCD + logdet) - len(myC)*LOG_SQRT_2_PI
+
+def _p_logL(params):
+    ss_order = params[0]
+    if ss_order == 0:
+        return GP_logL_x(*params[1:])
+    elif ss_order == 1:
+        return GP_logL_dx(*params[1:])
+    else:
+        raise ValueError(f"invalid steady state order: {ss_order}")
 
 def ds_logL(data, ss_order, acf, m=0):
     """ ss_order = 0 if trajectories are steady state, 1 if displacements are steady state """
     d = data.map_unique(lambda traj : traj.d)
         
-    if ss_order == 0:
-        my_logL = GP_logL_x
-    elif ss_order == 1:
-        my_logL = GP_logL_dx
-    else:
-        raise ValueError(f"invalid steady state order: {ss_order}")
-    
-    logLs = np.empty((len(data), d), dtype=float)
-    logLs[:] = np.nan
+#     if ss_order == 0:
+#         my_logL = GP_logL_x
+#     elif ss_order == 1:
+#         my_logL = GP_logL_dx
+#     else:
+#         raise ValueError(f"invalid steady state order: {ss_order}")
+#     
+#     logLs = np.empty((len(data), d), dtype=float)
+#     logLs[:] = np.nan
+#     for dim in range(d):
+#         if len(acf.shape) == 1:
+#             C = linalg.toeplitz(acf/d)
+#         else:
+#             C = linalg.toeplitz(acf[:, dim])
+# 
+#         for i, traj in enumerate(data):
+#             logLs[i, dim] = my_logL(traj[:][:, dim], C)
+# 
+#     return np.sum(logLs)
+
+    logL = 0
     for dim in range(d):
         if len(acf.shape) == 1:
             C = linalg.toeplitz(acf/d)
         else:
             C = linalg.toeplitz(acf[:, dim])
 
-        for i, traj in enumerate(data):
-            logLs[i, dim] = my_logL(traj[:][:, dim], C)
+        iparams = itertools.product([ss_order], (traj[:][:, dim] for traj in data), [C])
+        logL += np.sum(list(_imap_function(_p_logL, iparams)))
 
-    return np.sum(logLs)
+    return logL
 
 ################## Fit base class definition ###################################
 
@@ -226,17 +262,37 @@ class Fit:
                     return self.max_penalty
     
     def _get_min_target(self, n_params, offset=0, fix_values=()):
+        # Set up fixed value machinery and make sure that everything is cast as
+        # a function taking the given parameters and calculating the missing
+        # one from it. Note note below.
         is_fixed = np.zeros(n_params, dtype=bool)
         for i, (ip, val) in enumerate(fix_values):
             is_fixed[ip] = True
             if not callable(val):
-                fix_values[i] = (ip, lambda x : val)
+                fix_values[i] = (ip, lambda x, val=val : val)
+        # Note that the above is pretty hacky: what we want to do is to convert
+        # any fixed value into a function that returns that value. Because the
+        # function is only evaluated at runtime, the straight-forward approach
+        # ``lambda x: val`` does not work, because after all the definitions
+        # have run, `val` just has the value of the last iteration. As an
+        # example of this effect, note that
+        # >>> funs = [lambda : val for val in np.arange(3)]
+        # ... for fun in funs: print(fun())
+        # prints "2 2 2".
+        # We can circumvent this problem by passing the return value as an
+        # argument with default value to the function. Default values are
+        # evaluated at definition time, so that gives us the list of functions
+        # that we want. In terms of the example above:
+        # >>> funs = [lambda val=val : val for val in np.arange(3)]
+        # ... for fun in funs: print(fun())
+        # correctly prints "0 1 2".
         
         def min_target(params, return_full_params=False):
             myparams = np.empty(n_params, dtype=float)
             myparams[:] = np.nan
             myparams[~is_fixed] = params
-            myparams[is_fixed] = [val(myparams) for _, val in fix_values]
+            for ip, fixfun in fix_values:
+                myparams[ip] = fixfun(myparams)
 
             if return_full_params:
                 return myparams
@@ -245,14 +301,15 @@ class Fit:
             if penalty < 0: # infeasible
                 return self.max_penalty
             else:
-                f_acf, m = self.params2acfm(myparams)
-                return -ds_logL(self.data, self.ss_order, f_acf, m) + penalty - offset
+                acf, m = self.params2acfm(myparams)
+                return -ds_logL(self.data, self.ss_order, acf, m) + penalty - offset
             
         return min_target
     
     def run(self,
             init_from = None, # dict as returned by this function
             optimization_steps=('simplex',),
+            maxfev=None,
             fix_values = [], # list of 2-tuples (i, val) to fix params[i] = val
             full_output=False,
             show_progress=False, assume_notebook_for_progress_bar=True,
@@ -300,18 +357,28 @@ class Fit:
         with np.errstate(all='raise'):
             for istep, step in enumerate(optimization_steps):
                 if step == 'simplex':
+                    options = {'fatol' : 0.1, 'xatol' : 0.01}
+                    if maxfev is not None:
+                        options['maxfev'] = maxfev
                     kwargs = dict(method = 'Nelder-Mead',
-                                  options = {'fatol' : 0.1, 'xatol' : 0.01},
+                                  options = options,
                                   bounds = bounds,
                                   callback = callback,
                                  )
                 elif step == 'gradient':
+                    options = {}
+                    if maxfev is not None:
+                        options['maxfev'] = maxfev
                     kwargs = dict(method = 'L-BFGS-B',
+                                  options = options,
                                   bounds = bounds,
                                   callback = callback,
                                  )
                 else:
-                    kwargs = dict(callback = callback).update(step)
+                    kwargs = dict(callback = callback,
+                                  bounds = bounds,
+                                 )
+                    kwargs.update(step)
                     
                 min_target = self._get_min_target(n_params, total_offset, fix_values)
                 fitres = optimize.minimize(min_target, p0, **kwargs)
@@ -600,22 +667,38 @@ class RouseFit(Fit):
         # Fit properties
         # Parameters are (noise2, D, L)
         self.ss_order = 0
-        self.bounds = 3*[(1e-10, np.inf)]
+        self.bounds = 3*self.d*[(1e-10, np.inf)]
         self.constraints = [] # Don't need to check Cpositive, will always be true for Rouse MSDs
+
+        self.fix_values  = [(3*dim+1, lambda x : x[1]) for dim in range(1, self.d)]
+        self.fix_values += [(3*dim+2, lambda x : x[2]) for dim in range(1, self.d)]
         
     def params2acfm(self, params):
-        noise2, D, L = params
-        J = self.d*D*L/self.k
-        tau = np.pi*L**2 / (4*self.k)
-        
+        acf = np.empty((self.T, self.d), dtype=float)
+        acf[:] = np.nan
         dt = np.arange(1, self.T)
-        msd = 2*J*( np.sqrt(dt/tau)*(1-np.exp(-tau/(np.pi*dt))) + special.erfc(np.sqrt(tau/(np.pi*dt))))
-        msd = np.insert(msd + 2*noise2, 0, 0)
-        
-        return msdss2procacf(msd, J+noise2), 0
+        for dim in range(self.d):
+            noise2, D, L = params[(3*dim):(3*(dim+1))]
+            J = self.d*D*L/self.k
+            tau = np.pi*L**2 / (4*self.k)
+            
+            with np.errstate(under = 'ignore'):
+                msd = 2*J*( np.sqrt(dt/tau)*(1-np.exp(-tau/(np.pi*dt))) + special.erfc(np.sqrt(tau/(np.pi*dt))))
+            msd = np.insert(msd + 2*noise2, 0, 0)
+            
+            acf[:, dim] = msdss2procacf(msd, J+noise2)
+        return acf, 0
         
     def initial_params(self):
-        return np.array([1, 1, 1])
+        e_msd = MSD(self.data) / self.d
+        J = np.nanmean(np.concatenate([traj[:]**2 for traj in self.data], axis=0))
+        G = np.nanmean(e_msd[1:5]/np.sqrt(np.arange(1, 5)))
+        tau = (2*J/G)**2
+
+        L = np.sqrt(4*self.k*tau/np.pi)
+        D = self.k*J / (self.d*L)
+
+        return np.array(self.d*[e_msd[1]/2, D, L])
 
 class RouseFitDiscrete(Fit):
     def __init__(self, data, w):
@@ -626,7 +709,13 @@ class RouseFitDiscrete(Fit):
         # Parameters are d*[noise2, D, k], where by default we fix Ds and ks to be equal
         self.ss_order = 0
         self.bounds = 3*self.d*[(1e-10, np.inf)] # List of (lb, ub), to be passed to optimize.minimize
-        self.fix_values = [(3*dim+i, lambda x: x[i]) for dim in range(1, self.d) for i in [1, 2]]
+
+# Note: the following loop does not work, because i is local to the list
+# comprehension, thus the lambdas will ultimately all return the same value.
+#         self.fix_values = [(3*dim+i, lambda x: x[i]) for dim in range(1, self.d) for i in [1, 2]]
+        self.fix_values  = [(3*dim+1, lambda x : x[1]) for dim in range(1, self.d)]
+        self.fix_values += [(3*dim+2, lambda x : x[2]) for dim in range(1, self.d)]
+
         self.constraints = [] # Don't need to check Cpositive, will always be true for Rouse MSDs
         
     def params2acfm(self, params):

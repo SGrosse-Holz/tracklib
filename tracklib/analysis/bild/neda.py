@@ -70,6 +70,11 @@ class Environment:
         log_post = np.log(self.posterior_density(mcmcrun, trace_eval))
         log_prior = self.priorfam(*prior_params).logpi(trace_eval)
 
+        # Note: "L_eval" is likelihood * prior at the evaluation point, i.e.
+        # the "likelihood" that the MCMC sampler sees. We therefore have to
+        # subtract the prior to get the actual likelihood, in the sense of
+        # Bayes.
+        L_eval = L_eval - log_prior
         if np.isinf(log_post):
             return L_eval
         else:
