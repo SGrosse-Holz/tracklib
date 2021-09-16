@@ -71,7 +71,7 @@ from tracklib.models import rouse
 from .p2 import MSD
 
 _imap_function = map
-class Parallelize:
+class Parallelize: # TODO: make this parallelization scheme tracklib-global
     def __init__(self, imap_unordered):
         self.imapu = imap_unordered
     def __enter__(self):
