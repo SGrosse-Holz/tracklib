@@ -132,7 +132,8 @@ class FixedkSampler:
         ev_offac = np.mean(sample[4]) # offset by a factor exp(max_logL)
         dlogev = 1e-10
         logev = np.log(ev_offac) + self.max_logL + np.sum(np.log(np.arange(self.k)+1))
-        KL = logev - np.mean(np.log(sample[4]) + self.max_logL)
+        with np.errstate(divide='ignore'): # we might get log(0), but in that case KL is just +inf, that's fine
+            KL = logev - np.mean(np.log(sample[4]) + self.max_logL)
         self.evidences.append((logev, dlogev, KL))
         
         # Prevent the actual sampling from running
@@ -196,7 +197,8 @@ class FixedkSampler:
         dlogev = stats.sem(full_ensemble[2]) / ev_offac
         logev = np.log(ev_offac) + self.max_logL + np.sum(np.log(np.arange(self.k)+1)) # Note k! correction
         
-        KL = np.log(np.mean(full_ensemble[2])) - np.mean(np.log(full_ensemble[2]))
+        with np.errstate(divide='ignore'): # we might get log(0), but in that case KL is just +inf, that's fine
+            KL = np.log(np.mean(full_ensemble[2])) - np.mean(np.log(full_ensemble[2]))
         
         self.evidences.append((logev, dlogev, KL))
         
@@ -382,7 +384,7 @@ def optimize_boundary(profile, traj, model,
             boundaries = np.nonzero(np.diff(profile_new.state))[0]
             if profile_new[boundaries[i]+j] == profile_new[boundaries[i]+(1-j)]:
 #                 raise RuntimeError(f"Trying to abolish boundary at {boundaries[i]}")
-                return profile_new, True
+                return profile_new
 
             profile_new[boundaries[i]+j] = profile_new[boundaries[i]+(1-j)]
         else:
@@ -390,4 +392,4 @@ def optimize_boundary(profile, traj, model,
     else:
         raise RuntimeError(f"Exceeded max_iteration = {max_iteration}")
         
-    return profile_new, False # return: profile, is_boundary_max
+    return profile_new
