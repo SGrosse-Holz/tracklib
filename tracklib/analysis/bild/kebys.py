@@ -157,7 +157,17 @@ class FixedkSampler:
 
         sample[3] = np.zeros(self.N)
         for a, m in self.parameters:
-            sample[3] += proposal(a, m, sample[0], sample[1])
+            try:
+                sample[3] += proposal(a, m, sample[0], sample[1])
+            except ValueError:
+                # dirichlet.pdf got an argument that has a zero somewhere, but its alpha is < 1.
+                critical = sample[0][:, a < 1]
+                ind = np.any(critical == 0, axis=1)
+                if np.sum(ind) == 0:
+                    raise RuntimeError("Could not identify 0s in sample")
+
+                sample[3][~ind] += proposal(a, m, sample[0][~ind], sample[1][~ind])
+                sample[3][ind] = np.inf
 
         self.samples.append(sample)
 
