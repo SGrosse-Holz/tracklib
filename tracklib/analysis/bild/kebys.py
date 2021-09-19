@@ -54,16 +54,33 @@ def calculate_logLs(ss, thetas, traj, model):
 ### Proposal distribution ###
 
 def proposal(a, m, s, theta0):
-    return (
-        stats.dirichlet(a).pdf(s.T)
-        * ( m*theta0 + (1-m)*(1-theta0) )
-    )
+    try:
+        return (
+            stats.dirichlet(a).pdf(s.T)
+            * ( m*theta0 + (1-m)*(1-theta0) )
+        )
+    except ValueError:
+        # dirichlet.pdf got an argument that has a zero somewhere, but its alpha is < 1.
+        if len(s.shape) == 1:
+            s = s[None, :]
+            theta0 = np.asarray(theta0)
 
-def log_proposal(a, m, s, theta0):
-    return (
-        stats.dirichlet(a).logpdf(s.T)
-        + np.log( m*theta0 + (1-m)*(1-theta0) )
-    )
+        ind = np.any(s[:, a < 1] == 0, axis=1)
+        if np.sum(ind) == 0:
+            raise RuntimeError("Could not identify 0s in sample")
+
+        out = np.empty(len(s), dtype=float)
+        if np.sum(~ind) > 0:
+            out[~ind] = proposal(a, m, s[~ind], theta0[~ind])
+        out[ind] = np.inf
+
+        return out
+
+# def log_proposal(a, m, s, theta0):
+#     return (
+#         stats.dirichlet(a).logpdf(s.T)
+#         + np.log( m*theta0 + (1-m)*(1-theta0) )
+#     )
 
 def sample_proposal(a, m, N):
     ss = stats.dirichlet(a).rvs(N)
@@ -81,7 +98,7 @@ def fit_proposal(ss, thetas, weights):
 class FixedkSampler:
     # Potential further improvements:
     #  + make each proposal a mixture of Dirichlet's to catch multimodal behavior
-    #  + improve proposal fitting / braking
+    #  + improve proposal fitting / braking (better than MOM, maybe more something gradient like?)
     def __init__(self, traj, model,
                  k, N=100,
                  concentration_brake=1e-2,
@@ -157,17 +174,7 @@ class FixedkSampler:
 
         sample[3] = np.zeros(self.N)
         for a, m in self.parameters:
-            try:
-                sample[3] += proposal(a, m, sample[0], sample[1])
-            except ValueError:
-                # dirichlet.pdf got an argument that has a zero somewhere, but its alpha is < 1.
-                critical = sample[0][:, a < 1]
-                ind = np.any(critical == 0, axis=1)
-                if np.sum(ind) == 0:
-                    raise RuntimeError("Could not identify 0s in sample")
-
-                sample[3][~ind] += proposal(a, m, sample[0][~ind], sample[1][~ind])
-                sample[3][ind] = np.inf
+            sample[3] += proposal(a, m, sample[0], sample[1])
 
         self.samples.append(sample)
 
@@ -348,7 +355,8 @@ def sample(traj, model,
     out['ks'] = np.array([sampler.k for sampler in samplers])
     out['evidence'] = np.array([sampler.evidences[-1][0] for sampler in samplers])
     out['evidence_se'] = np.array([sampler.evidences[-1][1] for sampler in samplers])
-    out['profile'] = samplers[np.argmax(out['evidence'])].MLE_profile()
+    out['best_k'] = np.argmax(out['evidence'])
+    out['profile'] = samplers[out['best_k']].MLE_profile()
     return out
 
 ### Post-processing: gradient descent of switch positions ###

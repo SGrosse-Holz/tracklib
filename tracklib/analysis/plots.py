@@ -8,7 +8,7 @@ from matplotlib import pyplot as plt
 from tracklib import Trajectory, TaggedSet
 from .p2 import MSD
 
-def length_distribution(dataset, **kwargs):
+def length_distribution(dataset, ax=None, **kwargs):
     """
     Plot a histogram of trajectory lengths for the given dataset
 
@@ -18,6 +18,8 @@ def length_distribution(dataset, **kwargs):
     ----------
     dataset : `TaggedSet` of `Trajectory`
         the dataset to use
+    ax : matplotlib.axes, optional
+        the axes to plot in. If not specified, plot in ``plt.gca()``.
 
     Returns
     -------
@@ -33,15 +35,15 @@ def length_distribution(dataset, **kwargs):
 
     and produce a plot to your liking.
     """
+    if ax is None:
+        ax = plt.gca()
+
     lengths = [len(traj) for traj in dataset]
-    
+
     if 'bins' not in kwargs.keys():
         kwargs['bins'] = 'auto'
 
-    plt.figure()
-    h = plt.hist(lengths, **kwargs)
-    plt.title("Histogram of trajectory lengths")
-    plt.xlabel("Length in frames")
+    h = ax.hist(lengths, **kwargs)
     return h
 
 def msd_overview(dataset, dt=1., **kwargs):
@@ -206,7 +208,7 @@ def trajectories_spatial(dataset, **kwargs):
     # Done
     return lines
 
-def distance_distribution(dataset, **kwargs):
+def distance_distribution(dataset, ax=None, **kwargs):
     """
     Draw a histogram of distances.
     
@@ -220,6 +222,8 @@ def distance_distribution(dataset, **kwargs):
     ----------
     dataset : `TaggedSet` of `Trajectory`
         the trajectories to use
+    ax : matplotlib.axes, optional
+        the axes to plot in. If not specified, plot in ``plt.gca()``.
 
     Returns
     -------
@@ -238,6 +242,9 @@ def distance_distribution(dataset, **kwargs):
 
     >>> preproc = lambda traj : traj.relative().abs()
     """
+    if ax is None:
+        ax = plt.gca()
+
     N = dataset.map_unique(lambda traj : traj.N)
     if N == 2:
         preproc = lambda traj : traj.relative().abs()
@@ -251,7 +258,5 @@ def distance_distribution(dataset, **kwargs):
     if 'bins' not in kwargs.keys():
         kwargs['bins'] = 'auto'
 
-    plt.figure()
-    h = plt.hist(data, **kwargs)
-    plt.title('Distance histogram')
+    h = ax.hist(data, **kwargs)
     return h
