@@ -68,19 +68,8 @@ import numpy as np
 from scipy import linalg, optimize, interpolate, special
 
 from tracklib.models import rouse
+from tracklib.util import parallel
 from .p2 import MSD
-
-_imap_function = map
-class Parallelize: # TODO: make this parallelization scheme tracklib-global
-    def __init__(self, imap_unordered):
-        self.imapu = imap_unordered
-    def __enter__(self):
-        global _imap_function
-        _imap_function = self.imapu
-    def __exit__(self, type, value, traceback):
-        global _imap_function
-        _imap_function = map
-        return False # raise anything that might have happened
 
 ################## Converting between msd, acf, vacf ##########################
 
@@ -198,7 +187,7 @@ def ds_logL(data, ss_order, acf, m=0):
             C = linalg.toeplitz(acf[:, dim])
 
         iparams = itertools.product([ss_order], (traj[:][:, dim] for traj in data), [C])
-        logL += np.sum(list(_imap_function(_p_logL, iparams)))
+        logL += np.sum(list(parallel._umap(_p_logL, iparams)))
 
     return logL
 

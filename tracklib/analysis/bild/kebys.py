@@ -12,7 +12,7 @@ from copy import deepcopy
 import numpy as np
 from scipy import stats
 
-import tracklib as tl
+from tracklib.util import parallel
 from tracklib.analysis import bild
 
 ### Parametrization ###
@@ -48,7 +48,7 @@ def calculate_logLs(ss, thetas, traj, model):
     """ parallel-aware (ordered) """
     todo = zip(ss, thetas)
     todo = zip(todo, len(ss)*[(traj, model)])
-    imap = tl.util.parallel._map(logL, todo)
+    imap = parallel._map(logL, todo)
     return np.array(list(imap))
 
 ### Proposal distribution ###
@@ -400,7 +400,11 @@ def optimize_boundary(profile, traj, model,
         
         if logLR[i, j] > 0:
             boundaries = np.nonzero(np.diff(profile_new.state))[0]
-            if profile_new[boundaries[i]+j] == profile_new[boundaries[i]+(1-j)]:
+            if ((i == 0 and j == 0 and boundaries[i] == 0)
+                or (i == len(boundaries) and j == 1 and boundaries[i] == len(traj)-2)
+                or (j == 0 and profile_new[boundaries[i]-1] == profile_new[boundaries[i]+1])
+                or (j == 1 and profile_new[boundaries[i]+2] == profile_new[boundaries[i]])
+               ):
 #                 raise RuntimeError(f"Trying to abolish boundary at {boundaries[i]}")
                 return profile_new
 
