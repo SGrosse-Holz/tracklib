@@ -400,9 +400,9 @@ def optimize_boundary(profile, traj, model,
         
         if logLR[i, j] > 0:
             boundaries = np.nonzero(np.diff(profile_new.state))[0]
-            if ((i == 0 and j == 0 and boundaries[i] == 0)
-                or (i == len(boundaries) and j == 1 and boundaries[i] == len(traj)-2)
+            if (   (j == 0 and boundaries[i] == 0)
                 or (j == 0 and profile_new[boundaries[i]-1] == profile_new[boundaries[i]+1])
+                or (j == 1 and boundaries[i] == len(traj)-2)
                 or (j == 1 and profile_new[boundaries[i]+2] == profile_new[boundaries[i]])
                ):
 #                 raise RuntimeError(f"Trying to abolish boundary at {boundaries[i]}")
