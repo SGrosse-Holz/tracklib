@@ -176,8 +176,8 @@ def KM_survival(data, censored, conf=0.95, Tmax=np.inf, S1at=0):
             V[n] = 0
 
     z = scipy.stats.norm().ppf((1-conf)/2)
-    lower = S**(np.exp( z*np.sqrt(V)))
-    upper = S**(np.exp(-z*np.sqrt(V)))
+    lower = S**(np.exp(-z*np.sqrt(V)))
+    upper = S**(np.exp( z*np.sqrt(V)))
 
     if S1at is not None:
         t = np.insert(t, 0, S1at)
