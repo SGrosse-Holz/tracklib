@@ -111,11 +111,15 @@ def GP_logL_x(trace, C, m=0):
     myC = C[ind, :][:, ind]
     
     # Prepare likelihood calculation
-    s, logdet = np.linalg.slogdet(myC)
+    with np.errstate(under='ignore'):
+        s, logdet = np.linalg.slogdet(myC)
     if s <= 0:
         raise BadCovarianceError("Covariance not positive definite. slogdet = ({}, {})".format(s, logdet))
-    # xCx = trace @ linalg.inv(myC) @ trace
-    xCx = trace @ linalg.solve(myC, trace, assume_a='pos')
+    try:
+        # xCx = trace @ linalg.inv(myC) @ trace
+        xCx = trace @ linalg.solve(myC, trace, assume_a='pos')
+    except:
+        raise BadCovarianceError("Inverting covariance did not work")
 
     return -0.5*(xCx + logdet) - len(myC)*LOG_SQRT_2_PI
 
@@ -138,11 +142,15 @@ def GP_logL_dx(trace, C, m=0):
     myC = B @ C[:N1, :N1] @ B.T
     
     # Prepare likelihood calculation
-    s, logdet = np.linalg.slogdet(myC)
+    with np.errstate(under='ignore'):
+        s, logdet = np.linalg.slogdet(myC)
     if s <= 0:
         raise BadCovarianceError("Covariance not positive definite. slogdet = ({}, {})".format(s, logdet))
-    # DCD = steps @ linalg.inv(myC) @ steps
-    DCD = steps @ linalg.solve(myC, steps, assume_a='pos')
+    try:
+        # DCD = steps @ linalg.inv(myC) @ steps
+        DCD = steps @ linalg.solve(myC, steps, assume_a='pos')
+    except:
+        raise BadCovarianceError("Inverting covariance did not work")
     
     return -0.5*(DCD + logdet) - len(myC)*LOG_SQRT_2_PI
 
@@ -196,6 +204,7 @@ def ds_logL(data, ss_order, acf, m=0):
 class Fit:
     def __init__(self, data):
         self.data = data
+        self.data_selection = data.saveSelection()
         self.d = data.map_unique(lambda traj: traj.d)
         self.T = max(map(len, self.data))
 
@@ -219,6 +228,9 @@ class Fit:
         
     def initial_params(self):
         raise NotImplementedError
+
+    def initial_offset(self):
+        return 0
                 
     def constraint_Cpositive(self, params):
         acf, _ = self.params2acfm(params)
@@ -294,7 +306,7 @@ class Fit:
                 return -ds_logL(self.data, self.ss_order, acf, m) + penalty - offset
             
         return min_target
-    
+
     def run(self,
             init_from = None, # dict as returned by this function
             optimization_steps=('simplex',),
@@ -302,14 +314,16 @@ class Fit:
             fix_values = [], # list of 2-tuples (i, val) to fix params[i] = val
             full_output=False,
             show_progress=False, assume_notebook_for_progress_bar=True,
+            print_on_error=True,
            ):
+        self.data.restoreSelection(self.data_selection)
         for step in optimization_steps:
             assert type(step) is dict or step in {'simplex', 'gradient'}
         
         # Initial values
         if init_from is None:
             p0 = self.initial_params()
-            total_offset = 0
+            total_offset = self.initial_offset()
         else:
             p0 = deepcopy(init_from['params'])
             total_offset = -init_from['logL']
@@ -373,7 +387,8 @@ class Fit:
                 fitres = optimize.minimize(min_target, p0, **kwargs)
                 
                 if not fitres.success:
-                    print(fitres)
+                    if print_on_error:
+                        print(fitres)
                     raise RuntimeError("Fit failed at step {:d}: {:s}".format(istep, step))
                 else:
                     all_res.append(({'params' : min_target(fitres.x, return_full_params=True),
@@ -388,38 +403,39 @@ class Fit:
             return all_res
         else:
             return all_res[-1][0]
-    
-    def profile_likelihood(self, init_from, iparam, values,
-                           fix_values=(),
-                           full_output=False,
-                           show_progress=False, assume_notebook_for_progress_bar=True,
-                           **run_kw,
-                          ):
-        if show_progress:
-            if assume_notebook_for_progress_bar:
-                from tqdm.notebook import tqdm
-            else:
-                from tqdm import tqdm
-            val_iter = tqdm(values)
-            del tqdm
-        else:
-            val_iter = iter(values)
 
-        best_fits = []
-        for val in val_iter:
-            all_res = self.run(init_from, fix_values=[(iparam, val)]+list(fix_values), **run_kw)
-            best_fits.append(all_res[-1][0])
-            
-        logLs = np.array([best_fit['logL'] for best_fit in best_fits])
-        if full_output:
-            return logLs, best_fits
-        else:
-            return logLs
+#     def profile_likelihood(self, init_from, iparam, values,
+#                            fix_values=(),
+#                            full_output=False,
+#                            show_progress=False, assume_notebook_for_progress_bar=True,
+#                            **run_kw,
+#                           ):
+#         if show_progress:
+#             if assume_notebook_for_progress_bar:
+#                 from tqdm.notebook import tqdm
+#             else:
+#                 from tqdm import tqdm
+#             val_iter = tqdm(values)
+#             del tqdm
+#         else:
+#             val_iter = iter(values)
+# 
+#         best_fits = []
+#         for val in val_iter:
+#             best_fits.append(self.run(init_from, fix_values=[(iparam, val)]+list(fix_values), **run_kw))
+#             
+#         logLs = np.array([best_fit['logL'] for best_fit in best_fits])
+#         if full_output:
+#             return logLs, best_fits
+#         else:
+#             return logLs
 
 ################## Definition of the various subclasses we provide here ########
 
 class SplineFit(Fit):
-    def __init__(self, data, ss_order, n):
+    def __init__(self, data, ss_order, n,
+                 previous_spline_fit_and_result=None,
+                ):
         super().__init__(data)
         if n < 2:
             raise ValueError(f"SplineFit with n = {n} < 2 does not make sense")
@@ -433,6 +449,8 @@ class SplineFit(Fit):
                             self.constraint_logmsd,
                             self.constraint_Cpositive,
                            ]
+
+        self.prev_fit = previous_spline_fit_and_result # for (alternative) initialization
         
         # Set up
         # Note that in both cases  x is compactified to [0, 1], but by
@@ -472,33 +490,46 @@ class SplineFit(Fit):
         return acf, 0
             
     def initial_params(self):
-        # Fit linear (i.e. powerlaw), which is useful in both cases.
-        # For ss_order == 0 we will use it as boundary condition,
-        # for ss_order == 1 this will be the initial MSD
-        e_msd = MSD(self.data)
-        t_valid = np.nonzero(~np.isnan(e_msd[1:]))[0]
-        (A, B), _ = optimize.curve_fit(lambda x, A, B : A*x + B,
-                                       self.x_full[t_valid],
-                                       np.log(e_msd[t_valid+1]), # gotta skip msd[0] = 0
-                                       p0=(1, 0),
-                                       bounds=([0, -np.inf], np.inf),
-                                      )
-            
         x_init = np.linspace(self.x_full[0], self.x_full[-1], self.n)
-        if self.ss_order == 0:
-            # interpolate along 2-point spline
-            ss_var = np.nanmean(np.concatenate([np.sum(traj[:]**2, axis=1) for traj in self.data]))
-            csp = interpolate.CubicSpline(np.array([0, 2]),
-                                          np.log(np.array([e_msd[1], 2*ss_var])),
-                                          bc_type = ((1, A), (1, 0.)),
-                                         )
-            y_init = csp(x_init)
-        elif self.ss_order == 1:
-            y_init = A*x_init + B
+
+        # If we have a previous fit (e.g. when doing model selection), use that
+        # for initialization
+        if self.prev_fit is not None:
+            fit, res = self.prev_fit
+            y_init = fit._params2csp(res['params'])(x_init)
         else:
-            raise ValueError
+            # Fit linear (i.e. powerlaw), which is useful in both cases.
+            # For ss_order == 0 we will use it as boundary condition,
+            # for ss_order == 1 this will be the initial MSD
+            e_msd = MSD(self.data)
+            t_valid = np.nonzero(~np.isnan(e_msd[1:]))[0]
+            (A, B), _ = optimize.curve_fit(lambda x, A, B : A*x + B,
+                                           self.x_full[t_valid],
+                                           np.log(e_msd[t_valid+1]), # gotta skip msd[0] = 0
+                                           p0=(1, 0),
+                                           bounds=([0, -np.inf], np.inf),
+                                          )
+                
+            if self.ss_order == 0:
+                # interpolate along 2-point spline
+                ss_var = np.nanmean(np.concatenate([np.sum(traj[:]**2, axis=1) for traj in self.data]))
+                csp = interpolate.CubicSpline(np.array([0, 2]),
+                                              np.log(np.array([e_msd[1], 2*ss_var])),
+                                              bc_type = ((1, A), (1, 0.)),
+                                             )
+                y_init = csp(x_init)
+            elif self.ss_order == 1:
+                y_init = A*x_init + B
+            else:
+                raise ValueError
             
         return np.array([*x_init[1:-1], *y_init])
+
+    def initial_offset(self):
+        if self.prev_fit is None:
+            return 0
+        else:
+            return -self.prev_fit[1]['logL']
         
     def constraint_dx(self, params):
         min_step = 1e-7 # x is compactified to (0, 1)
