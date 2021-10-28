@@ -61,147 +61,137 @@ Other than the model free version, so far we have
    models, either with an infinite, continuous chain, or a model like
    `tracklib.models.Rouse`.
 """
+from abc import ABCMeta, abstractmethod
 from copy import deepcopy
 import itertools
 
 import numpy as np
-from scipy import linalg, optimize, interpolate, special
+from scipy import linalg, optimize, stats
 
 from tracklib.models import rouse
 from tracklib.util import parallel
-from .p2 import MSD
+from tracklib.analysis.p2 import MSD
 
-################## Converting between msd, acf, vacf ##########################
+################## Implementation notes vs. first version #####################
+##
+##  - we move to a purely MSD based formulation. This means functions like params2msd() should
+##    provide MSD(Δt) as a callable, able to handle Δt = inf (for ss_order = 0)
+##  - we assume that MSD(Δt) is vectorized (if non-trivial: np.vectorize)
+##  - we retain the drift / offset (ss_order = 1 / 0) term. It might come in handy at some point
+    ##  - separation of interfaces: we define a `FitType`, taking on the role of the old `Fit` and
+    ##    to be thought of as specifying *how* we run a fit (i.e. this is the one getting subclassed
+    ##    for specific fit shapes), and a `Fitter`, taking on the role of the old `Profiler`, plus
+    ##    running the initial fit for the point estimate
+##  - edit: we keep the `Fit` and `Profiler` layout, it just works well
+##  - note that profile likelihoods are not local optima, but only optimal in one direction  (well, duh).
+##    this means that when selecting the closest point to start from, we should pick one that belongs to
+##    the proper profile. We therefore augment `Fit`'s output dict with `iparam`.
+##
+###############################################################################
 
-def msdss2procacf(msd, ss_var):
-    msd[0] = 0 # Otherwise the acf is just wrong
-    return ss_var - 0.5*msd
+# Verbosity rules: 0 = no output, 1 = warnings only, 2 = informational, 3 = debug info
+verbosity = 1
+def vprint(v, *args, **kwargs):
+    if verbosity >= v:
+        print("[msdfit]", (v-1)*'--', *args, **kwargs)
+        
+###############################################################################
 
-def procacf2msdss(acf):
-    return 2*(acf[0] - acf), acf[0]
+def MSDfun(fun):
+    # Decorator to make some (vectorized) function R_+ --> R_+ a valid MSD function
+    def wrap(dt):
+        # Preproc
+        dt = np.abs(np.asarray(dt))
+        was_scalar = len(dt.shape) == 0
+        if was_scalar:
+            dt = np.array([dt])
+        
+        # Calculate
+        msd = fun(dt)
+        
+        # Postproc
+        msd[dt == 0] = 0
+        if was_scalar:
+            msd = msd[0]
+        return msd
+    return wrap
 
-def msd2stepacf(msd):
-    msd[0] = 0 # Otherwise the acf is just wrong
-    msd = np.insert(msd, 0, msd[1])
-    return 0.5*(msd[2:] + msd[:-2] - 2*msd[1:-1])
+def msd2C(msd, ti, ss_order):
+    if ss_order == 0:
+        return 0.5*( msd(np.inf) - msd(ti[:, None] - ti[None, :]) )
+    elif ss_order == 1:
+        return 0.5*(  msd(ti[1:, None] - ti[None,  :-1]) + msd(ti[:-1, None] - ti[None, 1:  ])
+                    - msd(ti[1:, None] - ti[None, 1:  ]) - msd(ti[:-1, None] - ti[None,  :-1]) )
+    else:
+        raise ValueError(f"Invalid stead state order: {ss_order}")
 
-def stepacf2msd(acf):
-    first_sum = 2*np.insert(np.cumsum(acf, axis=0), 0, 0, axis=0) - acf[0]
-    return np.cumsum(first_sum, axis=0) + acf[0]
-
-################## Gaussian Process likelihoods ###############################
+################## Gaussian Process likelihood ###############################
 
 LOG_SQRT_2_PI = 0.5*np.log(2*np.pi)
+GP_verbosity = 1
+def GP_vprint(v, *args, **kwargs):
+    if GP_verbosity >= v:
+        print("[msdfit.GP]", (v-1)*'--', *args, **kwargs)
 
 class BadCovarianceError(RuntimeError):
     pass
 
-def GP_logL_x(trace, C, m=0):
-    """ m, C define the actual process """
-    
-    # Get valid data points only
-    ind = ~np.isnan(trace)
-    trace = trace[ind] - m
-    
-    # Marginalize covariance over missing frames
-    # Note: numpy replaces missing entries in boolean index arrays
-    # with False, so we don't have to fill them explicitly!
-    # Note: numpy says it does this, but actually doesn't
-    ind = np.nonzero(ind)[0]
-    myC = C[ind, :][:, ind]
-    
-    # Prepare likelihood calculation
+def _GP_core_logL(C, x):
+    # likelihood calculation
     with np.errstate(under='ignore'):
-        s, logdet = np.linalg.slogdet(myC)
+        s, logdet = np.linalg.slogdet(C)
     if s <= 0:
         raise BadCovarianceError("Covariance not positive definite. slogdet = ({}, {})".format(s, logdet))
-    try:
-        # xCx = trace @ linalg.inv(myC) @ trace
-        xCx = trace @ linalg.solve(myC, trace, assume_a='pos')
-    except:
-        raise BadCovarianceError("Inverting covariance did not work")
-
-    return -0.5*(xCx + logdet) - len(myC)*LOG_SQRT_2_PI
-
-def GP_logL_dx(trace, C, m=0):
-    """ m, C define the displacement process """
-    
-    # Get valid data points only
-    ind = ~np.isnan(trace)
-    trace_clean = trace[ind]
-    steps = np.diff(trace_clean) - m
-    
-    # Adjust covariance for missing frames etc.
-    ind = np.nonzero(ind)[0]
-    ind -= np.min(ind)
-    N1 = np.max(ind) # number of single time steps
-    B = np.zeros((len(ind)-1, N1))
-    for i in range(len(ind)-1):
-        B[i, ind[i]:ind[i+1]] = 1
-    
-    myC = B @ C[:N1, :N1] @ B.T
-    
-    # Prepare likelihood calculation
-    with np.errstate(under='ignore'):
-        s, logdet = np.linalg.slogdet(myC)
-    if s <= 0:
-        raise BadCovarianceError("Covariance not positive definite. slogdet = ({}, {})".format(s, logdet))
-    try:
-        # DCD = steps @ linalg.inv(myC) @ steps
-        DCD = steps @ linalg.solve(myC, steps, assume_a='pos')
-    except:
-        raise BadCovarianceError("Inverting covariance did not work")
-    
-    return -0.5*(DCD + logdet) - len(myC)*LOG_SQRT_2_PI
-
-def _p_logL(params):
-    ss_order = params[0]
-    if ss_order == 0:
-        return GP_logL_x(*params[1:])
-    elif ss_order == 1:
-        return GP_logL_dx(*params[1:])
-    else:
-        raise ValueError(f"invalid steady state order: {ss_order}")
-
-def ds_logL(data, ss_order, acf, m=0):
-    """ ss_order = 0 if trajectories are steady state, 1 if displacements are steady state """
-    d = data.map_unique(lambda traj : traj.d)
         
-#     if ss_order == 0:
-#         my_logL = GP_logL_x
-#     elif ss_order == 1:
-#         my_logL = GP_logL_dx
-#     else:
-#         raise ValueError(f"invalid steady state order: {ss_order}")
-#     
-#     logLs = np.empty((len(data), d), dtype=float)
-#     logLs[:] = np.nan
-#     for dim in range(d):
-#         if len(acf.shape) == 1:
-#             C = linalg.toeplitz(acf/d)
-#         else:
-#             C = linalg.toeplitz(acf[:, dim])
-# 
-#         for i, traj in enumerate(data):
-#             logLs[i, dim] = my_logL(traj[:][:, dim], C)
-# 
-#     return np.sum(logLs)
+    try:
+        xCx = x @ linalg.solve(C, x, assume_a='pos')
+    except Exception as err:
+        GP_vprint(3, f"Problem when inverting covariance, even though slogdet = ({s}, {logdet})")
+        GP_vprint(3, type(err), err)
+        raise BadCovarianceError("Inverting covariance did not work")
 
-    logL = 0
-    for dim in range(d):
-        if len(acf.shape) == 1:
-            C = linalg.toeplitz(acf/d)
-        else:
-            C = linalg.toeplitz(acf[:, dim])
+    return -0.5*(xCx + logdet) - len(C)*LOG_SQRT_2_PI
 
-        iparams = itertools.product([ss_order], (traj[:][:, dim] for traj in data), [C])
-        logL += np.sum(list(parallel._umap(_p_logL, iparams)))
+def GP_logL(trace, ss_order, msd, mean=0):
+    # mean: mean if ss=0, drift if ss=1
+    ti = np.nonzero(~np.isnan(trace))[0]
+    
+    if ss_order == 0:
+        X = trace[ti] - mean
+    elif ss_order == 1:
+        X = np.diff(trace[ti]) - mean*np.diff(ti)
+    else:
+        raise ValueError(f"Invalid stead state order: {ss_order}")
+    
+    C = msd2C(msd, ti, ss_order)
+    return _GP_core_logL(C, X)
 
-    return logL
+def _GP_logL_for_parallelization(params):
+    return GP_logL(*params)
+
+def ds_logL(data, ss_order, msd_ms):
+    # msd_ms : tuple (msd, m) or list of such
+    d = data.map_unique(lambda traj : traj.d)
+    if isinstance(msd_ms, list):
+        if len(msd_ms) != d:
+            raise ValueError(f"Dimensionality of MSD ({len(msd_ms)}) != dimensionality of data ({d})")
+    else:
+        msd, m = msd_ms
+        if m != 0 and d > 1:
+            raise ValueError(f"Cannot use mean (m={m}) when specifying single MSD for {d}-dimensional data")
+        msd_ms = [(lambda dt: msd(dt)/d, m) for _ in range(d)]
+        
+    job_iter = itertools.chain.from_iterable((itertools.product((traj[:][:, dim] for traj in data),
+                                                                [ss_order], [msd], [m],
+                                                               )
+                                              for dim, (msd, m) in enumerate(msd_ms)
+                                             ))
+    
+    return np.sum(list(parallel._umap(_GP_logL_for_parallelization, job_iter)))
 
 ################## Fit base class definition ###################################
 
-class Fit:
+class Fit(metaclass=ABCMeta):
     def __init__(self, data):
         self.data = data
         self.data_selection = data.saveSelection()
@@ -210,7 +200,7 @@ class Fit:
 
         # Fit properties
         self.ss_order = 0
-        self.bounds = None # List of (lb, ub), to be passed to optimize.minimize
+        self.bounds = [] # List of (lb, ub), to be passed to optimize.minimize. len(bounds) is used to count parameters!
         self.fix_values = [] # will be appended to the list passed to run()
 
         # Each constraint should be a callable constr(params) -> x. We will apply:
@@ -220,12 +210,20 @@ class Fit:
         self.constraints = [self.constraint_Cpositive]
         self.max_penalty = 1e10
         
+        self.verbosity = 1
+        
+    def vprint(self, v, *args, **kwargs):
+        if self.verbosity >= v:
+            print("[msdfit.Fit]", (v-1)*'--', *args, **kwargs)
+        
     ### To be overwritten / used upon subclassing ###
-        
-    def params2acfm(self, params):
-        """ Should return acf, m """
+    
+    @abstractmethod
+    def params2msdm(self, params):
+        """ Should return msd, m """
         raise NotImplementedError
-        
+    
+    @abstractmethod
     def initial_params(self):
         raise NotImplementedError
 
@@ -233,18 +231,12 @@ class Fit:
         return 0
                 
     def constraint_Cpositive(self, params):
-        acf, _ = self.params2acfm(params)
-        min_ev_okay = 1 - np.cos(np.pi/len(acf)) # white noise min ev
-        min_ev = np.min(np.linalg.eigvalsh(linalg.toeplitz(acf)))
+        msd, _ = self.params2msdm(params)
+        min_ev_okay = 1 - np.cos(np.pi/self.T) # white noise min ev
+        min_ev = np.min(np.linalg.eigvalsh(msd2C(msd, np.arange(self.T), self.ss_order)))
         return min_ev / min_ev_okay
     
     ### General machinery, usually won't need overwriting ###
-    
-    def params2msd(self, params):
-        if self.ss_order == 0:
-            return procacf2msdss(self.params2acfm(params)[0])
-        else:
-            return stepacf2msd(self.params2acfm(params)[0])
         
     def _penalty(self, params):
         x = np.inf
@@ -261,11 +253,12 @@ class Fit:
                     return min(np.exp(1/np.tan(np.pi*x)), self.max_penalty)
                 except:
                     return self.max_penalty
-    
-    def _get_min_target(self, n_params, offset=0, fix_values=()):
+                
+    def get_value_fixer(self, fix_values=()):
         # Set up fixed value machinery and make sure that everything is cast as
         # a function taking the given parameters and calculating the missing
         # one from it. Note note below.
+        n_params = len(self.bounds)
         is_fixed = np.zeros(n_params, dtype=bool)
         for i, (ip, val) in enumerate(fix_values):
             is_fixed[ip] = True
@@ -288,22 +281,34 @@ class Fit:
         # ... for fun in funs: print(fun())
         # correctly prints "0 1 2".
         
-        def min_target(params, return_full_params=False):
-            myparams = np.empty(n_params, dtype=float)
-            myparams[:] = np.nan
-            myparams[~is_fixed] = params
+        def value_fixer(params):
+            fixed_params = np.empty(n_params, dtype=float)
+            fixed_params[:] = np.nan
+            fixed_params[~is_fixed] = params
             for ip, fixfun in fix_values:
-                myparams[ip] = fixfun(myparams)
-
-            if return_full_params:
-                return myparams
+                fixed_params[ip] = fixfun(fixed_params)
             
-            penalty = self._penalty(myparams)
+            return fixed_params
+        
+        return value_fixer
+    
+    def get_min_target(self, offset=0, fix_values=(), do_fixing=True):
+        fixer = self.get_value_fixer(fix_values)
+        
+        def min_target(params, just_return_full_params=False, do_fixing=do_fixing):
+            if do_fixing:
+                params = fixer(params)
+            if just_return_full_params:
+                return params
+            
+            penalty = self._penalty(params)
             if penalty < 0: # infeasible
                 return self.max_penalty
             else:
-                acf, m = self.params2acfm(myparams)
-                return -ds_logL(self.data, self.ss_order, acf, m) + penalty - offset
+                return -ds_logL(self.data,
+                                self.ss_order,
+                                self.params2msdm(params),
+                               ) + penalty - offset
             
         return min_target
 
@@ -311,14 +316,20 @@ class Fit:
             init_from = None, # dict as returned by this function
             optimization_steps=('simplex',),
             maxfev=None,
-            fix_values = [], # list of 2-tuples (i, val) to fix params[i] = val
+            fix_values = None, # list of 2-tuples (i, val) to fix params[i] = val
             full_output=False,
             show_progress=False, assume_notebook_for_progress_bar=True,
-            print_on_error=True,
+            verbosity=None, # temporarily overwrite verbosity settings
            ):
+        if verbosity is not None:
+            tmp = self.verbosity
+            self.verbosity = verbosity
+            verbosity = tmp
         self.data.restoreSelection(self.data_selection)
         for step in optimization_steps:
             assert type(step) is dict or step in {'simplex', 'gradient'}
+        if fix_values is None:
+            fix_values = []
         
         # Initial values
         if init_from is None:
@@ -327,7 +338,6 @@ class Fit:
         else:
             p0 = deepcopy(init_from['params'])
             total_offset = -init_from['logL']
-        n_params = len(p0)
         
         # Adjust for fixed values
         fix_values = fix_values + self.fix_values # X = X + Y copies, whereas X += Y would modify the values passed as argument
@@ -361,6 +371,7 @@ class Fit:
             for istep, step in enumerate(optimization_steps):
                 if step == 'simplex':
                     options = {'fatol' : 0.1, 'xatol' : 0.01}
+                    self.vprint(3, "Note: why is `xatol = 0.01` a good choice? / do we need it?")
                     if maxfev is not None:
                         options['maxfev'] = maxfev
                     kwargs = dict(method = 'Nelder-Mead',
@@ -383,377 +394,393 @@ class Fit:
                                  )
                     kwargs.update(step)
                     
-                min_target = self._get_min_target(n_params, total_offset, fix_values)
-                fitres = optimize.minimize(min_target, p0, **kwargs)
+                min_target = self.get_min_target(total_offset, fix_values)
+                try:
+                    fitres = optimize.minimize(min_target, p0, **kwargs)
+                except BadCovarianceError as err:
+                    self.vprint(2, "BadCovarianceError:", err)
+                    fitres = lambda: None
+                    fitres.success = False
                 
                 if not fitres.success:
-                    if print_on_error:
-                        print(fitres)
+                    self.vprint(1, f"Fit (step {istep}: {step}) failed. Here's the result:")
+                    self.vprint(1, fitres)
                     raise RuntimeError("Fit failed at step {:d}: {:s}".format(istep, step))
                 else:
-                    all_res.append(({'params' : min_target(fitres.x, return_full_params=True),
+                    all_res.append(({'params' : min_target(fitres.x, just_return_full_params=True),
                                      'logL' : -(fitres.fun+total_offset),
                                     }, fitres))
                     p0 = fitres.x
                     total_offset += fitres.fun
                     
         bar.close()
+        if verbosity is not None:
+            self.verbosity = verbosity
         
         if full_output:
             return all_res
         else:
             return all_res[-1][0]
 
-#     def profile_likelihood(self, init_from, iparam, values,
-#                            fix_values=(),
-#                            full_output=False,
-#                            show_progress=False, assume_notebook_for_progress_bar=True,
-#                            **run_kw,
-#                           ):
-#         if show_progress:
-#             if assume_notebook_for_progress_bar:
-#                 from tqdm.notebook import tqdm
-#             else:
-#                 from tqdm import tqdm
-#             val_iter = tqdm(values)
-#             del tqdm
-#         else:
-#             val_iter = iter(values)
-# 
-#         best_fits = []
-#         for val in val_iter:
-#             best_fits.append(self.run(init_from, fix_values=[(iparam, val)]+list(fix_values), **run_kw))
-#             
-#         logLs = np.array([best_fit['logL'] for best_fit in best_fits])
-#         if full_output:
-#             return logLs, best_fits
-#         else:
-#             return logLs
+################## Profiler class definition ###################################
 
-################## Definition of the various subclasses we provide here ########
-
-class SplineFit(Fit):
-    def __init__(self, data, ss_order, n,
-                 previous_spline_fit_and_result=None,
+class Profiler():
+    def __init__(self, fit,
+                 profiling=True,
+                 conf=0.95, conf_tol=0.001,
+                 bracket_strategy='auto', # 'auto', dict(multiplicative=(bool),
+                                          #              step=(float>1),
+                                          #              nonidentifiable_cutoffs=[(low, high)],
+                                          #             ),
+                                          #         or list of such (one for each parameter)
+                 bracket_step=1.2, # global default, but would be overridden by specifying bracket_strategy
+                 max_fit_runs=100,
+                 max_restarts=10,
+                 verbosity=1, # 0: print nothing, 1: print warnings, 2: print everything, 3: debugging
                 ):
-        super().__init__(data)
-        if n < 2:
-            raise ValueError(f"SplineFit with n = {n} < 2 does not make sense")
-        self.n = n
+        self.fit = fit
+        self.ress = [[] for _ in range(len(self.fit.bounds))] # one for each iparam
+        self.point_estimate = None
         
-        self.ss_order = ss_order
-        self.bounds = None # Will be done with constraints, since for x we have to ensure monotonicity
-                           # and y applies to the whole spline, not just the knots (i.e. parameters)
-        self.constraints = [self.constraint_dx,
-                            self.constraint_dy,
-                            self.constraint_logmsd,
-                            self.constraint_Cpositive,
-                           ]
-
-        self.prev_fit = previous_spline_fit_and_result # for (alternative) initialization
+        self.iparam = None
+        self.profiling = profiling
+        self.LR_interval = [stats.chi2(1).ppf(conf-conf_tol)/2,
+                            stats.chi2(1).ppf(conf+conf_tol)/2]
+        self.LR_target = np.mean(self.LR_interval)
         
-        # Set up
-        # Note that in both cases  x is compactified to [0, 1], but by
-        # different functions, such that for ss_order = 0 we also have infinity
-        # at x = 2.
-        if self.ss_order == 0:
-            # Fit in (4/π*arctan(log), log) space and add point at infinity,
-            # i.e. x = 4/π*arctan(log(∞)) = 2
-            self.x_full = np.log(np.arange(1, self.T))
-            self.x_full = np.append((4/np.pi)*np.arctan(self.x_full / self.x_full[-1]), 2)
-            self.bc_type = ('natural', (1, 0.0))
-        elif self.ss_order == 1:
-            # Simply fit in log space, with natural boundary conditions (i.e.
-            # vanishing second derivative; so we extrapolate as power law).
-            self.x_full = np.log(np.arange(1, self.T))
-            self.x_full = self.x_full / self.x_full[-1]
-            self.bc_type = 'natural'
-        else:
-            raise ValueError(f"Did not understand ss_order = {ss_order}")
+        self.bracket_strategy = bracket_strategy # see expand_bracket_strategy()
+        self.bracket_step = bracket_step
+        
+        self.max_fit_runs = max_fit_runs
+        self.run_count = 0
+        self.max_restarts_per_parameter = max_restarts
+        self.verbosity = verbosity
+        
+        self.bar = None
+        
+    ### Internals ###
+        
+    def vprint(self, verbosity, *args, **kwargs):
+        if self.verbosity >= verbosity:
+            print(f"[msdfit.Profiler @{self.run_count:3d}]", (verbosity-1)*'--', *args, **kwargs)
+    
+    def expand_bracket_strategy(self):
+        # We need a point estimate to set up the additive scheme, so this can't be in __init__()
+        if self.point_estimate is None:
+            raise RuntimeError("Cannot set up brackets without point estimate")
             
-    def _params2csp(self, params):
-        x = np.array([self.x_full[0], *params[:(self.n-2)], self.x_full[-1]])
-        y = params[(self.n-2):]
-        return interpolate.CubicSpline(x, y, bc_type=self.bc_type)
-        
-    def params2acfm(self, params):
-        csp = self._params2csp(params)
-        if self.ss_order == 0:
-            msd = np.insert(np.exp(csp(self.x_full[:-1])), 0, 0)
-            ss_var = 0.5*np.exp(params[-1]) # γ(0) = 0.5*μ(∞)
-            acf = msdss2procacf(msd, ss_var)
-        elif self.ss_order == 1:
-            msd = np.insert(np.exp(csp(self.x_full)), 0, 0)
-            acf = msd2stepacf(msd)
-        else:
-            raise ValueError
-        return acf, 0
+        if self.bracket_strategy == 'auto':
+            assert self.bracket_step > 1
             
-    def initial_params(self):
-        x_init = np.linspace(self.x_full[0], self.x_full[-1], self.n)
-
-        # If we have a previous fit (e.g. when doing model selection), use that
-        # for initialization
-        if self.prev_fit is not None:
-            fit, res = self.prev_fit
-            y_init = fit._params2csp(res['params'])(x_init)
-        else:
-            # Fit linear (i.e. powerlaw), which is useful in both cases.
-            # For ss_order == 0 we will use it as boundary condition,
-            # for ss_order == 1 this will be the initial MSD
-            e_msd = MSD(self.data)
-            t_valid = np.nonzero(~np.isnan(e_msd[1:]))[0]
-            (A, B), _ = optimize.curve_fit(lambda x, A, B : A*x + B,
-                                           self.x_full[t_valid],
-                                           np.log(e_msd[t_valid+1]), # gotta skip msd[0] = 0
-                                           p0=(1, 0),
-                                           bounds=([0, -np.inf], np.inf),
-                                          )
+            self.bracket_strategy = []
+            for iparam, bounds in enumerate(self.fit.bounds):
+                multiplicative = bounds[0] > 0
+                if multiplicative:
+                    step = self.bracket_step
+                    nonidentifiable_cutoffs = [10, 10]
+                else:
+                    pe = self.point_estimate['params'][iparam]
+                    step = pe*(self.bracket_step - 1)
+                    nonidentifiable_cutoffs = 2*[2*np.abs(pe)]
                 
-            if self.ss_order == 0:
-                # interpolate along 2-point spline
-                ss_var = np.nanmean(np.concatenate([np.sum(traj[:]**2, axis=1) for traj in self.data]))
-                csp = interpolate.CubicSpline(np.array([0, 2]),
-                                              np.log(np.array([e_msd[1], 2*ss_var])),
-                                              bc_type = ((1, A), (1, 0.)),
-                                             )
-                y_init = csp(x_init)
-            elif self.ss_order == 1:
-                y_init = A*x_init + B
+                self.bracket_strategy.append({
+                    'multiplicative'          : multiplicative,
+                    'step'                    : step,
+                    'nonidentifiable_cutoffs' : nonidentifiable_cutoffs,
+                })
+        elif isinstance(self.bracket_strategy, dict):
+            assert self.bracket_strategy['step'] > 1
+            self.bracket_strategy = len(self.fit.bounds)*[self.bracket_strategy]
+        else:
+            assert isinstance(self.bracket_strategy, list)
+        
+    class FoundBetterPointEstimate(Exception):
+        pass
+    
+    def restart_if_better_pe_found(fun):
+        def decorated_fun(self, *args, **kwargs):
+            restarts = -1
+            while restarts < self.max_restarts_per_parameter:
+                try:
+                    return fun(self, *args, **kwargs)
+                except Profiler.FoundBetterPointEstimate:
+                    self.vprint(1, ("Warning: Found a better point estimate."
+                                    f"Will restart from there. ({max_restarts-restarts} remaining)"))
+                    fit_kw = {}
+
+                    # Some housekeeping
+                    self.run_count = 0
+                    fit_kw['show_progress'] = self.bar is not None
+
+                    # If we're not calculating a profile likelihood, it does not make
+                    # sense to keep the old results, since the parameters are different
+                    if not self.profiling:
+                        fit_kw['init_from'] = self.best_estimate
+                        self.ress = [[] for _ in range(len(self.fit.bounds))]
+                        self.point_estimate = None
+
+                    # Get a new point estimate, starting from the better one we found
+                    self.vprint(2, "Finding new point estimate ...")
+                    self.find_point_estimate(**fit_kw)
+                    restarts += 1
+
+            # If this while loop runs out of restarts, we're pretty screwed overall
+            raise StopIteration(f"Ran out of restarts after finding a better point estimate (max_restarts = {self.max_restarts})")
+        return decorated_fun
+    
+    ### Point estimation ###
+        
+    @staticmethod
+    def likelihood_significantly_greater(res1, res2):
+        return res1['logL'] > res2['logL'] + 1e-10
+            
+    @property
+    def best_estimate(self):
+        if self.point_estimate is None:
+            return None
+        else:
+            best = self.point_estimate
+            for ress in self.ress:
+                candidate = ress[np.argmax([res['logL'] for res in ress])]
+                if self.likelihood_significantly_greater(candidate, best):
+                    best = candidate
+            return best
+    
+    def current_point_estimate_is_worse_than(self, res):
+        if self.point_estimate is not None and self.likelihood_significantly_greater(res, self.point_estimate):
+            return True
+        return False
+    
+    def run_fit(self, is_new_point_estimate=True,
+                **fit_kw,
+               ):
+        self.run_count += 1
+        if self.run_count > self.max_fit_runs:
+            raise StopIteration(f"Ran out of likelihood evaluations (max_fit_runs = {self.max_fit_runs})")
+            
+        if 'init_from' not in fit_kw:
+            fit_kw['init_from'] = self.best_estimate
+        
+        if self.point_estimate is None and fit_kw['init_from'] is None: # very first fit, so do simplex --> (gradient)
+            res = self.fit.run(optimization_steps = ('simplex',),
+                               **fit_kw,
+                              )
+            try: # try to refine
+                fit_kw['init_from'] = res
+                fit_kw['show_progress'] = False
+                res = self.fit.run(optimization_steps = ('gradient',),
+                                   **fit_kw,
+                                  )
+            except: # okay, this didn't work, whatever
+                pass
+        else: # we're starting from somewhere known, so start out trying to move by gradient, use simplex if that doesn't work
+            try:
+                res = self.fit.run(optimization_steps = ('gradient',),
+                                   verbosity=0,
+                                   **fit_kw,
+                                  )
+            except RuntimeError:
+                self.vprint(2, "Gradient fit failed, using simplex")
+                res = self.fit.run(optimization_steps = ('simplex',),
+                                   **fit_kw,
+                                  )
+        
+        if is_new_point_estimate:
+            self.point_estimate = res
+        else:
+            self.ress[self.iparam].append(res)
+            if self.current_point_estimate_is_worse_than(res):
+                raise Profiler.FoundBetterPointEstimate
+
+        if self.bar is not None:
+            self.bar.update()
+        
+    ### Sweeping one parameter ###
+    
+    def find_closest_res(self, val, direction=None):
+        ress = self.ress[self.iparam] + [self.point_estimate]
+        
+        values = np.array([res['params'][self.iparam] for res in ress])
+        if val in values:
+            i = np.argmax([res['logL'] for res in ress if res['params'][self.iparam] == val])
+            return ress[i]
+        
+        if self.bracket_strategy[self.iparam]['multiplicative']:
+            distances = np.abs([np.log(val/res['params'][self.iparam]) for res in ress])
+        else:
+            distances = np.abs([val-res['params'][self.iparam] for res in ress])
+            
+        if direction is not None:
+            distances[np.sign(values - val) != direction] = np.inf
+            
+        min_dist = np.min(distances)
+        
+        i_candidates = np.nonzero(distances < min_dist+1e-10)[0] # We use bisection, so usually there will be two candidates
+        ii_cand = np.argmax([ress[i]['logL'] for i in i_candidates])
+        
+        return ress[i_candidates[ii_cand]]
+    
+    def profile_likelihood(self, value, init_from='closest'):
+        if self.profiling:
+            if init_from == 'closest':
+                init_from = self.find_closest_res(value)
+
+            self.run_fit(init_from = init_from,
+                         fix_values = [(self.iparam, value)],
+                         is_new_point_estimate = False,
+                        )
+        else:
+            new_params = self.point_estimate['params'].copy()
+            new_params[self.iparam] = value
+            
+            minus_logL = self.fit.get_min_target()(new_params)
+                
+            if self.bar is not None:
+                self.bar.update()
+            
+            self.ress[self.iparam].append({'logL' : -minus_logL, 'params' : new_params})
+            if self.current_point_estimate_is_worse_than(self.ress[self.iparam][-1]):
+                raise Profiler.FoundBetterPointEstimate
+            
+        return self.ress[self.iparam][-1]['logL']
+    
+    def iterate_bracket_point(self, x0, pL, direction,
+                              step = None,
+                             ):
+        self.expand_bracket_strategy()
+        if step is None:
+            step = self.bracket_strategy[self.iparam]['step']
+            
+        bracket_param = 1 if self.bracket_strategy[self.iparam]['multiplicative'] else 0
+        p = x0
+        pL_thres = self.point_estimate['logL'] - self.LR_target
+        while pL > pL_thres:
+            self.vprint(3, "bracketing: {:.3f} > {:.3f} @ {}".format(pL, pL_thres, p))
+            
+            # Check identifiability cutoff
+            ib = int((1+direction)/2)
+            if bracket_param > self.bracket_strategy[self.iparam]['nonidentifiable_cutoffs'][ib]:
+                self.vprint(2, "{} edge of confidence interval is non-identifiable".format('left' if direction == -1 else 'right'))
+                p = self.fit.bounds[self.iparam][ib]
+                pL = np.inf
+                break
+
+            # Update position
+            if self.bracket_strategy[self.iparam]['multiplicative']:
+                bracket_param *= step
+                p = x0 * bracket_param**direction
             else:
-                raise ValueError
-            
-        return np.array([*x_init[1:-1], *y_init])
+                bracket_param += step
+                p = x0 + direction*bracket_param
 
-    def initial_offset(self):
-        if self.prev_fit is None:
-            return 0
+            # Update profile likelihood
+            pL = self.profile_likelihood(p)
         else:
-            return -self.prev_fit[1]['logL']
+            self.vprint(3, "bracketing: {:.3f} < {:.3f} @ {}".format(pL, pL_thres, p))
+            
+        return p, pL
         
-    def constraint_dx(self, params):
-        min_step = 1e-7 # x is compactified to (0, 1)
-        x = np.array([self.x_full[0], *params[:(self.n-2)], self.x_full[-1]])
-        return np.min(np.diff(x))/min_step
+    def initial_bracket_points(self):
+        self.expand_bracket_strategy()
+        a, a_pL = self.iterate_bracket_point(self.point_estimate['params'][self.iparam], self.point_estimate['logL'], direction=-1)
+        b, b_pL = self.iterate_bracket_point(self.point_estimate['params'][self.iparam], self.point_estimate['logL'], direction= 1)
+        return (a, a_pL), (b, b_pL)
     
-    def constraint_dy(self, params):
-        # Ensure monotonicity in the MSD. This makes sense intuitively, but is it technically a condition?
-        min_step = 1e-7
-        y = params[(self.n-2):]
-        return np.min(np.diff(y))/min_step
-    
-    def constraint_logmsd(self, params):
-        start_penalizing = 200
-        full_penalty = 500
+    def solve_bisection(self, bracket, bracket_pL):
+        c = np.mean(bracket)
+        c_pL = self.profile_likelihood(c)
         
-        csp = self._params2csp(params)
-        return (full_penalty - np.max(np.abs(csp(self.x_full))))/start_penalizing
-
-class NPXFit(Fit): # NPX = Noise + Powerlaw + X (i.e. spline)
-    def __init__(self, data, ss_order, n=0):
-        super().__init__(data)
-        if n == 0 and ss_order == 0:
-            raise ValueError("Incompatible assumptions: pure powerlaw (n=0) and trajectory steady state (ss_order=0)")
-        self.n = n
+        a_fun, b_fun = self.point_estimate['logL'] - bracket_pL - self.LR_target
+        c_fun = self.point_estimate['logL'] - c_pL - self.LR_target
+        i_update = 0 if a_fun*c_fun > 0 else 1
+        assert [a_fun, b_fun][1-i_update]*c_fun <= 0
         
-        # Parameters are (noise2, α, log(Γ), x0, ..., x{n-1}, y1, .., yn)
-        # If x == 0 we omit x0. So we always have 2*n spline parameters!
-        self.ss_order = ss_order
-        self.bounds = 2*[(1e-10, np.inf)] + [(-np.inf, np.inf)] + n*[(0, 2 if ss_order == 0 else 1)] + n*[(-np.inf, np.inf)]
-        self.constraints = [self.constraint_dx,
-                            self.constraint_dy,
-                            self.constraint_logmsd,
-                            self.constraint_Cpositive,
-                           ]
+        bracket[i_update] = c
+        bracket_pL[i_update] = c_pL
         
-        # Set up
-        self.logt_full = np.log(np.arange(1, self.T))
-        self.x_full = self.logt_full / self.logt_full[-1]
-        if self.ss_order == 0:
-            # Fit in 4/π*arctan(log) space and add point at infinity, i.e. x = 4/π*arctan(log(∞)) = 2
-            self.x_full = np.append((4/np.pi)*np.arctan(self.x_full), 2)
-            self.upper_bc_type = (1, 0.0)
-        elif self.ss_order == 1:
-            # Simply fit in log space, with natural boundary conditions
-            self.upper_bc_type = 'natural'
+        if np.all([self.LR_interval[0] < LR < self.LR_interval[1] for LR in self.point_estimate['logL'] - bracket_pL]):
+            return np.mean(bracket)
         else:
-            raise ValueError(f"Did not understand ss_order = {ss_order}")
-        
-    def _first_spline_point(self, x0, A, B):
-        if self.ss_order == 0:
-            logt0 = np.tan(np.pi/4*x0)*self.logt_full[-1]
-            dcdx0 = np.pi/4*A*self.logt_full[-1]/np.cos(np.pi/4*x0)**2
-        elif self.ss_order == 1:
-            logt0 = x0*self.logt_full[-1]
-            dcdx0 = A*self.logt_full[-1]
-        else:
-            raise ValueError
-        y0 = A*logt0 + B
-        return x0, logt0, y0, dcdx0
-            
-    def _params2logmsd(self, params):
-        _, A, B = params[:3]
-        if self.n == 0 or params[3] >= 1: # Note order of conditions. params[3] only exists if n > 0
-            return A*self.logt_full + B
-        
-        # Set up first spline point
-        x0, logt0, y0, dcdx0 = self._first_spline_point(params[3], A, B)
-        i0 = np.nonzero(x0 <= self.x_full)[0][0] # exists, because we know that x0 < 1, see above
-        
-        # Get spline
-        x = np.array([*params[3:(self.n+3)], self.x_full[-1]])
-        y = np.array([y0, *params[(self.n+3):]])
-        csp = interpolate.CubicSpline(x, y, bc_type=((1, dcdx0), self.upper_bc_type))
-        
-        # Put together MSD
-        # for simplicity, we initialize as all powerlaw, then overwrite the top portion
-        logmsd = A*self.logt_full + B
-        logmsd[i0:] = csp(self.x_full[i0:(-1 if self.ss_order == 0 else None)])
-        return logmsd
-        
-    def params2acfm(self, params):
-        logmsd = self._params2logmsd(params)
-        if self.ss_order == 0:
-            msd = np.insert(np.exp(logmsd), 0, 0)
-            ss_var = 0.5*np.exp(params[-1]) # γ(0) = 0.5*μ(∞)
-            acf = msdss2procacf(msd + 2*params[0], ss_var + params[0])
-        elif self.ss_order == 1:
-            msd = np.insert(np.exp(logmsd), 0, 0)
-            acf = msd2stepacf(msd + 2*params[0])
-        else:
-            raise ValueError
-        return acf, 0
-            
-    def initial_params(self):
-        # Fit linear (i.e. powerlaw), which is useful in both cases.
-        # For ss_order == 0 we will use it as boundary condition,
-        # for ss_order == 1 this will be the initial MSD
-        e_msd = MSD(self.data)
-        i_valid = np.nonzero(~np.isnan(e_msd[1:]))[0]
-        (A, B), _ = optimize.curve_fit(lambda x, A, B : A*x + B,
-                                       self.logt_full[i_valid],
-                                       np.log(e_msd[i_valid+1]), # gotta skip msd[0] = 0
-                                       p0=(1, 0),
-                                       bounds=([0, -np.inf], np.inf),
-                                      )
-            
-        x0, logt0, y0, dcdx0 = self._first_spline_point(0.5, A, B)
-        x_init = np.linspace(x0, self.x_full[-1], self.n+1)
-        if self.ss_order == 0:
-            # interpolate along 2-point spline
-            ss_var = np.nanmean(np.concatenate([np.sum(traj[:]**2, axis=1) for traj in self.data]))
-            csp = interpolate.CubicSpline(np.array([x0, 2]),
-                                          np.array([y0, np.log(2*ss_var)]),
-                                          bc_type = ((1, dcdx0), (1, 0.)),
-                                         )
-            y_init = csp(x_init)
-        elif self.ss_order == 1:
-            y_init = A*self.logt_full[-1]*x_init + B
-        else:
-            raise ValueError
-            
-        return np.array([e_msd[1], A, B, *x_init[:-1], *y_init[1:]])
-        
-    def constraint_dx(self, params):
-        if self.n == 0:
-            return np.inf
-        
-        min_step = 1e-7 # x is compactified to (0, 1)
-        x = np.array([*params[3:(self.n+3)], self.x_full[-1]])
-        return np.min(np.diff(x))/min_step
+            return self.solve_bisection(bracket, bracket_pL)
     
-    def constraint_dy(self, params):
-        # Ensure monotonicity in the MSD. This makes sense intuitively, but is it technically a condition?
-        if self.n == 0:
-            return np.inf
-        
-        min_step = 1e-7
-        _, _, y0, _ = self._first_spline_point(*params[[3, 1, 2]])
-        y = np.array([y0, *params[(self.n+3):]])
-        return np.min(np.diff(y))/min_step
-    
-    def constraint_logmsd(self, params):
-        start_penalizing = 200
-        full_penalty = 500
-        
-        logmsd = self._params2logmsd(params)
-        return (full_penalty - np.max(np.abs(logmsd)))/start_penalizing
-
-class RouseFit(Fit):
-    def __init__(self, data, k=1):
-        super().__init__(data)
-        self.k = k
-        
-        # Fit properties
-        # Parameters are (noise2, D, L)
-        self.ss_order = 0
-        self.bounds = 3*self.d*[(1e-10, np.inf)]
-        self.constraints = [] # Don't need to check Cpositive, will always be true for Rouse MSDs
-
-        self.fix_values  = [(3*dim+1, lambda x : x[1]) for dim in range(1, self.d)]
-        self.fix_values += [(3*dim+2, lambda x : x[2]) for dim in range(1, self.d)]
-        
-    def params2acfm(self, params):
-        acf = np.empty((self.T, self.d), dtype=float)
-        acf[:] = np.nan
-        dt = np.arange(1, self.T)
-        for dim in range(self.d):
-            noise2, D, L = params[(3*dim):(3*(dim+1))]
-            J = self.d*D*L/self.k
-            tau = np.pi*L**2 / (4*self.k)
+    @restart_if_better_pe_found
+    def find_single_MCI(self, iparam):
+        self.iparam = iparam
+        if self.point_estimate is None:
+            raise RuntimeError("Need to have a point estimate before calculating confidence intervals")
             
-            with np.errstate(under = 'ignore'):
-                msd = 2*J*( np.sqrt(dt/tau)*(1-np.exp(-tau/(np.pi*dt))) + special.erfc(np.sqrt(tau/(np.pi*dt))))
-            msd = np.insert(msd + 2*noise2, 0, 0)
-            
-            acf[:, dim] = msdss2procacf(msd, J+noise2)
-        return acf, 0
+        (a, a_pL), (b, b_pL) = self.initial_bracket_points()
+        m = self.point_estimate['params'][self.iparam]
+        m_pL = self.point_estimate['logL']
         
-    def initial_params(self):
-        e_msd = MSD(self.data) / self.d
-        J = np.nanmean(np.concatenate([traj[:]**2 for traj in self.data], axis=0))
-        G = np.nanmean(e_msd[1:5]/np.sqrt(np.arange(1, 5)))
-        tau = (2*J/G)**2
-
-        L = np.sqrt(4*self.k*tau/np.pi)
-        D = self.k*J / (self.d*L)
-
-        return np.array(self.d*[e_msd[1]/2, D, L])
-
-class RouseFitDiscrete(Fit):
-    def __init__(self, data, w):
-        super().__init__(data)
-        self.w = w
+        roots = np.array([np.nan, np.nan])
+        if a_pL == np.inf:
+            roots[0] = a
+        if b_pL == np.inf:
+            roots[1] = b
         
-        # Fit properties
-        # Parameters are d*[noise2, D, k], where by default we fix Ds and ks to be equal
-        self.ss_order = 0
-        self.bounds = 3*self.d*[(1e-10, np.inf)] # List of (lb, ub), to be passed to optimize.minimize
-
-# Note: the following loop does not work, because i is local to the list
-# comprehension, thus the lambdas will ultimately all return the same value.
-#         self.fix_values = [(3*dim+i, lambda x: x[i]) for dim in range(1, self.d) for i in [1, 2]]
-        self.fix_values  = [(3*dim+1, lambda x : x[1]) for dim in range(1, self.d)]
-        self.fix_values += [(3*dim+2, lambda x : x[2]) for dim in range(1, self.d)]
-
-        self.constraints = [] # Don't need to check Cpositive, will always be true for Rouse MSDs
+        for i, (bracket, bracket_pL) in enumerate(zip([(a, m), (m, b)], [(a_pL, m_pL), (m_pL, b_pL)])):
+            if np.isnan(roots[i]):
+                roots[i] = self.solve_bisection(np.asarray(bracket), np.asarray(bracket_pL))
+            if i == 0:
+                self.vprint(2, f"Found left edge, now searching right one @ {roots[i]}")
         
-    def params2acfm(self, params):
-        acf = np.empty((self.T, self.d), dtype=float)
-        for dim in range(self.d):
-            noise2, D, k = params[(3*dim):(3*(dim+1))]
-            model = rouse.Model(len(self.w), D, k, d=1, setup_dynamics=False)
-            acf[:, dim] = model.ss_ACF(np.arange(self.T), w=self.w)
-            acf[0, dim] += noise2
-        return acf, 0
+        self.vprint(2, f"found CI = {roots} (point estimate = {m}, iparam = {self.iparam})\n")
+        return m, roots
     
-    def initial_params(self):
-        e_msd = MSD(self.data) / self.d
-        J = np.nanmean(np.concatenate([traj[:]**2 for traj in self.data], axis=0))
-        G = np.nanmean(e_msd[1:5]/np.sqrt(np.arange(1, 5)))
-        L = np.diff(np.nonzero(self.w)[0])[0]
+    def find_MCI(self, iparam='all',
+                 show_progress=False, assume_notebook_for_progress_bar=True,
+                ):
+        if show_progress and self.bar is None:
+            if assume_notebook_for_progress_bar:
+                from tqdm.notebook import tqdm
+            else:
+                from tqdm import tqdm
+            self.bar = tqdm()
+            del tqdm
+            
+        if self.point_estimate is None:
+            self.vprint(2, "Finding initial point estimate ...")
+            self.run_fit(show_progress=show_progress)
+        old_point_estimate = self.point_estimate
         
-        D = np.pi*G**2*L/(16*J)
-        k = np.pi*( G*L / (4*J) )**2
-
-        return np.array(self.d*[e_msd[1]/2, D, k])
+        self.vprint(2, "initial point estimate: params = {}, logL = {}\n".format(self.point_estimate['params'],
+                                                                                 self.point_estimate['logL'],
+                                                                                ))
+        
+        n_params = len(self.point_estimate['params'])
+        mcis = np.empty((n_params, 3), dtype=float)
+        mcis[:] = np.nan
+        
+        if iparam == 'all':
+            fixed = [i for i, _ in self.fit.fix_values]
+            iparams = np.array([i for i in range(n_params) if i not in fixed])
+        else:
+            iparams = np.asarray(iparam)
+            if len(iparams.shape) == 0:
+                iparams = np.array([iparams])
+               
+        while True: # limited by max_restarts_per_parameter
+            for iparam in iparams:
+                self.run_count = 0
+                self.vprint(2, f"starting iparam = {iparam}")
+                m, ci = self.find_single_MCI(iparam)
+                mcis[iparam, :] = m, *ci
+                
+            if self.likelihood_significantly_greater(self.best_estimate, old_point_estimate):
+                self.vprint(2, f"Point estimate was updated while we calculated confidence intervals, so restart")
+                self.vprint(2, "new best logL = {:.3f} > {:.3f} = old point estimate logL\n".format(self.best_estimate['logL'],
+                                                                                                    old_point_estimate['logL']))
+            else:
+                break
+        
+        if show_progress and self.bar is not None:
+            self.bar.close()
+            self.bar = None
+            
+        self.vprint(2, "Done\n")
+        
+        if len(iparams) == 1:
+            return mcis[iparams[0]]
+        else:
+            return mcis
