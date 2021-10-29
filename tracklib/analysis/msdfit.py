@@ -505,7 +505,7 @@ class Profiler():
                     return fun(self, *args, **kwargs)
                 except Profiler.FoundBetterPointEstimate:
                     self.vprint(1, ("Warning: Found a better point estimate."
-                                    f"Will restart from there. ({max_restarts-restarts} remaining)"))
+                                    f"Will restart from there. ({self.max_restarts_per_parameter-restarts} remaining)"))
                     fit_kw = {}
 
                     # Some housekeeping
