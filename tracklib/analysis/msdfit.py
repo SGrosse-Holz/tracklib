@@ -590,19 +590,19 @@ class Profiler():
                                    verbosity=0,
                                    **fit_kw,
                                   )
+                if fit_kw['init_from'] is not None and self.likelihood_significantly_greater(fit_kw['init_from'], res):
+                    # This happens sometimes, who knows why
+                    raise RuntimeError
             except RuntimeError:
                 self.vprint(2, "Gradient fit failed, using simplex")
                 res = self.fit.run(optimization_steps = ('simplex',),
                                    **fit_kw,
                                   )
 
-        try:
-            if self.likelihood_significantly_greater(fit_kw['init_from'], res):
-                # This happens sometimes, who knows why
-                self.vprint(2, f"Fit gave worse than initial value: {res['logL']} < {fit_kw['init_from']}. Using initial instead")
-                res = fit_kw['init_from']
-        except (KeyError, TypeError):
-            pass
+        if fit_kw['init_from'] is not None and self.likelihood_significantly_greater(fit_kw['init_from'], res):
+            self.vprint(2, ("Both simplex and gradient fits gave worse than initial value: "
+                           f"{res['logL']} < {fit_kw['init_from']['logL']}. Using initial instead"))
+            res = fit_kw['init_from']
         
         if is_new_point_estimate:
             self.point_estimate = res
