@@ -502,7 +502,7 @@ class Profiler():
     def restart_if_better_pe_found(fun):
         def decorated_fun(self, *args, **kwargs):
             restarts = 0
-            while True
+            while True:
                 try:
                     return fun(self, *args, **kwargs)
                 except Profiler.FoundBetterPointEstimate:
