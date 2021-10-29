@@ -145,7 +145,7 @@ def _GP_core_logL(C, x):
         
     try:
         xCx = x @ linalg.solve(C, x, assume_a='pos')
-    except Exception as err:
+    except FloatingPointError as err:
         GP_vprint(3, f"Problem when inverting covariance, even though slogdet = ({s}, {logdet})")
         GP_vprint(3, type(err), err)
         raise BadCovarianceError("Inverting covariance did not work")
@@ -571,7 +571,7 @@ class Profiler():
                 res = self.fit.run(optimization_steps = ('gradient',),
                                    **fit_kw,
                                   )
-            except: # okay, this didn't work, whatever
+            except RuntimeError: # okay, this didn't work, whatever
                 pass
         else: # we're starting from somewhere known, so start out trying to move by gradient, use simplex if that doesn't work
             try:
