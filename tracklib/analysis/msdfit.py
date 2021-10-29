@@ -557,7 +557,7 @@ class Profiler():
     def check_point_estimate_against(self, res):
         if (
                 self.point_estimate is not None
-            and self.likelihood_significantly_greater(res, self.point_estimate):
+            and self.likelihood_significantly_greater(res, self.point_estimate)
             and self.restart_on_better_point_estimate
             ):
             raise Profiler.FoundBetterPointEstimate
