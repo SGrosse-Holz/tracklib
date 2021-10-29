@@ -521,7 +521,7 @@ class Profiler():
 
                     # Get a new point estimate, starting from the better one we found
                     self.vprint(2, "Finding new point estimate ...")
-                    self.find_point_estimate(**fit_kw)
+                    self.run_fit(**fit_kw)
                     restarts += 1
 
             # If this while loop runs out of restarts, we're pretty screwed overall
