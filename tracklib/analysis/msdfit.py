@@ -455,6 +455,8 @@ class Profiler():
         self.run_count = 0
         self.max_restarts_per_parameter = max_restarts
         self.verbosity = verbosity
+
+        self.restart_on_better_point_estimate = True
         
         self.bar = None
         
@@ -499,13 +501,18 @@ class Profiler():
     
     def restart_if_better_pe_found(fun):
         def decorated_fun(self, *args, **kwargs):
-            restarts = -1
-            while restarts < self.max_restarts_per_parameter:
+            restarts = 0
+            while True
                 try:
                     return fun(self, *args, **kwargs)
                 except Profiler.FoundBetterPointEstimate:
-                    self.vprint(1, ("Warning: Found a better point estimate."
-                                    f"Will restart from there. ({self.max_restarts_per_parameter-restarts} remaining)"))
+                    restarts += 1
+                    if restarts > self.max_restarts_per_parameter:
+                        raise StopIteration(f"Ran out of restarts after finding a better "
+                                             "point estimate (max_restarts = {self.max_restarts})")
+
+                    self.vprint(1, f"Warning: Found a better point estimate ({self.best_estimate['logL']} > {self.point_estimate['logL']})")
+                    self.vprint(1, f"Will restart from there ({self.max_restarts_per_parameter-restarts} remaining)"))
                     fit_kw = {}
 
                     # Some housekeeping
@@ -522,10 +529,8 @@ class Profiler():
                     # Get a new point estimate, starting from the better one we found
                     self.vprint(2, "Finding new point estimate ...")
                     self.run_fit(**fit_kw)
-                    restarts += 1
 
             # If this while loop runs out of restarts, we're pretty screwed overall
-            raise StopIteration(f"Ran out of restarts after finding a better point estimate (max_restarts = {self.max_restarts})")
         return decorated_fun
     
     ### Point estimation ###
@@ -549,10 +554,13 @@ class Profiler():
                     best = candidate
             return best
     
-    def current_point_estimate_is_worse_than(self, res):
-        if self.point_estimate is not None and self.likelihood_significantly_greater(res, self.point_estimate):
-            return True
-        return False
+    def check_point_estimate_against(self, res):
+        if (
+                self.point_estimate is not None
+            and self.likelihood_significantly_greater(res, self.point_estimate):
+            and self.restart_on_better_point_estimate
+            ):
+            raise Profiler.FoundBetterPointEstimate
     
     def run_fit(self, is_new_point_estimate=True,
                 **fit_kw,
@@ -592,8 +600,7 @@ class Profiler():
             self.point_estimate = res
         else:
             self.ress[self.iparam].append(res)
-            if self.current_point_estimate_is_worse_than(res):
-                raise Profiler.FoundBetterPointEstimate
+            self.check_point_estimate_against(res):
 
         if self.bar is not None:
             self.bar.update()
@@ -642,8 +649,7 @@ class Profiler():
                 self.bar.update()
             
             self.ress[self.iparam].append({'logL' : -minus_logL, 'params' : new_params})
-            if self.current_point_estimate_is_worse_than(self.ress[self.iparam][-1]):
-                raise Profiler.FoundBetterPointEstimate
+            self.check_point_estimate_against(self.ress[self.iparam][-1]):
             
         return self.ress[self.iparam][-1]['logL']
     
