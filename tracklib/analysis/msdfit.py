@@ -649,7 +649,7 @@ class Profiler():
                 self.bar.update()
             
             self.ress[self.iparam].append({'logL' : -minus_logL, 'params' : new_params})
-            self.check_point_estimate_against(self.ress[self.iparam][-1]):
+            self.check_point_estimate_against(self.ress[self.iparam][-1])
             
         return self.ress[self.iparam][-1]['logL']
     
