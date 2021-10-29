@@ -537,7 +537,7 @@ class Profiler():
         
     @staticmethod
     def likelihood_significantly_greater(res1, res2):
-        return res1['logL'] > res2['logL'] + 1e-10
+        return res1['logL'] > res2['logL'] + 1e-3 # smaller differences are irrelevant for likelihoods
             
     @property
     def best_estimate(self):
@@ -595,6 +595,14 @@ class Profiler():
                 res = self.fit.run(optimization_steps = ('simplex',),
                                    **fit_kw,
                                   )
+
+        try:
+            if self.likelihood_significantly_greater(fit_kw['init_from'], res):
+                # This happens sometimes, who knows why
+                self.vprint(2, f"Fit gave worse than initial value: {res['logL']} < {fit_kw['init_from']}. Using initial instead")
+                res = fit_kw['init_from']
+        except (KeyError, TypeError):
+            pass
         
         if is_new_point_estimate:
             self.point_estimate = res
