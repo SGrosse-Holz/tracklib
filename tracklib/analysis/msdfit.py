@@ -512,7 +512,7 @@ class Profiler():
                                              "point estimate (max_restarts = {self.max_restarts})")
 
                     self.vprint(1, f"Warning: Found a better point estimate ({self.best_estimate['logL']} > {self.point_estimate['logL']})")
-                    self.vprint(1, f"Will restart from there ({self.max_restarts_per_parameter-restarts} remaining)"))
+                    self.vprint(1, f"Will restart from there ({self.max_restarts_per_parameter-restarts} remaining)")
                     fit_kw = {}
 
                     # Some housekeeping
