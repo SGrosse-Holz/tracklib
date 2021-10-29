@@ -464,7 +464,7 @@ class Profiler():
         
     def vprint(self, verbosity, *args, **kwargs):
         if self.verbosity >= verbosity:
-            print(f"[msdfit.Profiler @{self.run_count:3d}]", (verbosity-1)*'--', *args, **kwargs)
+            print(f"[msdfit.Profiler @ {self.run_count:d}]", (verbosity-1)*'--', *args, **kwargs)
     
     def expand_bracket_strategy(self):
         # We need a point estimate to set up the additive scheme, so this can't be in __init__()
@@ -784,10 +784,12 @@ class Profiler():
                 m, ci = self.find_single_MCI(iparam)
                 mcis[iparam, :] = m, *ci
                 
-            if self.likelihood_significantly_greater(self.best_estimate, old_point_estimate):
+            if (self.likelihood_significantly_greater(self.best_estimate, old_point_estimate)
+                    and self.restart_on_better_point_estimate):
                 self.vprint(2, f"Point estimate was updated while we calculated confidence intervals, so restart")
                 self.vprint(2, "new best logL = {:.3f} > {:.3f} = old point estimate logL\n".format(self.best_estimate['logL'],
                                                                                                     old_point_estimate['logL']))
+                self.point_estimate = self.best_estimate # just in case it's not yet
             else:
                 break
         
