@@ -541,7 +541,10 @@ class Profiler():
         else:
             best = self.point_estimate
             for ress in self.ress:
-                candidate = ress[np.argmax([res['logL'] for res in ress])]
+                try:
+                    candidate = ress[np.argmax([res['logL'] for res in ress])]
+                except ValueError: # argmax([])
+                    continue
                 if self.likelihood_significantly_greater(candidate, best):
                     best = candidate
             return best
