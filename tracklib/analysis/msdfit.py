@@ -600,7 +600,7 @@ class Profiler():
             self.point_estimate = res
         else:
             self.ress[self.iparam].append(res)
-            self.check_point_estimate_against(res):
+            self.check_point_estimate_against(res)
 
         if self.bar is not None:
             self.bar.update()
