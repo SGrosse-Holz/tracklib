@@ -264,11 +264,12 @@ class Fit(metaclass=ABCMeta):
         _, ind = np.unique(ifix, return_index=True)
         full = []
         for i in ind:
-            ip, val = fix_values[i]
-            if not callable(val):
-                val = lambda x, val=val : val # take care to have val be fixed at definition time
+            ip, fun = fix_values[i]
+            if not callable(fun):
+                val = fun
+                fun = lambda x, val=val : val # take care to have val be fixed at definition time
 
-            full.append(ip, val)
+            full.append((ip, fun))
         return full
                 
     def get_value_fixer(self, fix_values=None):
