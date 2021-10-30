@@ -254,7 +254,7 @@ class Fit(metaclass=ABCMeta):
                 except:
                     return self.max_penalty
 
-    def expand_fix_values(fix_values=None):
+    def expand_fix_values(self, fix_values=None):
         # Also appends self.fix_values
         if fix_values is None:
             fix_values = []
