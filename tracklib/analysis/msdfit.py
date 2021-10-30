@@ -253,33 +253,30 @@ class Fit(metaclass=ABCMeta):
                     return min(np.exp(1/np.tan(np.pi*x)), self.max_penalty)
                 except:
                     return self.max_penalty
-                
-    def get_value_fixer(self, fix_values=()):
-        # Set up fixed value machinery and make sure that everything is cast as
-        # a function taking the given parameters and calculating the missing
-        # one from it. Note note below.
-        n_params = len(self.bounds)
-        is_fixed = np.zeros(n_params, dtype=bool)
-        for i, (ip, val) in enumerate(fix_values):
-            is_fixed[ip] = True
+
+    def expand_fix_values(fix_values=None):
+        # Also appends self.fix_values
+        if fix_values is None:
+            fix_values = []
+        fix_values = fix_values + self.fix_values
+        
+        ifix = [i for i, _ in fix_values]
+        _, ind = np.unique(ifix, return_index=True)
+        full = []
+        for i in ind:
+            ip, val = fix_values[i]
             if not callable(val):
-                fix_values[i] = (ip, lambda x, val=val : val)
-        # Note that the above is pretty hacky: what we want to do is to convert
-        # any fixed value into a function that returns that value. Because the
-        # function is only evaluated at runtime, the straight-forward approach
-        # ``lambda x: val`` does not work, because after all the definitions
-        # have run, `val` just has the value of the last iteration. As an
-        # example of this effect, note that
-        # >>> funs = [lambda : val for val in np.arange(3)]
-        # ... for fun in funs: print(fun())
-        # prints "2 2 2".
-        # We can circumvent this problem by passing the return value as an
-        # argument with default value to the function. Default values are
-        # evaluated at definition time, so that gives us the list of functions
-        # that we want. In terms of the example above:
-        # >>> funs = [lambda val=val : val for val in np.arange(3)]
-        # ... for fun in funs: print(fun())
-        # correctly prints "0 1 2".
+                val = lambda x, val=val : val # take care to have val be fixed at definition time
+
+            full.append(ip, val)
+        return full
+                
+    def get_value_fixer(self, fix_values=None):
+        fix_values = self.expand_fix_values(fix_values)
+
+        n_params = len(self.bounds)
+        ifix = [i for i, _ in fix_values]
+        is_fixed = np.array([i in ifix for i in range(n_params)])
         
         def value_fixer(params):
             fixed_params = np.empty(n_params, dtype=float)
@@ -289,10 +286,10 @@ class Fit(metaclass=ABCMeta):
                 fixed_params[ip] = fixfun(fixed_params)
             
             return fixed_params
-        
+
         return value_fixer
     
-    def get_min_target(self, offset=0, fix_values=(), do_fixing=True):
+    def get_min_target(self, offset=0, fix_values=None, do_fixing=True):
         fixer = self.get_value_fixer(fix_values)
         
         def min_target(params, just_return_full_params=False, do_fixing=do_fixing):
@@ -328,8 +325,6 @@ class Fit(metaclass=ABCMeta):
         self.data.restoreSelection(self.data_selection)
         for step in optimization_steps:
             assert type(step) is dict or step in {'simplex', 'gradient'}
-        if fix_values is None:
-            fix_values = []
         
         # Initial values
         if init_from is None:
@@ -340,8 +335,7 @@ class Fit(metaclass=ABCMeta):
             total_offset = -init_from['logL']
         
         # Adjust for fixed values
-        fix_values = fix_values + self.fix_values # X = X + Y copies, whereas X += Y would modify the values passed as argument
-        ifix = [i for i, _ in fix_values]
+        ifix = [i for i, _ in self.expand_fix_values(fix_values)]
         bounds = deepcopy(self.bounds)
         for i in sorted(ifix, reverse=True):
             del bounds[i]
@@ -394,7 +388,7 @@ class Fit(metaclass=ABCMeta):
                                  )
                     kwargs.update(step)
                     
-                min_target = self.get_min_target(total_offset, fix_values)
+                min_target = self.get_min_target(offset=total_offset, fix_values=fix_values)
                 try:
                     fitres = optimize.minimize(min_target, p0, **kwargs)
                 except BadCovarianceError as err:
@@ -439,6 +433,8 @@ class Profiler():
                  verbosity=1, # 0: print nothing, 1: print warnings, 2: print everything, 3: debugging
                 ):
         self.fit = fit
+        self.min_target_from_fit = fit.get_min_target()
+
         self.ress = [[] for _ in range(len(self.fit.bounds))] # one for each iparam
         self.point_estimate = None
         
@@ -650,8 +646,7 @@ class Profiler():
         else:
             new_params = self.point_estimate['params'].copy()
             new_params[self.iparam] = value
-            
-            minus_logL = self.fit.get_min_target()(new_params)
+            minus_logL = self.min_target_from_fit(new_params)
                 
             if self.bar is not None:
                 self.bar.update()
