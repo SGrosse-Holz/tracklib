@@ -280,9 +280,12 @@ class Fit(metaclass=ABCMeta):
         is_fixed = np.array([i in ifix for i in range(n_params)])
         
         def value_fixer(params):
-            fixed_params = np.empty(n_params, dtype=float)
-            fixed_params[:] = np.nan
-            fixed_params[~is_fixed] = params
+            if len(params) < n_params:
+                fixed_params = np.empty(n_params, dtype=float)
+                fixed_params[:] = np.nan
+                fixed_params[~is_fixed] = params
+            else:
+                fixed_params = params.copy()
             for ip, fixfun in fix_values:
                 fixed_params[ip] = fixfun(fixed_params)
             
@@ -647,7 +650,7 @@ class Profiler():
         else:
             new_params = self.point_estimate['params'].copy()
             new_params[self.iparam] = value
-            minus_logL = self.min_target_from_fit(new_params, do_fixing=False)
+            minus_logL = self.min_target_from_fit(new_params)
                 
             if self.bar is not None:
                 self.bar.update()
