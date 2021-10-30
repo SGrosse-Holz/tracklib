@@ -647,7 +647,7 @@ class Profiler():
         else:
             new_params = self.point_estimate['params'].copy()
             new_params[self.iparam] = value
-            minus_logL = self.min_target_from_fit(new_params)
+            minus_logL = self.min_target_from_fit(new_params, do_fixing=False)
                 
             if self.bar is not None:
                 self.bar.update()
