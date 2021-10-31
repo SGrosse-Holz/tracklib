@@ -145,7 +145,7 @@ def _GP_core_logL(C, x):
         
     try:
         xCx = x @ linalg.solve(C, x, assume_a='pos')
-    except FloatingPointError as err:
+    except (FloatingPointError, linalg.LinAlgError) as err:
         GP_vprint(3, f"Problem when inverting covariance, even though slogdet = ({s}, {logdet})")
         GP_vprint(3, type(err), err)
         raise BadCovarianceError("Inverting covariance did not work")
@@ -592,6 +592,7 @@ class Profiler():
                                   )
                 if fit_kw['init_from'] is not None and self.likelihood_significantly_greater(fit_kw['init_from'], res):
                     # This happens sometimes, who knows why
+                    # Update: was a bug, but can't hurt to keep this mechanism around
                     raise RuntimeError
             except RuntimeError:
                 self.vprint(2, "Gradient fit failed, using simplex")
