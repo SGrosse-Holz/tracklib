@@ -442,11 +442,11 @@ class Profiler():
         self.ress = [[] for _ in range(len(self.fit.bounds))] # one for each iparam
         self.point_estimate = None
         
-        self.iparam = None
-        self.profiling = profiling # also sets self.LR_interval and self.LR_target
-
         self.conf = conf
         self.conf_tol = conf_tol
+
+        self.iparam = None
+        self.profiling = profiling # also sets self.LR_interval and self.LR_target
 
         self.bracket_strategy = bracket_strategy # see expand_bracket_strategy()
         self.bracket_step = bracket_step
