@@ -467,7 +467,7 @@ class Profiler():
     def profiling(self):
         return self._profiling
     
-    @profiling.getter
+    @profiling.setter
     def profiling(self, val):
         self._profiling = val
 
