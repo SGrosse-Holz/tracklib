@@ -511,7 +511,7 @@ class Profiler():
                     'nonidentifiable_cutoffs' : nonidentifiable_cutoffs,
                 })
         elif isinstance(self.bracket_strategy, dict):
-            assert self.bracket_strategy['step'] > 1 if self.bracket_strategy['multiplicative'] else 0
+            assert self.bracket_strategy['step'] > (1 if self.bracket_strategy['multiplicative'] else 0)
             self.bracket_strategy = len(self.fit.bounds)*[self.bracket_strategy]
         else:
             assert isinstance(self.bracket_strategy, list)
