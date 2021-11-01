@@ -444,8 +444,15 @@ class Profiler():
         
         self.iparam = None
         self.profiling = profiling
-        self.LR_interval = [stats.chi2(1).ppf(conf-conf_tol)/2,
-                            stats.chi2(1).ppf(conf+conf_tol)/2]
+
+        if self.profiling:
+            dof = 1
+        else:
+            n_params = len(self.fit.bounds)
+            n_fixed = len(self.fit.fix_values)
+            dof = n_params - n_fixed
+        self.LR_interval = [stats.chi2(dof).ppf(conf-conf_tol)/2,
+                            stats.chi2(dof).ppf(conf+conf_tol)/2]
         self.LR_target = np.mean(self.LR_interval)
         
         self.bracket_strategy = bracket_strategy # see expand_bracket_strategy()
