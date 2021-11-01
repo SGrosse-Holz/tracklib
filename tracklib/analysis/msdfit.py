@@ -443,18 +443,8 @@ class Profiler():
         self.point_estimate = None
         
         self.iparam = None
-        self.profiling = profiling
+        self.profiling = profiling # also sets self.LR_interval and self.LR_target
 
-        if self.profiling:
-            dof = 1
-        else:
-            n_params = len(self.fit.bounds)
-            n_fixed = len(self.fit.fix_values)
-            dof = n_params - n_fixed
-        self.LR_interval = [stats.chi2(dof).ppf(conf-conf_tol)/2,
-                            stats.chi2(dof).ppf(conf+conf_tol)/2]
-        self.LR_target = np.mean(self.LR_interval)
-        
         self.bracket_strategy = bracket_strategy # see expand_bracket_strategy()
         self.bracket_step = bracket_step
         
@@ -472,6 +462,26 @@ class Profiler():
     def vprint(self, verbosity, *args, **kwargs):
         if self.verbosity >= verbosity:
             print(f"[msdfit.Profiler @ {self.run_count:d}]", (verbosity-1)*'--', *args, **kwargs)
+
+    @property
+    def profiling(self):
+        return self._profiling
+    
+    @profiling.getter
+    def profiling(self, val):
+        self._profiling = val
+
+        if self.profiling:
+            dof = 1
+        else:
+            n_params = len(self.fit.bounds)
+            n_fixed = len(self.fit.fix_values)
+            dof = n_params - n_fixed
+            
+        self.LR_interval = [stats.chi2(dof).ppf(conf-conf_tol)/2,
+                            stats.chi2(dof).ppf(conf+conf_tol)/2]
+        self.LR_target = np.mean(self.LR_interval)
+        
     
     def expand_bracket_strategy(self):
         # We need a point estimate to set up the additive scheme, so this can't be in __init__()
