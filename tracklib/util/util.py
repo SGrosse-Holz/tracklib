@@ -9,28 +9,11 @@ from scipy.linalg import cholesky, toeplitz
 import scipy.special
 import scipy.stats
 
-#NOTE: sort this a little better
-def _twoLociRelativeACF(ts, A=1, B=1, d=1): # pragma: no cover
-    """
-    A = σ^2 / √κ     (general prefactor)
-    B = Δs^2 / 4κ    (tether length)
-    """
-    # Scipy's implementation of En can only deal with integer n
-    def E32(z):
-        return 2*np.exp(-z) - 2*np.sqrt(np.pi*z)*scipy.special.erfc(np.sqrt(z))
-
-    if not isinstance(ts, collections.abc.Iterable):
-        ts = [ts]
-
-    return np.array([ d*A*( np.sqrt(B) - np.sqrt(t/np.pi)*( 1 - 0.5*E32(B/t) ) ) if t != 0 else d*A*np.sqrt(B) for t in ts])
-
-def _twoLociRelativeMSD(ts, *args, **kwargs): # pragma: no cover
-    """
-    A = σ^2 / √κ     (general prefactor)
-    B = Δs^2 / 4κ       (tether length)
-    """
-    return 2*(twoLociRelativeACF(0, *args, **kwargs) - twoLociRelativeACF(ts, *args, **kwargs))
-####################################################
+__all__ = [
+    "distribute_noiselevel",
+    "log_derivative",
+    "KM_survival",
+]
 
 def distribute_noiselevel(noise2, pixelsize):
     """
@@ -54,38 +37,6 @@ def distribute_noiselevel(noise2, pixelsize):
     voxel = np.asarray(pixelsize)
     noise_in_px = np.sqrt(noise2/np.sum(voxel**2))
     return noise_in_px*voxel
-
-def twoLocusMSD(t, Gamma, tau_c):
-    """
-    MSD for the distance between two loci on an infinite Rouse polymer
-
-    Parameters
-    ----------
-    t : iterable
-        the times at which to evaluate the MSD
-    Gamma : float
-        the prefactor for the polymer part (0.5 scaling) of the MSD. Note that
-        this parameter should be the prefactor for tracking of one locus, i.e.
-        the MSD produced by this function (which is the distance between two
-        loci) will have a prefactor of ``2*Gamma``.
-    tau_e : float
-        the equilibration time. This is the time for which the two asymptotics
-        (MSD ~ √t for short times, MSD ~ const at long times) have the same
-        value. Note that this is a factor π^3/4 ~ 7.75 greater than the Rouse
-        time of the tether between the loci.
-
-    Returns
-    -------
-    (T,) np.array
-        the MSD evaluated at times `!t`
-    """
-    with np.errstate(divide='ignore'):
-        ret = 2 * Gamma * (
-                np.sqrt(t)     * ( 1 - np.exp(-tau_c/(np.pi*t)) )
-              + np.sqrt(tau_c) * scipy.special.erfc( np.sqrt(tau_e/(np.pi*t)) )
-              )
-    ret[np.isnan(ret)] = 0 # t = 0 produces the nan
-    return ret
 
 def log_derivative(y, x=None, resampling_density=2):
     """
@@ -150,7 +101,7 @@ def KM_survival(data, censored, conf=0.95, Tmax=np.inf, S1at=0):
 
     Returns
     -------
-    out : (T, 4) array
+    (T, 4) array
         the columns of this array are: t, S(t), l(t), u(t), where l and u are
         lower and upper confidence levels respectively.
     """
@@ -187,3 +138,5 @@ def KM_survival(data, censored, conf=0.95, Tmax=np.inf, S1at=0):
         upper = upper[1:]
 
     return np.stack([t, S, lower, upper], axis=-1)
+
+## Remember to update __all__ if adding to this

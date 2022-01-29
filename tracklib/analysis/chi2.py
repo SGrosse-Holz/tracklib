@@ -119,7 +119,7 @@ def summary_plot(dataset, dof=None, p=0.05, ax=None, **kwargs):
 
     if dof is not None:
         xplot = np.linspace(0, np.nanmax(scores), 1000)
-        ax.plot(xplot, scipy.stats.chi2.pdf(xplot, dof), color='red', label='expected chi2')
+        ax.plot(xplot, np.insert(scipy.stats.chi2.pdf(xplot[1:], dof), 0, 0), color='red', label='expected chi2')
 
         if p is not None:
             thres = scipy.stats.chi2.ppf(p, dof)

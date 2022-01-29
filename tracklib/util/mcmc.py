@@ -6,6 +6,8 @@ A small module for running MCMC sampling. It provides the abstract base class
 from copy import deepcopy
 from abc import ABC, abstractmethod
 
+from tqdm.auto import tqdm
+
 import numpy as np
 
 class MCMCRun:
@@ -298,7 +300,6 @@ class Sampler(ABC):
             log_every=-1,
             check_stopping_every=-1,
             show_progress=False,
-            assume_notebook_for_progress_display=True,
             ):
         """
         Set the configuration of the sampler.
@@ -320,10 +321,6 @@ class Sampler(ABC):
             to never check.
         show_progress : bool
             whether to show a progress bar using `!tqdm`
-        assume_notebook_for_progress_display : bool
-            if ``True``, use `!tqdm.notebook.tqdm` otherwise `!tqdm.tqdm`. The
-            former displays the progress bar as a jupyter widget, the latter as
-            ASCII.
 
         See also
         --------
@@ -335,7 +332,6 @@ class Sampler(ABC):
                 'log_every' : log_every,
                 'check_stopping_every' : check_stopping_every,
                 'show_progress' : show_progress,
-                'assume_notebook_for_progress_display' : assume_notebook_for_progress_display,
                 }
 
     def run(self, initial_values):
@@ -393,12 +389,7 @@ class Sampler(ABC):
         
         Mrange = range(config['iterations'])
         if config['show_progress']: # pragma: no cover
-            if config['assume_notebook_for_progress_display']:
-                from tqdm.notebook import tqdm
-            else:
-                from tqdm import tqdm
             Mrange = tqdm(Mrange)
-            del tqdm
 
         # Run
         for i in Mrange:
@@ -418,7 +409,7 @@ class Sampler(ABC):
                     p_accept = 1
                 elif cur_logL == np.inf:
                     print("Encountered absorbing state (L = inf) at {}".format(current_values))
-                    if i > config['burn_in']:
+                    if i > config['burn_in']: # pragma: no cover
                         print("Aborting here")
                         break
                     else:

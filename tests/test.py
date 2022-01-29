@@ -13,7 +13,32 @@ from unittest.mock import patch
 
 from context import tracklib as tl
 
-# Extend unittest.TestCase's capabilities to deal with numpy arrays
+"""
+exec "norm jjd}O" | let @a="\n'" | exec "g/^class Test/norm w\"Ayt(:let @a=@a.\"',\\n'\"" | norm i__all__ = ["ap}kddO]kV?__all__j>>
+"""
+__all__ = [
+    'Test0Trajectory',
+    'Test1Trajectory',
+    'Test0TaggedSet',
+    'Test1TaggedSet',
+    'TestClean',
+    'TestIOLoad',
+    'TestIOWrite',
+    'TestModelsRouse',
+    'TestModelsRouseMSDfun',
+    'TestModelsStatgauss',
+    'TestAnalysisChi2',
+    'TestAnalysisP2',
+    'TestAnalysisKLD',
+    'TestAnalysisPlots',
+    'TestUtilUtil',
+    'TestUtilMCMC',
+    'TestUtilMCMCMCMCRun',
+    'TestUtilSweep',
+    'TestUtilParallel',
+    'TestUtilPlotting',
+]
+
 class myTestCase(unittest.TestCase):
     def assert_array_equal(self, array1, array2):
         try:
@@ -110,6 +135,8 @@ class Test1Trajectory(myTestCase):
                     lines = traj.plot_spatial(label='test plot')
 
             # Modifiers
+            _ = traj.rescale(2)
+
             traj.meta['MSD'] = {'data' : np.array([5])}
             times2 = traj.rescale(2)
             self.assert_array_equal(traj.data*2, times2.data)
@@ -373,130 +400,9 @@ class TestIOWrite(myTestCase):
         with open(filename, 'r') as f:
             self.assertTrue(f.read() == 'id\tframe\tx\ty\tx2\ty2\n0\t0\t0\t1\t10\t11\n0\t1\t2\t3\t12\t13\n0\t2\t4\t5\t14\t15\n0\t3\t6\t7\t16\t17\n0\t4\t8\t9\t18\t19\n')
 
-class TestUtilUtil(myTestCase):
-    def test_distribute_noiselevel(self):
-        self.assert_array_equal(tl.util.util.distribute_noiselevel(14, [5, 10, 15]),
-                                [1, 2, 3])
-
-    def test_log_derivative(self):
-        x = [1, 2, 5, np.nan, 30]
-        y = np.array(x)**1.438
-        xnew, dy = tl.util.util.log_derivative(y, x, resampling_density=1.5)
-        self.assertTrue(np.all(np.abs(dy - 1.438) < 1e-7))
-
-class TestUtilSweep(myTestCase):
-    @staticmethod
-    def countfun(ds, what, factor=1):
-        cnt = 0
-        for traj in ds:
-            if np.isnan(what):
-                cnt += np.sum(np.isnan(traj[:]))
-            else:
-                cnt += np.sum(traj[:]*factor == what)
-        return cnt
-
-    def setUp(self):
-        ds = tl.TaggedSet()
-        ds.add(tl.Trajectory.fromArray([0, 0.75, 0.5, 0.3, 5.4, 5.5, 5.3, -2.0, 5.4]))
-        ds.add(tl.Trajectory.fromArray([1.2, 1.4, np.nan, np.nan, 10.0, 10.2]))
-
-        self.sweep = tl.util.Sweeper(ds, self.countfun)
-        _ = tl.util.Sweeper(ds, self.countfun, copy=False)
-
-    def test_preprocess(self):
-        self.sweep.preprocess(lambda traj : traj.abs())
-    
-    def test_run(self):
-        res = self.sweep.run({'what' : [5.5, np.nan, 10.0], 'factor' : 1})
-        self.assertDictEqual(res, {'what' : [5.5, np.nan, 10.0], 'factor' : [1, 1, 1], 'result' : [1, 2, 1]})
-
-        self.sweep.processes = 2
-        res = self.sweep.run({'what' : [10.8, 0.5], 'factor' : [1, 2]})
-        self.assertDictEqual(res, {'what' : [10.8, 10.8, 0.5, 0.5], 'factor' : [1, 2, 1, 2], 'result' : [0, 2, 1, 0]})
-
-        self.sweep.processes = 1
-        res = self.sweep.run([{'what' : 10.0}, {'what' : 1.5, 'factor' : 2}])
-        self.assertDictEqual(res, {'what' : [10.0, 1.5], 'factor' : [None, 2], 'result' : [1, 1]})
-
-class TestMCMCRun(myTestCase):
-    def setUp(self):
-        sample0 = [0]
-        sample1 = [1]
-        sample2 = [2]
-
-        self.samples = 5*[sample0] + 2*[sample1] + 3*[sample2]
-        self.logLs = np.array(10*[-10] + 5*[-5] + 2*[-2] + 3*[-3])
-        self.myrun = tl.util.mcmc.MCMCRun(self.logLs, self.samples)
-
-    def test_init_noparams(self):
-        myrun = tl.util.mcmc.MCMCRun()
-        self.assertEqual(len(myrun.samples), 0)
-        myrun.samples.append(1)
-        myrun = tl.util.mcmc.MCMCRun()
-        self.assertEqual(len(myrun.samples), 0)
-
-    def test_logLs_trunc(self):
-        self.assert_array_equal(self.myrun.logLs_trunc(), self.logLs[10:20])
-
-    def test_best_sample_logL(self):
-        best, bestL = self.myrun.best_sample_logL()
-        self.assertEqual(bestL, -2)
-        self.assertListEqual(best, [1])
-
-    def test_acceptance_rate(self):
-        acc = 2/9
-        self.assertEqual(self.myrun.acceptance_rate('sample_equality'), acc)
-        self.assertEqual(self.myrun.acceptance_rate('sample_identity'), acc)
-        self.assertEqual(self.myrun.acceptance_rate('likelihood_equality'), acc)
-
-    def test_evaluate(self):
-        tmp = self.myrun.evaluate(lambda sample : 2*sample)
-        self.assertIs(tmp[0], tmp[1])
-        self.assertTupleEqual(np.array(tmp).shape, (10, 2))
-
-class TestUtilmcmc(myTestCase):
-    @patch('builtins.print')
-    def test_mcmc(self, mock_print):
-        # Simply use the example from the docs
-        class normMCMC(tl.util.mcmc.Sampler):
-            callback_tracker = 0
-
-            def __init__(self, stepsize=0.1):
-                self.stepsize = stepsize
-
-            def propose_update(self, current_value):
-                proposed_value = current_value + np.random.normal(scale=self.stepsize)
-                logp_forward = -0.5*(proposed_value - current_value)**2/self.stepsize**2 - 0.5*np.log(2*np.pi*self.stepsize**2)
-                logp_backward = -0.5*(current_value - proposed_value)**2/self.stepsize**2 - 0.5*np.log(2*np.pi*self.stepsize**2)
-                return proposed_value, logp_forward, logp_backward
-                
-            def logL(self, value):
-                return -0.5*value**2 - 0.5*np.log(2*np.pi)
-            
-            def callback_logging(self, current_value, best_value):
-                self.callback_tracker += np.abs(current_value) + np.abs(best_value)
-                print("test")
-
-            def callback_stopping(self, myrun):
-                return len(myrun.logLs) > 7
-        
-        mc = normMCMC()
-        mc.configure(iterations=10,
-                     burn_in=5,
-                     log_every=2,
-                     show_progress=False,)
-        myrun = mc.run(1)
-
-        self.assertEqual(mock_print.call_count, 10)
-        self.assertEqual(len(myrun.logLs), 10)
-        self.assertEqual(len(myrun.samples), 5)
-        self.assertGreater(mc.callback_tracker, 0)
-
-        mc.config['check_stopping_every'] = 2
-        myrun = mc.run(1)
-
-        self.assertEqual(len(myrun.logLs), 8)
-        self.assertEqual(len(myrun.samples), 3)
+    def test_mat(self):
+        filename = "testdata/test_write.mat"
+        tl.io.write.mat(self.ds, filename)
 
 class TestModelsRouse(myTestCase):
     def setUp(self):
@@ -517,9 +423,9 @@ class TestModelsRouse(myTestCase):
         self.assertTrue(self.model != self.model_nosetup) # we have != as mixin for == :)
         self.assertFalse(self.model == tl.models.Rouse(6, 1, 1, setup_dynamics=False))
 
-        self.assertEqual(repr(self.model), "rouse.Model(N=5, D=1, k=1)")
+        self.assertEqual(repr(self.model), "rouse.Model(N=5, D=1, k=1, d=3)")
         self.assertEqual(repr(tl.models.Rouse(5, 1, 1, add_bonds=[(2, 4), (1, 3, 0.5)])),
-                         "rouse.Model(N=5, D=1, k=1) with 2 additional bonds")
+                         "rouse.Model(N=5, D=1, k=1, d=3) with 2 additional bonds")
 
     def test_check_dynamics(self):
         self.model.check_dynamics(dt=1)
@@ -533,9 +439,6 @@ class TestModelsRouse(myTestCase):
             self.model_nosetup.check_dynamics(dt=1, run_if_necessary=False)
 
     def test_steady_state(self):
-        with self.assertRaises(RuntimeError):
-            self.model_nosetup.steady_state(additional_tether=False)
-
         M, C = self.model_nosetup.steady_state()
         self.assert_array_equal(M, np.zeros_like(M))
 
@@ -566,27 +469,70 @@ class TestModelsRouse(myTestCase):
         conf = self.model.evolve(conf)
         self.assertTupleEqual(conf.shape, (5,3))
 
-#     def test_update_ensemble_with_observation_1d(self):
-#         # these are generic formulae, so have nothing to do with a specific model
-#         l, m, c = tl.models.rouse.Model.update_ensemble_with_observation_1d(
-#                         np.array([1]), np.array([[1]]), np.array([0]), 1, np.array([1]))
-#         self.assertAlmostEqual(l, -1/4-1/2*np.log(4*np.pi), delta=1e-10)
-#         self.assertEqual(m[0], 0.5)
-#         self.assertEqual(c[0, 0], 0.5)
-# 
-#         for _ in range(10):
-#             M = np.random.rand(1)
-#             C = np.eye(1)
-#             x = np.random.rand(1) - 1
-#             s = np.random.rand() + 1
-#             w = np.array([1.])
-# 
-#             l0, m0, c0 = tl.models.rouse.Model.update_ensemble_with_observation_1d(M, C, x, s, w)
-#             l1, m1, c1 = tl.models.rouse.Model.Kalman_update_1d(M, C, x, s, w)
-#             print(l0, l1, m0, m1, c0, c1)
-#             self.assertAlmostEqual(l0, l1, delta=1e-10)
-#             self.assertAlmostEqual(m0, m1, delta=1e-10)
-#             self.assertAlmostEqual(c0, c1, delta=1e-10)
+    def test_contact_probability(self):
+        hic = self.model.contact_probability()
+        self.assertEqual(np.sum(np.isinf(hic)), 5)
+        self.assert_array_equal(np.round(np.diagonal(hic, 1), 10), [1, 1, 1, 1])
+        self.assert_array_equal(np.round(np.diagonal(hic, 1), 10), np.round(np.diagonal(hic, -1), 10))
+
+    def test_MSD_ACF(self):
+        dts = np.array([0, 1, 10, 100, np.inf])
+        msd = self.model.MSD(dts, w=[0, 1, 0, -1, 0])
+        self.assert_array_equal(np.round(msd[[0, -1]], 10), [0, 2*3*2]) # correct values?
+
+        # The better check for correct values: do MSD and ACF match?
+        # (these are computed along separate paths)
+        acf = self.model.ACF(dts, w=[0, 1, 0, -1, 0])
+        comp = msd - 2*(acf[0] - acf)
+        comp[np.abs(comp) < 1e-10] = 0
+        self.assert_array_equal(comp, np.zeros_like(comp))
+
+        # If there's no steady state
+        msd = self.model.MSD(dts[:-1], w=[0, 0, 1, 0, 0])
+        self.assertEqual(msd[0], 0)
+
+        # Various problems that might come up
+        with self.assertRaises(ValueError):
+            _ = self.model.MSD([-1]) # dt < 0
+        with self.assertRaises(ValueError):
+            _ = self.model.MSD([np.nan]) # invalid time lag
+        with self.assertRaises(ValueError):
+            _ = self.model.MSD([np.inf]) # no global steady state
+        with self.assertRaises(ValueError):
+            _ = self.model.MSD([np.inf], w=[0, 1, 0, 0, 0]) # no steady state
+
+        # With ballistic motion due to force
+        self.model.F[3] = [0, 1, 0]
+        self.model.update_F_only()
+        msd = self.model.MSD(dts[:-1])
+
+        # Some more ACF stuff
+        _ = self.model.ACF(dts)
+        with self.assertRaises(ValueError):
+            _ = self.model.ACF([-1]) # dt < 0
+        with self.assertRaises(ValueError):
+            _ = self.model.ACF([np.nan]) # invalid time lag
+
+    def test_scales(self):
+        ts = self.model.timescales()
+        self.assertEqual(ts['t_microscopic'], 1)
+        self.assertAlmostEqual(ts['t_equilibration']/ts['t_Rouse'], np.pi**3/4)
+
+        self.assertEqual(self.model.Gamma_2loci() / self.model.Gamma(), 2)
+
+        self.assertAlmostEqual(self.model.rms_Ree()**2, 12)
+        self.assertAlmostEqual(self.model.rms_Ree(L=3)**2, 9)
+
+class TestModelsRouseMSDfun(myTestCase):
+    def test_twolocus(self):
+        msd = tl.models.rouse.twoLocusMSD([0, 1, np.inf], 1, 1)
+        self.assertEqual(msd[0], 0)
+        self.assertEqual(msd[-1], 2)
+
+        with self.assertRaises(ValueError):
+            _ = tl.models.rouse.twoLocusMSD([-1], 1, 1)
+        with self.assertRaises(ValueError):
+            _ = tl.models.rouse.twoLocusMSD([np.nan], 1, 1)
 
 class TestModelsStatgauss(myTestCase):
     def test_sampleMSD(self):
@@ -660,18 +606,36 @@ class TestAnalysisP2(myTestCase):
 
         self.assert_array_equal(msd, tl.analysis.MSD(self.ds))
 
-#     def test_MSD_functions(self):
-#         md = tl.analysis.MSD(self.traj, TA=False, function='D', writeto='MD')
-#         self.assertIs(md, self.traj.meta['MD']['data'])
-#         self.assert_array_equal(md, [0, 1, 2, 3, np.nan, 5])
-# 
-#         acf = tl.analysis.MSD(self.traj, TA=False, function='SP', writeto='ACF')
-#         self.assert_array_equal(acf, [1, 2, 3, 4, np.nan, 6])
-# 
-#         mcd = tl.analysis.MSD(self.traj, TA=False,
-#                               function=lambda xm, xn : np.sum((xm-xn)**3, axis=-1),
-#                               writeto='MCD')
-#         self.assert_array_equal(mcd, [0, 1, 8, 27, np.nan, 125])
+    def test_covariances_and_correlations(self):
+        acov = tl.analysis.ACov(self.traj)
+        self.assert_array_equal(acov, np.array([13.2, 20/3, 35/3, 11, 12, 6]))
+        self.assert_array_equal(self.traj.meta['ACov']['data'], np.array([13.2, 20/3, 35/3, 11, 12, 6]))
+
+        acorr = tl.analysis.ACorr(self.traj)
+        self.assert_array_equal(acorr, np.array([13.2, 20/3, 35/3, 11, 12, 6])/13.2)
+        self.assert_array_equal(self.traj.meta['ACorr']['data'], np.array([13.2, 20/3, 35/3, 11, 12, 6])/13.2)
+
+        vacov = tl.analysis.VACov(self.traj)
+        self.assert_array_equal(vacov, np.array([1, 1, 1, np.nan, np.nan]))
+        self.assert_array_equal(self.traj.meta['VACov']['data'], np.array([1, 1, 1, np.nan, np.nan]))
+
+        vacorr = tl.analysis.VACorr(self.traj)
+        self.assert_array_equal(vacov, np.array([1, 1, 1, np.nan, np.nan]))
+        self.assert_array_equal(self.traj.meta['VACorr']['data'], np.array([1, 1, 1, np.nan, np.nan]))
+
+    def test_new_p2(self):
+        def AD(xm, xn):
+            return np.sum(np.abs(xm-xn), axis=-1)
+
+        MAD = tl.analysis.p2.P2traj(self.traj, function=AD, writeto=None)['data']
+        with self.assertRaises(KeyError):
+            _ = self.traj.meta['P2']
+        tl.analysis.p2.P2(self.traj, function=AD)
+
+        self.assert_array_equal(MAD, np.array([0, 1, 2, 3, 4, 5]))
+        self.assert_array_equal(MAD, self.traj.meta['P2']['data'])
+
+        _ = tl.analysis.p2.P2dataset(self.ds, function=AD)
 
 class TestAnalysisKLD(myTestCase):
     def setUp(self):
@@ -717,7 +681,186 @@ class TestAnalysisPlots(myTestCase):
         _ = tl.analysis.plots.distance_distribution(self.ds)
         _ = tl.analysis.plots.distance_distribution(self.ds2)
 
-from test_bild import *
+class TestUtilUtil(myTestCase):
+    def test_distribute_noiselevel(self):
+        self.assert_array_equal(tl.util.distribute_noiselevel(14, [5, 10, 15]),
+                                [1, 2, 3])
+
+    def test_log_derivative(self):
+        x = [1, 2, 5, np.nan, 30]
+        y = np.array(x)**1.438
+        xnew, dy = tl.util.log_derivative(y, x, resampling_density=1.5)
+        self.assertTrue(np.all(np.abs(dy - 1.438) < 1e-7))
+
+        xnew, dy = tl.util.log_derivative(y)
+
+    def test_KMsurvival(self):
+        km = tl.util.KM_survival([1, 2, 3, 4, 5], [0, 0, 0, 0, 0], S1at=None)
+        self.assert_array_equal(km[:, 0], [1, 2, 3, 4, 5])
+        self.assert_array_equal(np.round(km[:, 1], 10), [0.8, 0.6, 0.4, 0.2, 0.0]) # km is calculated via exp(log(...)), so off by 1e-16 is okay
+
+        km = tl.util.KM_survival([1, 2, 3, 4, 5], [0, 0, 0, 0, 0])
+        self.assert_array_equal(km[:, 0], [0, 1, 2, 3, 4, 5])
+        self.assert_array_equal(np.round(km[:, 1], 10), [1, 0.8, 0.6, 0.4, 0.2, 0.0]) # km is calculated via exp(log(...)), so off by 1e-16 is okay
+
+class TestUtilMCMC(myTestCase):
+    myprint = print
+
+    @patch('builtins.print')
+    def test_mcmc(self, mock_print):
+        # Simply use the example from the docs
+        class normMCMC(tl.util.mcmc.Sampler):
+            callback_tracker = 0
+
+            def __init__(self, stepsize=0.1):
+                self.stepsize = stepsize
+
+            def propose_update(self, current_value):
+                proposed_value = current_value + np.random.normal(scale=self.stepsize)
+                logp_forward = -0.5*(proposed_value - current_value)**2/self.stepsize**2 - 0.5*np.log(2*np.pi*self.stepsize**2)
+                logp_backward = -0.5*(current_value - proposed_value)**2/self.stepsize**2 - 0.5*np.log(2*np.pi*self.stepsize**2)
+                return proposed_value, logp_forward, logp_backward
+                
+            def logL(self, value):
+                return -0.5*value**2 - 0.5*np.log(2*np.pi)
+            
+            def callback_logging(self, current_value, best_value):
+                self.callback_tracker += np.abs(current_value) + np.abs(best_value)
+                print("test")
+
+            def callback_stopping(self, myrun):
+                return len(myrun.logLs) > 7
+        
+        mc = normMCMC()
+        mc.configure(iterations=10,
+                     burn_in=5,
+                     log_every=2,
+                     show_progress=False,)
+        myrun = mc.run(1)
+
+        self.assertEqual(mock_print.call_count, 10)
+        self.assertEqual(len(myrun.logLs), 10)
+        self.assertEqual(len(myrun.samples), 5)
+        self.assertGreater(mc.callback_tracker, 0)
+
+        # Stopping
+        mc.config['check_stopping_every'] = 2
+        myrun = mc.run(1)
+
+        self.assertEqual(len(myrun.logLs), 9)
+        self.assertEqual(len(myrun.samples), 4)
+
+        mc.config['check_stopping_every'] = -1
+
+        # infinite likelihoods
+        mc.logL = lambda value: -np.inf
+        myrun = mc.run(1)
+        self.assertEqual(np.sum(np.diff(myrun.samples) != 0), 4)
+
+        mc.logL = lambda value: np.nan
+        with self.assertRaises(RuntimeError):
+            myrun = mc.run(1)
+
+        mc.logL = lambda value: np.inf
+        with self.assertRaises(RuntimeError):
+            myrun = mc.run(1)
+
+class TestUtilMCMCMCMCRun(myTestCase):
+    def setUp(self):
+        sample0 = [0]
+        sample1 = [1]
+        sample2 = [2]
+
+        self.samples = 5*[sample0] + 2*[sample1] + 3*[sample2]
+        self.logLs = np.array(10*[-10] + 5*[-5] + 2*[-2] + 3*[-3])
+        self.myrun = tl.util.mcmc.MCMCRun(self.logLs, self.samples)
+
+    def test_init_noparams(self):
+        myrun = tl.util.mcmc.MCMCRun()
+        self.assertEqual(len(myrun.samples), 0)
+        myrun.samples.append(1)
+        myrun = tl.util.mcmc.MCMCRun()
+        self.assertEqual(len(myrun.samples), 0)
+
+    def test_logLs_trunc(self):
+        self.assert_array_equal(self.myrun.logLs_trunc(), self.logLs[10:20])
+
+    def test_best_sample_logL(self):
+        best, bestL = self.myrun.best_sample_logL()
+        self.assertEqual(bestL, -2)
+        self.assertListEqual(best, [1])
+
+    def test_acceptance_rate(self):
+        acc = 2/9
+        self.assertEqual(self.myrun.acceptance_rate('sample_equality'), acc)
+        self.assertEqual(self.myrun.acceptance_rate('sample_identity'), acc)
+        self.assertEqual(self.myrun.acceptance_rate('likelihood_equality'), acc)
+
+    def test_evaluate(self):
+        tmp = self.myrun.evaluate(lambda sample : 2*sample)
+        self.assertIs(tmp[0], tmp[1])
+        self.assertTupleEqual(np.array(tmp).shape, (10, 2))
+
+class TestUtilSweep(myTestCase):
+    @staticmethod
+    def countfun(ds, what, factor=1):
+        cnt = 0
+        for traj in ds:
+            if np.isnan(what):
+                cnt += np.sum(np.isnan(traj[:]))
+            else:
+                cnt += np.sum(traj[:]*factor == what)
+        return cnt
+
+    def setUp(self):
+        ds = tl.TaggedSet()
+        ds.add(tl.Trajectory.fromArray([0, 0.75, 0.5, 0.3, 5.4, 5.5, 5.3, -2.0, 5.4]))
+        ds.add(tl.Trajectory.fromArray([1.2, 1.4, np.nan, np.nan, 10.0, 10.2]))
+
+        self.sweep = tl.util.Sweeper(ds, self.countfun)
+        _ = tl.util.Sweeper(ds, self.countfun, copy=False)
+
+    def test_preprocess(self):
+        self.sweep.preprocess(lambda traj : traj.abs())
+    
+    def test_run(self):
+        res = self.sweep.run({'what' : [5.5, np.nan, 10.0], 'factor' : 1})
+        self.assertDictEqual(res, {'what' : [5.5, np.nan, 10.0], 'factor' : [1, 1, 1], 'result' : [1, 2, 1]})
+
+        self.sweep.processes = 2
+        res = self.sweep.run({'what' : [10.8, 0.5], 'factor' : [1, 2]})
+        self.assertDictEqual(res, {'what' : [10.8, 10.8, 0.5, 0.5], 'factor' : [1, 2, 1, 2], 'result' : [0, 2, 1, 0]})
+
+        self.sweep.processes = 1
+        res = self.sweep.run([{'what' : 10.0}, {'what' : 1.5, 'factor' : 2}])
+        self.assertDictEqual(res, {'what' : [10.0, 1.5], 'factor' : [None, 2], 'result' : [1, 1]})
+
+class TestUtilParallel(myTestCase):
+    def test_vanilla(self):
+        self.assertIs(tl.util.parallel._map, map)
+        self.assertIs(tl.util.parallel._umap, map)
+
+        # These tests are a bit of an abuse...
+        # This will be used for actual parallelization when testing msdfit
+        with tl.util.parallel.Parallelize(dict):
+            self.assertIs(tl.util.parallel._map, dict)
+            self.assertIs(tl.util.parallel._umap, dict)
+
+        with tl.util.parallel.Parallelize(set, tuple):
+            self.assertIs(tl.util.parallel._map, set)
+            self.assertIs(tl.util.parallel._umap, tuple)
+
+        self.assertIs(tl.util.parallel._map, map)
+        self.assertIs(tl.util.parallel._umap, map)
+
+class TestUtilPlotting(myTestCase):
+    def test_cov_ellipse(self):
+        ell = tl.util.plotting.ellipse_from_cov([1, 2], [[1, 1], [1, 2]])
+        self.assertIsNot(ell, None)
+        ell = tl.util.plotting.ellipse_from_cov([1, 2], [[1, 1], [1, 2]], color='r')
+
+# from test_bild import *
+# from test_msdfit import *
 
 if __name__ == '__main__':
     unittest.main(module=__file__[:-3])

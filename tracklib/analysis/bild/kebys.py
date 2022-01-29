@@ -9,6 +9,8 @@ Parametrize binary profiles as (s, theta) where
 
 from copy import deepcopy
 
+from tqdm.auto import tqdm
+
 import numpy as np
 from scipy import stats
 
@@ -252,20 +254,9 @@ def sample(traj, model,
            k_max = 20,
            sampler_kw = {},
            show_progress=False,
-           assume_notebook_for_progress_bar=True,
           ):
     """ uses calculate_logLs, which is parallel-aware (ordered) """
-    if show_progress:
-        if assume_notebook_for_progress_bar:
-            from tqdm.notebook import tqdm
-        else:
-            from tqdm import tqdm
-        bar = tqdm()
-        del tqdm
-    else:
-        bar = lambda : None
-        bar.update = lambda *_ : None
-        bar.close = lambda *_ : None
+    bar = tqdm(disable = not show_progress)
     
     # Some conditions that come in handy
     def all_exhausted(xs):

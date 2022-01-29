@@ -3,7 +3,7 @@
 <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=emulateIE7" />
-    <title>Coverage for tracklib/io/write.py: 83%</title>
+    <title>Coverage for tracklib/io/write.py: 100%</title>
     <link rel="stylesheet" href="style.css" type="text/css">
     <script type="text/javascript" src="jquery.min.js"></script>
     <script type="text/javascript" src="jquery.hotkeys.js"></script>
@@ -17,13 +17,13 @@
 <div id="header">
     <div class="content">
         <h1>Coverage for <b>tracklib/io/write.py</b> :
-            <span class="pc_cov">83%</span>
+            <span class="pc_cov">100%</span>
         </h1>
         <img id="keyboard_icon" src="keybd_closed.png" alt="Show keyboard shortcuts" />
         <h2 class="stats">
             29 statements &nbsp;
-            <button type="button" class="run shortkey_r button_toggle_run" title="Toggle lines run">24 run</button>
-            <button type="button" class="mis show_mis shortkey_m button_toggle_mis" title="Toggle lines missing">5 missing</button>
+            <button type="button" class="run shortkey_r button_toggle_run" title="Toggle lines run">29 run</button>
+            <button type="button" class="mis show_mis shortkey_m button_toggle_mis" title="Toggle lines missing">0 missing</button>
             <button type="button" class="exc show_exc shortkey_x button_toggle_exc" title="Toggle lines excluded">0 excluded</button>
         </h2>
     </div>
@@ -127,18 +127,18 @@
     <p id="t74" class="pln"><span class="n"><a href="#t74">74</a></span><span class="t"><span class="str">    filename : str</span>&nbsp;</span><span class="r"></span></p>
     <p id="t75" class="pln"><span class="n"><a href="#t75">75</a></span><span class="t"><span class="str">        the file to write to</span>&nbsp;</span><span class="r"></span></p>
     <p id="t76" class="pln"><span class="n"><a href="#t76">76</a></span><span class="t"><span class="str">    """</span>&nbsp;</span><span class="r"></span></p>
-    <p id="t77" class="mis show_mis"><span class="n"><a href="#t77">77</a></span><span class="t">    <span class="nam">trajs</span> <span class="op">=</span> <span class="nam">np</span><span class="op">.</span><span class="nam">empty</span><span class="op">(</span><span class="nam">len</span><span class="op">(</span><span class="nam">data</span><span class="op">)</span><span class="op">,</span> <span class="nam">dtype</span><span class="op">=</span><span class="nam">object</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
-    <p id="t78" class="mis show_mis"><span class="n"><a href="#t78">78</a></span><span class="t">    <span class="key">for</span> <span class="nam">i</span><span class="op">,</span> <span class="op">(</span><span class="nam">traj</span><span class="op">,</span> <span class="nam">tags</span><span class="op">)</span> <span class="key">in</span> <span class="nam">enumerate</span><span class="op">(</span><span class="nam">data</span><span class="op">(</span><span class="nam">giveTags</span><span class="op">=</span><span class="key">True</span><span class="op">)</span><span class="op">)</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
-    <p id="t79" class="mis show_mis"><span class="n"><a href="#t79">79</a></span><span class="t">        <span class="nam">traj</span><span class="op">.</span><span class="nam">tracklib_tags</span> <span class="op">=</span> <span class="nam">list</span><span class="op">(</span><span class="nam">tags</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
-    <p id="t80" class="mis show_mis"><span class="n"><a href="#t80">80</a></span><span class="t">        <span class="nam">trajs</span><span class="op">[</span><span class="nam">i</span><span class="op">]</span> <span class="op">=</span> <span class="nam">traj</span>&nbsp;</span><span class="r"></span></p>
+    <p id="t77" class="run"><span class="n"><a href="#t77">77</a></span><span class="t">    <span class="nam">trajs</span> <span class="op">=</span> <span class="nam">np</span><span class="op">.</span><span class="nam">empty</span><span class="op">(</span><span class="nam">len</span><span class="op">(</span><span class="nam">data</span><span class="op">)</span><span class="op">,</span> <span class="nam">dtype</span><span class="op">=</span><span class="nam">object</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
+    <p id="t78" class="run"><span class="n"><a href="#t78">78</a></span><span class="t">    <span class="key">for</span> <span class="nam">i</span><span class="op">,</span> <span class="op">(</span><span class="nam">traj</span><span class="op">,</span> <span class="nam">tags</span><span class="op">)</span> <span class="key">in</span> <span class="nam">enumerate</span><span class="op">(</span><span class="nam">data</span><span class="op">(</span><span class="nam">giveTags</span><span class="op">=</span><span class="key">True</span><span class="op">)</span><span class="op">)</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
+    <p id="t79" class="run"><span class="n"><a href="#t79">79</a></span><span class="t">        <span class="nam">traj</span><span class="op">.</span><span class="nam">tracklib_tags</span> <span class="op">=</span> <span class="nam">list</span><span class="op">(</span><span class="nam">tags</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
+    <p id="t80" class="run"><span class="n"><a href="#t80">80</a></span><span class="t">        <span class="nam">trajs</span><span class="op">[</span><span class="nam">i</span><span class="op">]</span> <span class="op">=</span> <span class="nam">traj</span>&nbsp;</span><span class="r"></span></p>
     <p id="t81" class="pln"><span class="n"><a href="#t81">81</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
-    <p id="t82" class="mis show_mis"><span class="n"><a href="#t82">82</a></span><span class="t">    <span class="nam">scipy</span><span class="op">.</span><span class="nam">io</span><span class="op">.</span><span class="nam">savemat</span><span class="op">(</span><span class="nam">filename</span><span class="op">,</span> <span class="op">{</span><span class="str">'trajs'</span> <span class="op">:</span> <span class="nam">trajs</span><span class="op">}</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
+    <p id="t82" class="run"><span class="n"><a href="#t82">82</a></span><span class="t">    <span class="nam">scipy</span><span class="op">.</span><span class="nam">io</span><span class="op">.</span><span class="nam">savemat</span><span class="op">(</span><span class="nam">filename</span><span class="op">,</span> <span class="op">{</span><span class="str">'trajs'</span> <span class="op">:</span> <span class="nam">trajs</span><span class="op">}</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
 </div>
 <div id="footer">
     <div class="content">
         <p>
             <a class="nav" href="index.html">&#xab; index</a> &nbsp; &nbsp; <a class="nav" href="https://coverage.readthedocs.io">coverage.py v5.2.1</a>,
-            created at 2021-07-08 05:43 -0400
+            created at 2022-01-13 13:11 -0500
         </p>
     </div>
 </div>

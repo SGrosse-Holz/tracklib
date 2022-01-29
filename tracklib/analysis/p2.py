@@ -1,6 +1,9 @@
 """
 Calculating two-point functions, like MSD & ACF
 
+Note that all of these (MSD, ACF, VACF, ...) contain the same information. See
+also `msdfit <tracklib.analysis.msdfit]`.
+
 Many results of this module will be stored in `Trajectory.meta` for further
 use. For an overview, see :ref:`here <traj_meta_fields_msd>`.
 """
@@ -44,7 +47,9 @@ def P2traj(traj, TA=True, recalculate=False,
         traj: traj.diff()`` gives the increment trajectory
     postproc : callable or None
         will be applied to the final result, i.e. should take a (T,) array and
-        return such.
+        return such. Relevant when accessing this function through
+        ``P2dataset``, since in that case this `!postproc` is applied _before_
+        averaging. Use case: normalizing correlation functions
     writeto : hashable or None
         where to store the output of the calculation in the ``traj.meta`` dict.
         Set to ``None`` to return the output dict instead of storing it.
@@ -59,7 +64,7 @@ def P2traj(traj, TA=True, recalculate=False,
 
     See also
     --------
-    P2dataset, MSD, ACF
+    P2dataset, MSD, tracklib.analysis.msdfit
 
     Notes
     -----
@@ -211,35 +216,201 @@ def P2(*args, **kwargs):
         raise ValueError("Did not understand first argument, with type {}".format(type(args[0])))
 
 def MSD(*args, **kwargs):
+    """
+    Calculate MSD for a `Trajectory` or dataset.
+
+    This is an implementation of `P2`. See `P2traj` and `P2dataset` for
+    detailed description of parameters, here we will just list the most
+    interesting / relevant ones
+
+    Parameters
+    ----------
+    in : Trajectory or TaggedSet of Trajectory
+        the first argument is the input data, either a single `Trajectory`, or
+        a dataset that will be ensemble averaged over
+    TA : bool, optional
+        whether to time average on (each) single trajectory
+    recalculate : bool, optional
+        set to ``True`` to ensure that the calculation is actually performed.
+        Otherwise, this function might just return precalculated values from
+        ``traj.meta['MSD']``.
+    giveN : bool, optional
+        only applicable when `!in` is a dataset. Whether to also return the
+        sample size for each MSD data point.
+
+    Returns
+    -------
+    msd : np.ndarray
+        the calculated MSD. Note that ``msd[i] = MSD(iΔt)``, i.e. ``msd[0] =
+        0``.
+    N : np.ndarray, optional
+        the sample size for each point, see `!giveN`.
+
+    See also
+    --------
+    P2traj, P2dataset, tracklib.analysis.msdfit
+    """
     def SD(xm, xn):
         return np.sum((xm-xn)**2, axis=-1)
 
     return P2(*args, **kwargs, function=SD, writeto='MSD')
 
-def ACovF(*args, **kwargs):
+def ACov(*args, **kwargs):
+    """
+    Calculate autocovariance for a `Trajectory` or dataset.
+
+    This is an implementation of `P2`. See `P2traj` and `P2dataset` for
+    detailed description of parameters, here we will just list the most
+    interesting / relevant ones
+
+    Parameters
+    ----------
+    in : Trajectory or TaggedSet of Trajectory
+        the first argument is the input data, either a single `Trajectory`, or
+        a dataset that will be ensemble averaged over
+    TA : bool, optional
+        whether to time average on (each) single trajectory
+    recalculate : bool, optional
+        set to ``True`` to ensure that the calculation is actually performed.
+        Otherwise, this function might just return precalculated values from
+        ``traj.meta['ACov']``.
+    giveN : bool, optional
+        only applicable when `!in` is a dataset. Whether to also return the
+        sample size for each data point.
+
+    Returns
+    -------
+    acov : np.ndarray
+        the calculated autocovariance
+    N : np.ndarray, optional
+        the sample size for each point, see `!giveN`
+
+    See also
+    --------
+    MSD, P2traj, P2dataset, tracklib.analysis.msdfit
+    """
     def SP(xm, xn):
         return np.sum(xm*xn, axis=-1)
 
-    return P2(*args, **kwargs, function=SP, writeto='ACovF')
+    return P2(*args, **kwargs, function=SP, writeto='ACov')
 
-def ACorrF(*args, **kwargs):
+def ACorr(*args, **kwargs):
+    """
+    Calculate autocorrelation for a `Trajectory` or dataset.
+
+    This is an implementation of `P2`. See `P2traj` and `P2dataset` for
+    detailed description of parameters, here we will just list the most
+    interesting / relevant ones
+
+    Parameters
+    ----------
+    in : Trajectory or TaggedSet of Trajectory
+        the first argument is the input data, either a single `Trajectory`, or
+        a dataset that will be ensemble averaged over
+    TA : bool, optional
+        whether to time average on (each) single trajectory
+    recalculate : bool, optional
+        set to ``True`` to ensure that the calculation is actually performed.
+        Otherwise, this function might just return precalculated values from
+        ``traj.meta['ACorr']``.
+    giveN : bool, optional
+        only applicable when `!in` is a dataset. Whether to also return the
+        sample size for each data point.
+
+    Returns
+    -------
+    acorr : np.ndarray
+        the calculated autocorrelation
+    N : np.ndarray, optional
+        the sample size for each point, see `!giveN`
+
+    See also
+    --------
+    MSD, P2traj, P2dataset, tracklib.analysis.msdfit
+    """
     def SP(xm, xn):
         return np.sum(xm*xn, axis=-1)
     def normalize(data):
         return data / data[0]
 
-    return P2(*args, **kwargs, function=SP, postproc=normalize, writeto='ACorrF')
+    return P2(*args, **kwargs, function=SP, postproc=normalize, writeto='ACorr')
 
-def VACovF(*args, **kwargs):
+def VACov(*args, **kwargs):
+    """
+    Calculate velocity autocovariance for a `Trajectory` or dataset.
+
+    This is an implementation of `P2`. See `P2traj` and `P2dataset` for
+    detailed description of parameters, here we will just list the most
+    interesting / relevant ones
+
+    Parameters
+    ----------
+    in : Trajectory or TaggedSet of Trajectory
+        the first argument is the input data, either a single `Trajectory`, or
+        a dataset that will be ensemble averaged over
+    TA : bool, optional
+        whether to time average on (each) single trajectory
+    recalculate : bool, optional
+        set to ``True`` to ensure that the calculation is actually performed.
+        Otherwise, this function might just return precalculated values from
+        ``traj.meta['VACov']``.
+    giveN : bool, optional
+        only applicable when `!in` is a dataset. Whether to also return the
+        sample size for each data point.
+
+    Returns
+    -------
+    vacov : np.ndarray
+        the calculated velocity autocovariance
+    N : np.ndarray, optional
+        the sample size for each point, see `!giveN`
+
+    See also
+    --------
+    MSD, P2traj, P2dataset, tracklib.analysis.msdfit
+    """
     def SP(xm, xn):
         return np.sum(xm*xn, axis=-1)
 
-    return P2(*args, **kwargs, function=SP, preproc=lambda traj: traj.diff(), writeto='ACovF')
+    return P2(*args, **kwargs, function=SP, preproc=lambda traj: traj.diff(), writeto='VACov')
 
-def VACorrF(*args, **kwargs):
+def VACorr(*args, **kwargs):
+    """
+    Calculate velocity autocorrelation for a `Trajectory` or dataset.
+
+    This is an implementation of `P2`. See `P2traj` and `P2dataset` for
+    detailed description of parameters, here we will just list the most
+    interesting / relevant ones
+
+    Parameters
+    ----------
+    in : Trajectory or TaggedSet of Trajectory
+        the first argument is the input data, either a single `Trajectory`, or
+        a dataset that will be ensemble averaged over
+    TA : bool, optional
+        whether to time average on (each) single trajectory
+    recalculate : bool, optional
+        set to ``True`` to ensure that the calculation is actually performed.
+        Otherwise, this function might just return precalculated values from
+        ``traj.meta['VACorr']``.
+    giveN : bool, optional
+        only applicable when `!in` is a dataset. Whether to also return the
+        sample size for each data point.
+
+    Returns
+    -------
+    vacorr : np.ndarray
+        the calculated velocity autocorrelation
+    N : np.ndarray, optional
+        the sample size for each point, see `!giveN`
+
+    See also
+    --------
+    MSD, P2traj, P2dataset, tracklib.analysis.msdfit
+    """
     def SP(xm, xn):
         return np.sum(xm*xn, axis=-1)
     def normalize(data):
         return data / data[0]
 
-    return P2(*args, **kwargs, function=SP, preproc=lambda traj: traj.diff(), postproc=normalize, writeto='ACorrF')
+    return P2(*args, **kwargs, function=SP, preproc=lambda traj: traj.diff(), postproc=normalize, writeto='VACorr')

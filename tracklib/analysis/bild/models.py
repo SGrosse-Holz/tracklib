@@ -5,6 +5,8 @@ The inference models, and the interface they have to conform to.
 import abc
 import functools
 
+from tqdm.auto import tqdm
+
 import numpy as np
 import scipy.optimize
 import scipy.stats
@@ -233,24 +235,40 @@ class MultiStateRouse(MultiStateModel):
     def logL(self, profile, traj):
         localization_error = self._get_noise(traj)
 
+        # Evolution of covariance matrix for each dimension depends only on the
+        # localization error, i.e. is independent of the actual data. This
+        # means we can optimize here by not executing the actual propagation
+        # for dimensions with equal localization error
+        # Idea: always use C[Cind[d]] instead of C[d], so C actually has only
+        #       the distinct covariance matrices
+        unique_errors, Cind = np.unique(localization_error, return_inverse=True)
+        s2 = unique_errors*unique_errors
+
         for model in self.models:
             model.check_dynamics()
 
         model = self.models[profile[0]]
         M, C_single = model.steady_state()
-        C = self.d * [C_single]
+        C = len(unique_errors) * [C_single]
 
         valid_times = np.nonzero(~np.any(np.isnan(traj[:]), axis=1))[0]
         L_log = np.empty((len(valid_times), self.d), dtype=float)
 
         def Kalman_update(t, M, C, L_log, i_write):
-            for d in range(self.d):
-                l, m, c = model.Kalman_update_1d(M[:, d], C[d],
-                                                 traj[t][d], localization_error[d],
-                                                 self.measurement)
-                L_log[i_write, d] = l
-                M[:, d] = m
-                C[d] = c
+            # Innovation
+            w = self.measurement
+            m = w @ M
+            xmm = traj[t] - m
+
+            # Updates of covariances
+            Cw = [c @ w for c in C]
+            S = [w @ Cw[i] + s2[i]                   for i in range(len(C))]
+            K = [Cw[i] / S[i]                        for i in range(len(C))]
+            C = [C[i] - K[i][:, None]*Cw[i][None, :] for i in range(len(C))]
+
+            # Mean and likelihoods
+            M              = M + np.stack( [K[Cind[d]]*xmm[d]                             for d in range(self.d)], axis=-1)
+            L_log[i_write] = -0.5*np.array([xmm[d]*xmm[d]/S[Cind[d]] + np.log(S[Cind[d]]) for d in range(self.d)]) - LOG_SQRT_2_PI
 
             return M, C
 
@@ -274,7 +292,7 @@ class MultiStateRouse(MultiStateModel):
                 i_write += 1
 
         if i_write != len(L_log):
-            raise RuntimeError # pragma: no cover
+            raise RuntimeError("Internal inconsistency (i.e. bug)") # pragma: no cover
 
         return np.sum(L_log)
 
@@ -489,7 +507,7 @@ def _neg_logL_traj(traj, model):
     return -model.logL(traj.meta['loopingprofile'], traj)
 
 def fit(data, modelfamily,
-        show_progress=False, assume_notebook_for_progressbar=True,
+        show_progress=False,
         map_function=map,
         **kwargs):
     """
@@ -561,17 +579,7 @@ def fit(data, modelfamily,
        initial conditions when using this.
     """
     # Set up progressbar
-    if show_progress: # pragma: no cover
-        if assume_notebook_for_progressbar:
-            from tqdm.notebook import tqdm
-        else:
-            from tqdm import tqdm
-        pbar = tqdm()
-    else:
-        class Nullbar:
-            def update(*args): pass
-            def close(*args): pass
-        pbar = Nullbar()
+    pbar = tqdm(disable = not show_progress)
 
     # Set up minimization target
     def neg_logL_ds(params):

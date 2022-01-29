@@ -33,11 +33,14 @@ def ellipse_from_cov(pos, cov, ax=None, n_std=1, **kwargs):
             'facecolor' : 'none',
             'edgecolor' : 'k',
             }
+    if 'color' in kwargs:
+        mykwargs['edgecolor'] = kwargs['color']
+        del kwargs['color']
     mykwargs.update(kwargs)
 
     axes = 2*n_std*np.sqrt(w)
     ell = matplotlib.patches.Ellipse(pos, axes[-1], axes[0], angle_in_degrees, **mykwargs)
 
-    if ax is None:
+    if ax is None: # pragma: no cover
         ax = plt.gca()
     return ax.add_patch(ell)
