@@ -10,6 +10,14 @@ tracklib
    tracklib.util
 
 
+tracklib..rouse\_no\_eigendecomposition
+---------------------------------------
+
+.. automodule:: tracklib..rouse_no_eigendecomposition
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 tracklib.clean
 --------------
 

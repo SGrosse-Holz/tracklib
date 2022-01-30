@@ -860,7 +860,7 @@ class TestUtilPlotting(myTestCase):
         ell = tl.util.plotting.ellipse_from_cov([1, 2], [[1, 1], [1, 2]], color='r')
 
 # from test_bild import *
-# from test_msdfit import *
+from test_msdfit import *
 
 if __name__ == '__main__':
     unittest.main(module=__file__[:-3])

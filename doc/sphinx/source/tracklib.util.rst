@@ -12,6 +12,14 @@ tracklib.util.mcmc
    :undoc-members:
    :show-inheritance:
 
+tracklib.util.parallel
+----------------------
+
+.. automodule:: tracklib.util.parallel
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 tracklib.util.plotting
 ----------------------
 

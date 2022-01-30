@@ -152,6 +152,23 @@ the whole structure to file. It can write only the “core” data, i.e. the
 actual trajectories.</p>
 </dd></dl>
 
+<dl class="function">
+<dt id="tracklib.io.write.mat">
+<code class="sig-prename descclassname">tracklib.io.write.</code><code class="sig-name descname">mat</code><span class="sig-paren">(</span><em class="sig-param">data</em>, <em class="sig-param">filename</em><span class="sig-paren">)</span><a class="headerlink" href="#tracklib.io.write.mat" title="Permalink to this definition">¶</a></dt>
+<dd><p>Write a dataset to MATLAB’s .mat format</p>
+<p>This will produce a cell array containing the individual trajectories as
+structs. All the meta-data is passed along as well. The tags associated
+with the trajectory will be written to an entry <code class="docutils literal notranslate"><span class="pre">'tracklib_tags'</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>data</strong> (<em>TaggedSet of Trajectory</em>) – the data set to write</p></li>
+<li><p><strong>filename</strong> (<em>str</em>) – the file to write to</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
 </div>
 </div>
 

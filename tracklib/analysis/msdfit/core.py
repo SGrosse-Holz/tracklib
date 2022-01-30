@@ -66,7 +66,6 @@ def MSDfun(fun):
 
     Example
     -------
-    ```
     >>> # ... Fit subclass implementation ...
     ... 
     ... def params2msdm(self, params):
@@ -86,7 +85,6 @@ def MSDfun(fun):
     See also
     --------
     msd2C_fun, Fit
-    ```
     """
     def wrap(dt):
         # Preproc
@@ -402,11 +400,10 @@ class Fit(metaclass=ABCMeta):
 
     Upon subclassing, it is highly recommended to initialize the base class
     first thing:
-    ```
+
     >>> def SomeFit(Fit):
     ...     def __init__(self, data, *other_args):
     ...         super().__init__(data) # <--- don't forget!
-    ```
 
     This class uses ``scipy.optimize.minimize`` to find the MAP parameter
     estimate (or MLE if you leave `logprior` flat). When running the fit, you
@@ -592,7 +589,7 @@ class Fit(metaclass=ABCMeta):
             with np.errstate(over='raise', under='ignore'):
                 try:
                     return min(np.exp(1/np.tan(np.pi*x)), self.max_penalty)
-                except:
+                except FloatingPointError:
                     return self.max_penalty
 
     def expand_fix_values(self, fix_values=None):
@@ -1033,7 +1030,7 @@ class Profiler():
         self.iparam = None
         self.profiling = profiling # also sets self.LR_interval and self.LR_target
 
-        self.bracket_strategy = bracket_strategy # see expand_bracket_strategy()
+        self._bracket_strategy_input = bracket_strategy # see expand_bracket_strategy()
         self.bracket_step = bracket_step
         
         self.max_fit_runs = max_fit_runs
@@ -1080,10 +1077,10 @@ class Profiler():
         Preprocessor for the `!bracket_strategy` attribute
         """
         # We need a point estimate to set up the additive scheme, so this can't be in __init__()
-        if self.point_estimate is None:
+        if self.point_estimate is None: # pragma: no cover
             raise RuntimeError("Cannot set up brackets without point estimate")
             
-        if self.bracket_strategy == 'auto':
+        if self._bracket_strategy_input == 'auto':
             assert self.bracket_step > 1
             
             self.bracket_strategy = []
@@ -1102,11 +1099,12 @@ class Profiler():
                     'step'                    : step,
                     'nonidentifiable_cutoffs' : nonidentifiable_cutoffs,
                 })
-        elif isinstance(self.bracket_strategy, dict):
-            assert self.bracket_strategy['step'] > (1 if self.bracket_strategy['multiplicative'] else 0)
-            self.bracket_strategy = len(self.fit.bounds)*[self.bracket_strategy]
+        elif isinstance(self._bracket_strategy_input, dict):
+            assert self._bracket_strategy_input['step'] > (1 if self._bracket_strategy_input['multiplicative'] else 0)
+            self.bracket_strategy = len(self.fit.bounds)*[self._bracket_strategy_input]
         else:
-            assert isinstance(self.bracket_strategy, list)
+            assert isinstance(self._bracket_strategy_input, list)
+            self.bracket_strategy = self._bracket_strategy_input
         
     class FoundBetterPointEstimate(Exception):
         pass
@@ -1127,8 +1125,8 @@ class Profiler():
                 except Profiler.FoundBetterPointEstimate:
                     restarts += 1
                     if restarts > self.max_restarts_per_parameter:
-                        raise StopIteration(f"Ran out of restarts after finding a better "
-                                             "point estimate (max_restarts = {self.max_restarts})")
+                        raise StopIteration("Ran out of restarts after finding a better "
+                                            f"point estimate (max_restarts = {self.max_restarts})") # pragma: no cover
 
                     self.vprint(1, f"Warning: Found a better point estimate ({self.best_estimate['logL']} > {self.point_estimate['logL']})")
                     self.vprint(1, f"Will restart from there ({self.max_restarts_per_parameter-restarts} remaining)")
@@ -1255,28 +1253,28 @@ class Profiler():
                 res = self.fit.run(optimization_steps = ('gradient',),
                                    **fit_kw,
                                   )
-            except RuntimeError: # okay, this didn't work, whatever
+            except RuntimeError: # okay, this didn't work, whatever # pragma: no cover
                 pass
-        else: # we're starting from somewhere known, so start out trying to move by gradient, use simplex if that doesn't work
+        else: # we're starting from somewhere known, so start out trying to
+              # move by gradient, use simplex if that doesn't work
             try:
                 res = self.fit.run(optimization_steps = ('gradient',),
                                    verbosity=0,
                                    **fit_kw,
                                   )
-                if fit_kw['init_from'] is not None and self.likelihood_significantly_greater(fit_kw['init_from'], res):
-                    # This happens sometimes, who knows why
-                    # Update: was a bug, but can't hurt to keep this mechanism around
-                    raise RuntimeError
             except RuntimeError:
                 self.vprint(2, "Gradient fit failed, using simplex")
                 res = self.fit.run(optimization_steps = ('simplex',),
                                    **fit_kw,
                                   )
-
-        if fit_kw['init_from'] is not None and self.likelihood_significantly_greater(fit_kw['init_from'], res):
-            self.vprint(2, ("Both simplex and gradient fits gave worse than initial value: "
-                           f"{res['logL']} < {fit_kw['init_from']['logL']}. Using initial instead"))
-            res = fit_kw['init_from']
+            # At this point, we used to check that the new result is indeed
+            # better than the initial point, which was intended as a sanity
+            # check. It ended up being problematic: when we are profiling, we
+            # initialize to the closest available previous point, which of
+            # course will not fulfill the constraint on the parameter of
+            # interest. It's associated likelihood (which we would compare
+            # against) thus can be better than any possible value that fulfills
+            # the constraint. Long story short: no sanity check here.
         
         if is_new_point_estimate:
             self.point_estimate = res
@@ -1285,7 +1283,7 @@ class Profiler():
             self.check_point_estimate_against(res)
 
         if self.bar is not None:
-            self.bar.update()
+            self.bar.update() # pragma: no cover
         
     ### Sweeping one parameter ###
     
@@ -1324,6 +1322,8 @@ class Profiler():
             
         if direction is not None:
             distances[np.sign(values - val) != direction] = np.inf
+            if not np.any(np.isfinite(distances)):
+                raise RuntimeError("Did not find any values in specified direction")
             
         min_dist = np.min(distances)
         
@@ -1364,7 +1364,7 @@ class Profiler():
             minus_logL = self.min_target_from_fit(new_params)
                 
             if self.bar is not None:
-                self.bar.update()
+                self.bar.update() # pragma: no cover
             
             self.ress[self.iparam].append({'logL' : -minus_logL, 'params' : new_params})
             self.check_point_estimate_against(self.ress[self.iparam][-1])
@@ -1511,7 +1511,7 @@ class Profiler():
         """
         self.iparam = iparam
         if self.point_estimate is None:
-            raise RuntimeError("Need to have a point estimate before calculating confidence intervals")
+            raise RuntimeError("Need to have a point estimate before calculating confidence intervals") # pragma: no cover
             
         (a, a_pL), (b, b_pL) = self.initial_bracket_points()
         m = self.point_estimate['params'][self.iparam]
@@ -1556,12 +1556,11 @@ class Profiler():
         run_fit
         """
         if show_progress and self.bar is None:
-            self.bar = tqdm()
+            self.bar = tqdm() # pragma: no cover
             
         if self.point_estimate is None:
             self.vprint(2, "Finding initial point estimate ...")
             self.run_fit(show_progress=show_progress)
-        old_point_estimate = self.point_estimate
         
         self.vprint(2, "initial point estimate: params = {}, logL = {}\n".format(self.point_estimate['params'],
                                                                                  self.point_estimate['logL'],
@@ -1571,6 +1570,7 @@ class Profiler():
         mcis = np.empty((n_params, 3), dtype=float)
         mcis[:] = np.nan
         
+        # check, which parameters to run
         if iparam == 'all':
             fixed = [i for i, _ in self.fit.fix_values]
             iparams = np.array([i for i in range(n_params) if i not in fixed])
@@ -1579,23 +1579,23 @@ class Profiler():
             if len(iparams.shape) == 0:
                 iparams = np.array([iparams])
                
+        # keep track of which point estimate was used for which parameters
+        used_point_estimates = n_params*[None]
         while True: # limited by max_restarts_per_parameter
             for iparam in iparams:
-                self.run_count = 0
-                self.vprint(2, f"starting iparam = {iparam}")
-                m, ci = self.find_single_MCI(iparam)
-                mcis[iparam, :] = m, *ci
+                # Only run if we did not already sweep from here
+                if used_point_estimates[iparam] is not self.point_estimate:
+                    self.run_count = 0
+                    self.vprint(2, f"starting iparam = {iparam}")
+                    m, ci = self.find_single_MCI(iparam)
+                    mcis[iparam, :] = m, *ci
+                    used_point_estimates[iparam] = self.point_estimate
                 
-            if (self.likelihood_significantly_greater(self.best_estimate, old_point_estimate)
-                    and self.restart_on_better_point_estimate):
-                self.vprint(2, f"Point estimate was updated while we calculated confidence intervals, so restart")
-                self.vprint(2, "new best logL = {:.3f} > {:.3f} = old point estimate logL\n".format(self.best_estimate['logL'],
-                                                                                                    old_point_estimate['logL']))
-                self.point_estimate = self.best_estimate # just in case it's not yet
-            else:
+            if ( all([used_point_estimates[iparam] is self.point_estimate for iparam in iparams])
+                 or not self.restart_on_better_point_estimate ):
                 break
         
-        if show_progress and self.bar is not None:
+        if show_progress and self.bar is not None: # pragma: no cover
             self.bar.close()
             self.bar = None
             

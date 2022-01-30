@@ -48,15 +48,128 @@
 <div class="contents local topic" id="contents">
 <ul class="simple">
 <li><p><a class="reference internal" href="#module-tracklib.util.mcmc" id="id1">tracklib.util.mcmc</a></p></li>
-<li><p><a class="reference internal" href="#module-tracklib.util.plotting" id="id2">tracklib.util.plotting</a></p></li>
-<li><p><a class="reference internal" href="#module-tracklib.util.sweep" id="id3">tracklib.util.sweep</a></p></li>
-<li><p><a class="reference internal" href="#module-tracklib.util.util" id="id4">tracklib.util.util</a></p></li>
+<li><p><a class="reference internal" href="#module-tracklib.util.parallel" id="id2">tracklib.util.parallel</a></p></li>
+<li><p><a class="reference internal" href="#module-tracklib.util.plotting" id="id3">tracklib.util.plotting</a></p></li>
+<li><p><a class="reference internal" href="#module-tracklib.util.sweep" id="id4">tracklib.util.sweep</a></p></li>
+<li><p><a class="reference internal" href="#module-tracklib.util.util" id="id5">tracklib.util.util</a></p></li>
 </ul>
 </div>
 <div class="section" id="module-tracklib.util.mcmc">
 <span id="tracklib-util-mcmc"></span><h2><a class="toc-backref" href="#id1">tracklib.util.mcmc</a><a class="headerlink" href="#module-tracklib.util.mcmc" title="Permalink to this headline">¶</a></h2>
 <p>A small module for running MCMC sampling. It provides the abstract base class
 <a class="reference internal" href="#tracklib.util.mcmc.Sampler" title="tracklib.util.mcmc.Sampler"><code class="xref any py py-class docutils literal notranslate"><span class="pre">Sampler</span></code></a> that can be subclassed for concrete sampling schemes.</p>
+<dl class="class">
+<dt id="tracklib.util.mcmc.MCMCRun">
+<em class="property">class </em><code class="sig-prename descclassname">tracklib.util.mcmc.</code><code class="sig-name descname">MCMCRun</code><span class="sig-paren">(</span><em class="sig-param">logLs=None</em>, <em class="sig-param">samples=None</em><span class="sig-paren">)</span><a class="headerlink" href="#tracklib.util.mcmc.MCMCRun" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>The results of an MCMC run</p>
+<dl class="attribute">
+<dt id="tracklib.util.mcmc.MCMCRun.logLs">
+<code class="sig-name descname">logLs</code><a class="headerlink" href="#tracklib.util.mcmc.MCMCRun.logLs" title="Permalink to this definition">¶</a></dt>
+<dd><p>the likelihoods from the run</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>np.array(dtype=float)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="tracklib.util.mcmc.MCMCRun.samples">
+<code class="sig-name descname">samples</code><a class="headerlink" href="#tracklib.util.mcmc.MCMCRun.samples" title="Permalink to this definition">¶</a></dt>
+<dd><p>the actual MCMC sample</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>list of &lt;sample data type&gt;)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<p class="rubric">Notes</p>
+<p>The list of samples is not automatically copied upon initialization.</p>
+<dl class="method">
+<dt id="tracklib.util.mcmc.MCMCRun.logLs_trunc">
+<code class="sig-name descname">logLs_trunc</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#tracklib.util.mcmc.MCMCRun.logLs_trunc" title="Permalink to this definition">¶</a></dt>
+<dd><p>Give only the likelihoods associated with the samples</p>
+<p><a class="reference internal" href="#tracklib.util.mcmc.Sampler.run" title="tracklib.util.mcmc.Sampler.run"><code class="xref any py py-meth docutils literal notranslate"><span class="pre">Sampler.run</span></code></a> returns likelihoods starting at the first iteration, but
+samples only after a given burn-in period. This function cuts this
+initial overhang from the likelihood array</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p><em>(len(samples),) np.ndarray</em></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="tracklib.util.mcmc.MCMCRun.best_sample_logL">
+<code class="sig-name descname">best_sample_logL</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#tracklib.util.mcmc.MCMCRun.best_sample_logL" title="Permalink to this definition">¶</a></dt>
+<dd><p>Give the best sample (and log-likelihood)</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p><ul class="simple">
+<li><p><strong>sample</strong> (<em>&lt;sample data type&gt;</em>) – the maximum likelihood estimate</p></li>
+<li><p><strong>logL</strong> (<em>float</em>) – the maximum likelihood value</p></li>
+</ul>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="tracklib.util.mcmc.MCMCRun.acceptance_rate">
+<code class="sig-name descname">acceptance_rate</code><span class="sig-paren">(</span><em class="sig-param">criterion='sample_identity'</em>, <em class="sig-param">comp_fun=None</em><span class="sig-paren">)</span><a class="headerlink" href="#tracklib.util.mcmc.MCMCRun.acceptance_rate" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculate fraction of accepted moves</p>
+<p>We can see whether a move was accepted or rejected by checking whether
+the samples are actually different. There are three different ways to
+do so: syntactically correct would be sample comparison (using <code class="docutils literal notranslate"><span class="pre">==</span></code>).
+However, since samples have a user-defined data type, we do not
+necessarily have the == operator defined. For mutable objects we can
+exploit that they would not be copied for an unaccepted step, i.e. we
+can use identity check (<code class="docutils literal notranslate"><span class="pre">is</span></code>). As a last resort, we can use the
+likelihood as a proxy: it is very unlikeliy that we did a move where
+the likelihood remained exactly the same.</p>
+<p>Alternatively, you can provide a comparison function
+<code class="docutils literal notranslate"><span class="pre">comp_fun(sample0,</span> <span class="pre">sample1)-&gt;bool</span></code> that provides the comparison. This
+overrides the <code class="xref any docutils literal notranslate"><span class="pre">criterion</span></code> setting.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>criterion</strong> (<em>{'sample_equality'</em><em>, </em><em>'sample_identity'</em><em>, </em><em>'likelihood_equality'}</em>) – which method to use to determine whether a step was accepted or
+rejected.</p></li>
+<li><p><strong>comp_fun</strong> (<em>callable</em><em>, </em><em>optional</em>) – should return <code class="docutils literal notranslate"><span class="pre">True</span></code> if the two arguments compare equal,
+<code class="docutils literal notranslate"><span class="pre">False</span></code> otherwise</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><em>float</em> – the calculated acceptance rate</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="tracklib.util.mcmc.MCMCRun.evaluate">
+<code class="sig-name descname">evaluate</code><span class="sig-paren">(</span><em class="sig-param">fun</em><span class="sig-paren">)</span><a class="headerlink" href="#tracklib.util.mcmc.MCMCRun.evaluate" title="Permalink to this definition">¶</a></dt>
+<dd><p>Evaluate a function on all samples</p>
+<p>This exploits that (if the sample data type is e.g. a user-defined
+class) many samples will actually be identical and we have to evaluate
+the function significantly fewer than <code class="docutils literal notranslate"><span class="pre">len(samples)</span></code> times.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>fun</strong> (callable of signature <code class="docutils literal notranslate"><span class="pre">fun(sample)</span> <span class="pre">--&gt;</span> <span class="pre">object</span></code>) – the function to evaluate. It should expect a single sample as input
+and return something.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><em>list</em> – a list of output values, in the order of <a class="reference internal" href="#tracklib.util.mcmc.MCMCRun.samples" title="tracklib.util.mcmc.MCMCRun.samples"><code class="xref any py py-attr docutils literal notranslate"><span class="pre">samples</span></code></a>.</p>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<p>This function is supposed to decrease computational cost. It is usually
+quicker however, to use a vectorized function <code class="docutils literal notranslate"><span class="pre">fun</span></code> instead.</p>
+</dd></dl>
+
+</dd></dl>
+
 <dl class="class">
 <dt id="tracklib.util.mcmc.Sampler">
 <em class="property">class </em><code class="sig-prename descclassname">tracklib.util.mcmc.</code><code class="sig-name descname">Sampler</code><a class="headerlink" href="#tracklib.util.mcmc.Sampler" title="Permalink to this definition">¶</a></dt>
@@ -67,6 +180,7 @@
 <li><p><a class="reference internal" href="#tracklib.util.mcmc.Sampler.propose_update" title="tracklib.util.mcmc.Sampler.propose_update"><code class="xref any py py-meth docutils literal notranslate"><span class="pre">propose_update</span></code></a></p></li>
 <li><p><a class="reference internal" href="#tracklib.util.mcmc.Sampler.logL" title="tracklib.util.mcmc.Sampler.logL"><code class="xref any py py-meth docutils literal notranslate"><span class="pre">logL</span></code></a></p></li>
 <li><p><a class="reference internal" href="#tracklib.util.mcmc.Sampler.callback_logging" title="tracklib.util.mcmc.Sampler.callback_logging"><code class="xref any py py-meth docutils literal notranslate"><span class="pre">callback_logging</span></code></a> (optional)</p></li>
+<li><p><a class="reference internal" href="#tracklib.util.mcmc.Sampler.callback_stopping" title="tracklib.util.mcmc.Sampler.callback_stopping"><code class="xref any py py-meth docutils literal notranslate"><span class="pre">callback_stopping</span></code></a> (optional)</p></li>
 </ul>
 <p>See their documentations in this base class for more details.</p>
 <p>The above methods take an argument <code class="xref any docutils literal notranslate"><span class="pre">params</span></code> that is supposed to represent
@@ -75,17 +189,6 @@ list of parameters, a <code class="xref any docutils literal notranslate"><span 
 the user. Since all explicit handling of the parameters happens in the
 <a class="reference internal" href="#tracklib.util.mcmc.Sampler.propose_update" title="tracklib.util.mcmc.Sampler.propose_update"><code class="xref any py py-meth docutils literal notranslate"><span class="pre">propose_update</span></code></a> and <a class="reference internal" href="#tracklib.util.mcmc.Sampler.logL" title="tracklib.util.mcmc.Sampler.logL"><code class="xref any py py-meth docutils literal notranslate"><span class="pre">logL</span></code></a> methods, the code in this base class is
 completely independent from the parameterization.</p>
-<dl class="attribute">
-<dt id="tracklib.util.mcmc.Sampler.stepsize">
-<code class="sig-name descname">stepsize</code><a class="headerlink" href="#tracklib.util.mcmc.Sampler.stepsize" title="Permalink to this definition">¶</a></dt>
-<dd><p>a generic stepsize variable that can be used in <a class="reference internal" href="#tracklib.util.mcmc.Sampler.propose_update" title="tracklib.util.mcmc.Sampler.propose_update"><code class="xref any py py-meth docutils literal notranslate"><span class="pre">propose_update</span></code></a>.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Type</dt>
-<dd class="field-odd"><p>float</p>
-</dd>
-</dl>
-</dd></dl>
-
 <dl class="attribute">
 <dt id="tracklib.util.mcmc.Sampler.config">
 <code class="sig-name descname">config</code><a class="headerlink" href="#tracklib.util.mcmc.Sampler.config" title="Permalink to this definition">¶</a></dt>
@@ -103,6 +206,9 @@ completely independent from the parameterization.</p>
 </pre></div>
 </div>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="k">class</span> <span class="nc">normMCMC</span><span class="p">(</span><span class="n">Sampler</span><span class="p">):</span>
+<span class="gp">... </span>    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">stepsize</span><span class="o">=</span><span class="mf">0.1</span><span class="p">):</span>
+<span class="gp">... </span>        <span class="bp">self</span><span class="o">.</span><span class="n">stepsize</span> <span class="o">=</span> <span class="n">stepsize</span>
+<span class="gp">...</span>
 <span class="gp">... </span>    <span class="k">def</span> <span class="nf">propose_update</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">current_value</span><span class="p">):</span>
 <span class="gp">... </span>        <span class="n">proposed_value</span> <span class="o">=</span> <span class="n">current_value</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span><span class="n">scale</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">stepsize</span><span class="p">)</span>
 <span class="gp">... </span>        <span class="n">logp_forward</span> <span class="o">=</span> <span class="o">-</span><span class="mf">0.5</span><span class="o">*</span><span class="p">(</span><span class="n">proposed_value</span> <span class="o">-</span> <span class="n">current_value</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span><span class="o">/</span><span class="bp">self</span><span class="o">.</span><span class="n">stepsize</span><span class="o">**</span><span class="mi">2</span> <span class="o">-</span> <span class="mf">0.5</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="mi">2</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">stepsize</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
@@ -125,7 +231,6 @@ completely independent from the parameterization.</p>
 <dt id="tracklib.util.mcmc.Sampler.propose_update">
 <em class="property">abstract </em><code class="sig-name descname">propose_update</code><span class="sig-paren">(</span><em class="sig-param">params</em><span class="sig-paren">)</span><a class="headerlink" href="#tracklib.util.mcmc.Sampler.propose_update" title="Permalink to this definition">¶</a></dt>
 <dd><p>Propose an update step.</p>
-<p>You can use <code class="docutils literal notranslate"><span class="pre">self.stepsize</span></code> for the proposal.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><p><strong>params</strong> (<em>&lt;user-specified parameter structure&gt;</em>) – the current parameters</p>
@@ -189,26 +294,39 @@ seen so far.</p></li>
 </dd></dl>
 
 <dl class="method">
+<dt id="tracklib.util.mcmc.Sampler.callback_stopping">
+<code class="sig-name descname">callback_stopping</code><span class="sig-paren">(</span><em class="sig-param">myrun</em><span class="sig-paren">)</span><a class="headerlink" href="#tracklib.util.mcmc.Sampler.callback_stopping" title="Permalink to this definition">¶</a></dt>
+<dd><p>Callback to enable early stopping</p>
+<p>This function will be called at well-defined intervals to check whether
+sampling should abort. Judgement is to be made based on the data so
+far, which is handed over as the <code class="xref any docutils literal notranslate"><span class="pre">myrun</span></code> argument. This is an
+<a class="reference internal" href="#tracklib.util.mcmc.MCMCRun" title="tracklib.util.mcmc.MCMCRun"><code class="xref any py py-class docutils literal notranslate"><span class="pre">MCMCRun</span></code></a> object.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>myrun</strong> (<a class="reference internal" href="tracklib.analysis.neda.html#tracklib.analysis.neda.mcmc.MCMCRun" title="tracklib.analysis.neda.mcmc.MCMCRun"><em>MCMCRun</em></a>) – the data generated so far</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>stop</strong> (<em>bool</em>) – should be <code class="docutils literal notranslate"><span class="pre">True</span></code> if the sampling is to stop, <code class="docutils literal notranslate"><span class="pre">False</span></code> otherwise</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
 <dt id="tracklib.util.mcmc.Sampler.configure">
-<code class="sig-name descname">configure</code><span class="sig-paren">(</span><em class="sig-param">stepsize=0.1</em>, <em class="sig-param">iterations=1</em>, <em class="sig-param">burn_in=0</em>, <em class="sig-param">log_every=-1</em>, <em class="sig-param">best_only=False</em>, <em class="sig-param">show_progress=False</em>, <em class="sig-param">assume_notebook_for_progress_display=True</em><span class="sig-paren">)</span><a class="headerlink" href="#tracklib.util.mcmc.Sampler.configure" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">configure</code><span class="sig-paren">(</span><em class="sig-param">iterations=1</em>, <em class="sig-param">burn_in=0</em>, <em class="sig-param">log_every=-1</em>, <em class="sig-param">check_stopping_every=-1</em>, <em class="sig-param">show_progress=False</em><span class="sig-paren">)</span><a class="headerlink" href="#tracklib.util.mcmc.Sampler.configure" title="Permalink to this definition">¶</a></dt>
 <dd><p>Set the configuration of the sampler.</p>
 <p>Note that after calling this function once, you can also access single
 configuration entries via the attribute <a class="reference internal" href="#tracklib.util.mcmc.Sampler.config" title="tracklib.util.mcmc.Sampler.config"><code class="xref any py py-attr docutils literal notranslate"><span class="pre">config</span></code></a>.</p>
 <dl class="field-list simple">
-<dt class="field-odd">Keyword Arguments</dt>
+<dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>stepsize</strong> (<em>float</em>) – this will be written to <a class="reference internal" href="#tracklib.util.mcmc.Sampler.stepsize" title="tracklib.util.mcmc.Sampler.stepsize"><code class="xref any py py-attr docutils literal notranslate"><span class="pre">stepsize</span></code></a> and can then be used e.g. in
-<a class="reference internal" href="#tracklib.util.mcmc.Sampler.propose_update" title="tracklib.util.mcmc.Sampler.propose_update"><code class="xref any py py-meth docutils literal notranslate"><span class="pre">propose_update</span></code></a>.</p></li>
 <li><p><strong>iterations</strong> (<em>int</em>) – how many MCMC iterations to run total</p></li>
 <li><p><strong>burn_in</strong> (<em>int</em>) – how many steps to discard at the beginning</p></li>
 <li><p><strong>log_every</strong> (<em>int</em>) – print a status line every … steps. Set to <code class="docutils literal notranslate"><span class="pre">-1</span></code> (default) to
 disable status lines.</p></li>
-<li><p><strong>best_only</strong> (<em>bool</em>) – instead of the whole sampling history, have <a class="reference internal" href="#tracklib.util.mcmc.Sampler.run" title="tracklib.util.mcmc.Sampler.run"><code class="xref any py py-meth docutils literal notranslate"><span class="pre">run</span></code></a> return only the
-best fit.</p></li>
+<li><p><strong>check_stopping_every</strong> (<em>int</em>) – how often to call the <a class="reference internal" href="#tracklib.util.mcmc.Sampler.callback_stopping" title="tracklib.util.mcmc.Sampler.callback_stopping"><code class="xref any py py-meth docutils literal notranslate"><span class="pre">callback_stopping</span></code></a>. Set to <code class="docutils literal notranslate"><span class="pre">-1</span></code> (default)
+to never check.</p></li>
 <li><p><strong>show_progress</strong> (<em>bool</em>) – whether to show a progress bar using <code class="xref any docutils literal notranslate"><span class="pre">tqdm</span></code></p></li>
-<li><p><strong>assume_notebook_for_progress_display</strong> (<em>bool</em>) – if <code class="docutils literal notranslate"><span class="pre">True</span></code>, use <code class="xref any docutils literal notranslate"><span class="pre">tqdm.notebook.tqdm</span></code> otherwise <code class="xref any docutils literal notranslate"><span class="pre">tqdm.tqdm</span></code>. The
-former displays the progress bar as a jupyter widget, the latter as
-ASCII.</p></li>
 </ul>
 </dd>
 </dl>
@@ -225,14 +343,12 @@ ASCII.</p></li>
 <p>Remember to run <a class="reference internal" href="#tracklib.util.mcmc.Sampler.configure" title="tracklib.util.mcmc.Sampler.configure"><code class="xref any py py-meth docutils literal notranslate"><span class="pre">configure</span></code></a> before this.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>initial_values</strong> (<a class="reference internal" href="tracklib.analysis.html#tracklib.analysis.bild.LoopSequence" title="tracklib.analysis.bild.LoopSequence"><em>LoopSequence</em></a>) – the initial values for the sampling scheme</p>
+<dd class="field-odd"><p><strong>initial_values</strong> (<em>&lt;user-specified parameter structure&gt;</em>) – the initial values for the sampling scheme</p>
 </dd>
 <dt class="field-even">Returns</dt>
-<dd class="field-even"><p><ul class="simple">
-<li><p><strong>logL</strong> (<em>np.ndarray</em>) – log-likelihood for the parameters at each step.</p></li>
-<li><p><strong>params</strong> (<em>list of LoopSequence</em>) – list of the sampled parameter sets, after the burn-in period</p></li>
-</ul>
-</p>
+<dd class="field-even"><p><em>MCMCRun</em> – the output data of the run. This is essentially a wrapper class for
+an array of likelihoods and the associated samples. Plus some
+convenience functions.</p>
 </dd>
 </dl>
 <div class="admonition seealso">
@@ -240,16 +356,37 @@ ASCII.</p></li>
 <p><a class="reference internal" href="#tracklib.util.mcmc.Sampler.configure" title="tracklib.util.mcmc.Sampler.configure"><code class="xref py py-meth docutils literal notranslate"><span class="pre">configure()</span></code></a></p>
 </div>
 <p class="rubric">Notes</p>
-<p>The returned list of log-likelihoods contains likelihoods for all steps
-starting at initialization, while the list of sampled parameters starts
-only after the burn-in period.</p>
+<p>The returned <a class="reference internal" href="#tracklib.util.mcmc.MCMCRun" title="tracklib.util.mcmc.MCMCRun"><code class="xref any py py-class docutils literal notranslate"><span class="pre">MCMCRun</span></code></a> contains likelihoods for all steps starting at
+initialization, while the list of sampled parameters starts only after
+the burn-in period.</p>
 </dd></dl>
 
 </dd></dl>
 
 </div>
+<div class="section" id="module-tracklib.util.parallel">
+<span id="tracklib-util-parallel"></span><h2><a class="toc-backref" href="#id2">tracklib.util.parallel</a><a class="headerlink" href="#module-tracklib.util.parallel" title="Permalink to this headline">¶</a></h2>
+<p>Parallelization for tracklib functions</p>
+<p>Use this as context for parallel-aware functions:
+&gt;&gt;&gt; import tracklib as tl
+… from multiprocessing import Pool
+…
+… with Pool(16) as mypool:
+…     with tl.util.Parallelize(mypool.imap):
+…         # parallel-aware stuff goes here</p>
+<p>Note that <code class="docutils literal notranslate"><span class="pre">Pool.imap</span></code> is preferred over <code class="docutils literal notranslate"><span class="pre">Pool.map</span></code>, since it gives an
+iterator instead of a list, so is the more literal replacement of the built-in
+<code class="docutils literal notranslate"><span class="pre">map()</span></code>. If the code in question is okay with this, you can also use
+<code class="docutils literal notranslate"><span class="pre">Pool.imap_unordered</span></code>.</p>
+<dl class="class">
+<dt id="tracklib.util.parallel.Parallelize">
+<em class="property">class </em><code class="sig-prename descclassname">tracklib.util.parallel.</code><code class="sig-name descname">Parallelize</code><span class="sig-paren">(</span><em class="sig-param">map_like</em>, <em class="sig-param">map_like_unordered=None</em><span class="sig-paren">)</span><a class="headerlink" href="#tracklib.util.parallel.Parallelize" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+</dd></dl>
+
+</div>
 <div class="section" id="module-tracklib.util.plotting">
-<span id="tracklib-util-plotting"></span><h2><a class="toc-backref" href="#id2">tracklib.util.plotting</a><a class="headerlink" href="#module-tracklib.util.plotting" title="Permalink to this headline">¶</a></h2>
+<span id="tracklib-util-plotting"></span><h2><a class="toc-backref" href="#id3">tracklib.util.plotting</a><a class="headerlink" href="#module-tracklib.util.plotting" title="Permalink to this headline">¶</a></h2>
 <p>Some helper functions for plotting stuff with matplotlib</p>
 <dl class="function">
 <dt id="tracklib.util.plotting.ellipse_from_cov">
@@ -272,7 +409,7 @@ only after the burn-in period.</p>
 
 </div>
 <div class="section" id="module-tracklib.util.sweep">
-<span id="tracklib-util-sweep"></span><h2><a class="toc-backref" href="#id3">tracklib.util.sweep</a><a class="headerlink" href="#module-tracklib.util.sweep" title="Permalink to this headline">¶</a></h2>
+<span id="tracklib-util-sweep"></span><h2><a class="toc-backref" href="#id4">tracklib.util.sweep</a><a class="headerlink" href="#module-tracklib.util.sweep" title="Permalink to this headline">¶</a></h2>
 <dl class="class">
 <dt id="tracklib.util.sweep.Sweeper">
 <em class="property">class </em><code class="sig-prename descclassname">tracklib.util.sweep.</code><code class="sig-name descname">Sweeper</code><span class="sig-paren">(</span><em class="sig-param">dataset</em>, <em class="sig-param">fun</em>, <em class="sig-param">copy=True</em>, <em class="sig-param">repeats=1</em>, <em class="sig-param">processes=1</em><span class="sig-paren">)</span><a class="headerlink" href="#tracklib.util.sweep.Sweeper" title="Permalink to this definition">¶</a></dt>
@@ -374,20 +511,26 @@ marked as <code class="docutils literal notranslate"><span class="pre">None</spa
 
 </div>
 <div class="section" id="module-tracklib.util.util">
-<span id="tracklib-util-util"></span><h2><a class="toc-backref" href="#id4">tracklib.util.util</a><a class="headerlink" href="#module-tracklib.util.util" title="Permalink to this headline">¶</a></h2>
-<p>Currently just a graveyard for small functions, might be deprecated.</p>
+<span id="tracklib-util-util"></span><h2><a class="toc-backref" href="#id5">tracklib.util.util</a><a class="headerlink" href="#module-tracklib.util.util" title="Permalink to this headline">¶</a></h2>
+<p>Random assortment of useful auxiliary stuff</p>
 <dl class="function">
-<dt id="tracklib.util.util.twoLociRelativeACF">
-<code class="sig-prename descclassname">tracklib.util.util.</code><code class="sig-name descname">twoLociRelativeACF</code><span class="sig-paren">(</span><em class="sig-param">ts</em>, <em class="sig-param">A=1</em>, <em class="sig-param">B=1</em>, <em class="sig-param">d=1</em><span class="sig-paren">)</span><a class="headerlink" href="#tracklib.util.util.twoLociRelativeACF" title="Permalink to this definition">¶</a></dt>
-<dd><p>A = σ^2 / √κ     (general prefactor)
-B = Δs^2 / 4κ    (tether length)</p>
-</dd></dl>
-
-<dl class="function">
-<dt id="tracklib.util.util.twoLociRelativeMSD">
-<code class="sig-prename descclassname">tracklib.util.util.</code><code class="sig-name descname">twoLociRelativeMSD</code><span class="sig-paren">(</span><em class="sig-param">ts</em>, <em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#tracklib.util.util.twoLociRelativeMSD" title="Permalink to this definition">¶</a></dt>
-<dd><p>A = σ^2 / √κ     (general prefactor)
-B = Δs^2 / 4κ       (tether length)</p>
+<dt id="tracklib.util.util.distribute_noiselevel">
+<code class="sig-prename descclassname">tracklib.util.util.</code><code class="sig-name descname">distribute_noiselevel</code><span class="sig-paren">(</span><em class="sig-param">noise2</em>, <em class="sig-param">pixelsize</em><span class="sig-paren">)</span><a class="headerlink" href="#tracklib.util.util.distribute_noiselevel" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get coordinate-wise localization error from scalar noise level</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>noise2</strong> (<em>float</em>) – the total noise level. In terms of coordinate-wise errors this is
+<code class="docutils literal notranslate"><span class="pre">noise2</span> <span class="pre">=</span> <span class="pre">Δx^2</span> <span class="pre">+</span> <span class="pre">Δy^2</span> <span class="pre">+</span> <span class="pre">Δz^2</span></code></p></li>
+<li><p><strong>pixelsize</strong> (<em>array-like</em>) – linear extension of pixel/voxel in each direction</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>localization_error</strong> (<em>(d,) np.array</em>) – localization error distributed to the coordinate directions,
+proportionately to the pixel size, i.e. <code class="docutils literal notranslate"><span class="pre">Δx</span></code>, <code class="docutils literal notranslate"><span class="pre">Δy</span></code>, <code class="docutils literal notranslate"><span class="pre">Δz</span></code> such
+that <code class="docutils literal notranslate"><span class="pre">noise2</span> <span class="pre">=</span> <span class="pre">Δx^2</span> <span class="pre">+</span> <span class="pre">Δy^2</span> <span class="pre">+</span> <span class="pre">Δz^2</span></code>.</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="function">
@@ -416,6 +559,29 @@ decrease spacing.</p></li>
 </dl>
 </dd></dl>
 
+<dl class="function">
+<dt id="tracklib.util.util.KM_survival">
+<code class="sig-prename descclassname">tracklib.util.util.</code><code class="sig-name descname">KM_survival</code><span class="sig-paren">(</span><em class="sig-param">data</em>, <em class="sig-param">censored</em>, <em class="sig-param">conf=0.95</em>, <em class="sig-param">Tmax=inf</em>, <em class="sig-param">S1at=0</em><span class="sig-paren">)</span><a class="headerlink" href="#tracklib.util.util.KM_survival" title="Permalink to this definition">¶</a></dt>
+<dd><p>Kaplan-Meier survival estimator on censored data</p>
+<p>This is the standard survival estimator for right-censored data, i.e. data
+points that are marked as “censored” enter the estimate as <code class="docutils literal notranslate"><span class="pre">t_true</span> <span class="pre">&gt;</span> <span class="pre">t</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>data</strong> (<em>(</em><em>N</em><em>,</em><em>) </em><em>array-like</em>) – individual survival times</p></li>
+<li><p><strong>censored</strong> (<em>(</em><em>N</em><em>,</em><em>) </em><em>array-like</em><em>, </em><em>boolean</em>) – indicate for each data point whether it is right-censored or not.</p></li>
+<li><p><strong>conf</strong> (<em>float in</em><em> (</em><em>0</em><em>, </em><em>1</em><em>)</em><em>, </em><em>optional</em>) – the confidence bounds on the survival curve to calculate</p></li>
+<li><p><strong>Tmax</strong> (<em>float</em>) – can be used to compute survival only up to some time <code class="docutils literal notranslate"><span class="pre">Tmax</span></code>.</p></li>
+<li><p><strong>S1at</strong> (<em>float</em><em>, </em><em>optional</em>) – give a natural lower limit for survival times where S = 1.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><em>(T, 4) array</em> – the columns of this array are: t, S(t), l(t), u(t), where l and u are
+lower and upper confidence levels respectively.</p>
+</dd>
+</dl>
+</dd></dl>
+
 </div>
 </div>
 
@@ -429,6 +595,7 @@ decrease spacing.</p></li>
   <ul>
 <li><a class="reference internal" href="#">tracklib.util</a><ul>
 <li><a class="reference internal" href="#module-tracklib.util.mcmc">tracklib.util.mcmc</a></li>
+<li><a class="reference internal" href="#module-tracklib.util.parallel">tracklib.util.parallel</a></li>
 <li><a class="reference internal" href="#module-tracklib.util.plotting">tracklib.util.plotting</a></li>
 <li><a class="reference internal" href="#module-tracklib.util.sweep">tracklib.util.sweep</a></li>
 <li><a class="reference internal" href="#module-tracklib.util.util">tracklib.util.util</a></li>

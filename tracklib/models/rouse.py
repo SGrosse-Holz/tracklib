@@ -689,9 +689,9 @@ class Model:
         exp(-k*A*dt) @ C``, where ``C`` is the steady state covariance as
         returned by `steady_state()`. Note that for any equilibrating degrees
         of freedom the ACF can also be calculated from the MSD as
-        ```
-        ACF(Δt) = 0.5*( MSD(∞) - MSD(Δt) )
-        ```
+
+            ACF(Δt) = 0.5*( MSD(∞) - MSD(Δt) )
+
         so sticking to the MSD is preferred. Any non-equilibrating dofs are
         pinned to zero by the Moore-Penrose inverse.
 

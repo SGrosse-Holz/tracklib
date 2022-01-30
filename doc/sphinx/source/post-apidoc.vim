@@ -70,4 +70,9 @@ call search("^\.\. contents::")
 norm }o.. autofunction:: tracklib.analysis.neda.neda.main
 write!
 
+edit! tracklib.analysis.msdfit.rst
+call search("^\.\. contents::")
+norm }o.. automodule:: tracklib.analysis.msdfit
+write!
+
 quit

@@ -6,13 +6,15 @@ tracklib.analysis
 
 .. toctree::
 
+   tracklib.analysis.bild
+   tracklib.analysis.msdfit
    tracklib.analysis.neda
 
 
-tracklib.analysis.bild
-----------------------
+tracklib.analysis..msdfit\_old
+------------------------------
 
-.. automodule:: tracklib.analysis.bild
+.. automodule:: tracklib.analysis..msdfit_old
    :members:
    :undoc-members:
    :show-inheritance:
@@ -33,18 +35,10 @@ tracklib.analysis.kld
    :undoc-members:
    :show-inheritance:
 
-tracklib.analysis.kli
----------------------
+tracklib.analysis.p2
+--------------------
 
-.. automodule:: tracklib.analysis.kli
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-tracklib.analysis.msd
----------------------
-
-.. automodule:: tracklib.analysis.msd
+.. automodule:: tracklib.analysis.p2
    :members:
    :undoc-members:
    :show-inheritance:

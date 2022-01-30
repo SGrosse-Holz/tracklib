@@ -12,35 +12,35 @@ discriminate two cases, depending on what exactly is stationary:
    criterion is ``MSD(inf) < inf``. In this case, it is straightforward to
    prove the following relation between the MSD μ and autocovariance γ of the
    process:
-   ```
+
         μ(k) = 2*( γ(0) - γ(k) )
-   ```
+
    Thus, the full autocovariance function can be obtained from the MSD and the
    steady state covariance ``γ(0)``. For decaying correlations (``γ(k) --> 0 as
    k --> ∞``) we furthermore see that ``2*γ(0) = μ(∞)`` is the asymptotic value
    of the MSD. Finally, this allows us to calculate the covariance matrix of
    the process as
-   ```
+
         C_ij := <x_i*x_j>
               = γ(|i-j|)
               = γ(0) - 1/2*μ(|i-j|)
-   ```
+
    We call this case a steady state of order 0.
  + in many cases (e.g. sampling a diffusing particle's position) the
    trajectories itself will not be stationary, but the increment process is. In
    this case the Gaussian process of interest is the one generating the
    increments of the trajectory, whose autocorrelation is the second derivative
    of the MSD:
-   ```
+
         γ(k) = 1/2 * (d/dk)^2 μ(k)
-   ```
+
    where derivatives should be understood in a weak ("distributional") sense.
    More straightforwardly, the correlation matrix of the increments is given by
-   ```
-   C_ij := <(x_{i+1} - x_i)(x_{j+1}-x_j)>
-         = 1/2 * ( μ(t_{i+1} - t_j) + μ(t_i - t_{j+1})
-                 - μ(t_{i+1} - t_{j+1}) - μ(t_i - t_j) )
-   ```
+
+       C_ij := <(x_{i+1} - x_i)(x_{j+1}-x_j)>
+             = 1/2 * ( μ(t_{i+1} - t_j) + μ(t_i - t_{j+1})
+                      -μ(t_{i+1} - t_{j+1}) - μ(t_i - t_j) )
+
    where by definition we let ``μ(-k) = μ(k)``. In this case, we talk about a
    steady state of order 1.
 
@@ -64,7 +64,7 @@ TODO: once `!lib` is implemented, add some examples
 An example implementation of an MSD sampler for sampling the posterior, given
 data from a `!Profiler` instance.
 TODO: test this
-```
+
 >>> import tracklib as tl
 ... import numpy as np
 ...
@@ -112,8 +112,6 @@ TODO: test this
 ... 
 ...         return new_params, 1, 1 # don't have to care about fwd/bwd probabilities, bc Gaussian is symmetric
 ...         # return new_params, step_dist.logpdf(step), step_dist.logpdf(-step) # "more correct"
-```
-
 
 See also
 --------
