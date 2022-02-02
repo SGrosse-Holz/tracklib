@@ -8,7 +8,4 @@ __pycache__/
 *.egg-info
 
 # Specific files
-dataset.py
-
-# Development stuff
-development/
+# dataset.py # doesn't exist anymore
