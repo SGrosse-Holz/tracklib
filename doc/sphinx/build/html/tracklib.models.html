@@ -241,9 +241,9 @@ automatically for internal modifications (such as when <a class="reference inter
 is called). If you modify anything externally, recommended behavior is
 to simply set <code class="docutils literal notranslate"><span class="pre">model._dynamics['needs_updating']</span> <span class="pre">=</span> <span class="pre">True</span></code>, which will
 ensure that stuff is recalculated as needed.</p>
-<p>Ultimately, this is just a wrapper for the <code class="xref any docutils literal notranslate"><span class="pre">update_*</span></code> functions. If you
-know what you’re doing, you can also just call these individually as
-needed.</p>
+<p>Ultimately, this is just a wrapper for the <code class="docutils literal notranslate"><span class="pre">update_*</span></code> functions. If
+you know what you’re doing, you can also just call these individually
+as needed.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><p><strong>dt</strong> (<em>float</em>) – time step to prepare for</p>

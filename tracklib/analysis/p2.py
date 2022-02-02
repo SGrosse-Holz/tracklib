@@ -2,7 +2,7 @@
 Calculating two-point functions, like MSD & ACF
 
 Note that all of these (MSD, ACF, VACF, ...) contain the same information. See
-also `msdfit <tracklib.analysis.msdfit]`.
+also :py:mod:`msdfit <tracklib.analysis.msdfit>`.
 
 Many results of this module will be stored in `Trajectory.meta` for further
 use. For an overview, see :ref:`here <traj_meta_fields_msd>`.

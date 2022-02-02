@@ -303,7 +303,7 @@ far, which is handed over as the <code class="xref any docutils literal notransl
 <a class="reference internal" href="#tracklib.util.mcmc.MCMCRun" title="tracklib.util.mcmc.MCMCRun"><code class="xref any py py-class docutils literal notranslate"><span class="pre">MCMCRun</span></code></a> object.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>myrun</strong> (<a class="reference internal" href="tracklib.analysis.neda.html#tracklib.analysis.neda.mcmc.MCMCRun" title="tracklib.analysis.neda.mcmc.MCMCRun"><em>MCMCRun</em></a>) – the data generated so far</p>
+<dd class="field-odd"><p><strong>myrun</strong> (<a class="reference internal" href="#tracklib.util.mcmc.MCMCRun" title="tracklib.util.mcmc.MCMCRun"><em>MCMCRun</em></a>) – the data generated so far</p>
 </dd>
 <dt class="field-even">Returns</dt>
 <dd class="field-even"><p><strong>stop</strong> (<em>bool</em>) – should be <code class="docutils literal notranslate"><span class="pre">True</span></code> if the sampling is to stop, <code class="docutils literal notranslate"><span class="pre">False</span></code> otherwise</p>
@@ -378,10 +378,23 @@ the burn-in period.</p>
 iterator instead of a list, so is the more literal replacement of the built-in
 <code class="docutils literal notranslate"><span class="pre">map()</span></code>. If the code in question is okay with this, you can also use
 <code class="docutils literal notranslate"><span class="pre">Pool.imap_unordered</span></code>.</p>
+<p>We indicate in docstrings that certain functions are “parallel-aware
+(ordered|unordered)” if they use the <code class="docutils literal notranslate"><span class="pre">map_like</span></code> or <code class="docutils literal notranslate"><span class="pre">map_like_unordered</span></code>
+arguments, respectively.</p>
 <dl class="class">
 <dt id="tracklib.util.parallel.Parallelize">
 <em class="property">class </em><code class="sig-prename descclassname">tracklib.util.parallel.</code><code class="sig-name descname">Parallelize</code><span class="sig-paren">(</span><em class="sig-param">map_like</em>, <em class="sig-param">map_like_unordered=None</em><span class="sig-paren">)</span><a class="headerlink" href="#tracklib.util.parallel.Parallelize" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Context manager taking care of the parallelization</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>map_like</strong> (<em>callable</em>) – should act like <code class="docutils literal notranslate"><span class="pre">map()</span></code>. Example: <code class="docutils literal notranslate"><span class="pre">multiprocessing.Pool.imap</span></code></p></li>
+<li><p><strong>map_like_unordered</strong> (<em>callable</em>) – should act like <code class="docutils literal notranslate"><span class="pre">map()</span></code>, but might return the result in a different
+order. Example: <code class="docutils literal notranslate"><span class="pre">multiprocessing.Pool.imap_unordered</span></code></p></li>
+</ul>
+</dd>
+</dl>
 </dd></dl>
 
 </div>

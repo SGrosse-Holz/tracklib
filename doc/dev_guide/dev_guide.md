@@ -2,6 +2,9 @@ tracklib developer's guide
 ==========================
 --------------------------
 --------------------------
+SOMEWHAT OUTDATED, MIGHT BE REMOVED AND REPLACED BY MORE EXTENSIVE CODE
+COMMENTS
+
 This document is intended to explain and document style and implementation
 choices made in the library. Before deciding that stupid design choices were
 made, consult the corresponding section here. (Though there might of course be

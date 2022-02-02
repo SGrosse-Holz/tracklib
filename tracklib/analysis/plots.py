@@ -12,7 +12,7 @@ def length_distribution(dataset, ax=None, **kwargs):
     """
     Plot a histogram of trajectory lengths for the given dataset
 
-    All keyword arguments will be forwarded to `!plt.hist()`.
+    All keyword arguments will be forwarded to ``plt.hist()``.
 
     Parameters
     ----------
@@ -24,7 +24,7 @@ def length_distribution(dataset, ax=None, **kwargs):
     Returns
     -------
     tuple
-        the return value of `!plt.hist()`, i.e. a tuple ``(n, bins, patches)``
+        the return value of ``plt.hist()``, i.e. a tuple ``(n, bins, patches)``
 
     Notes
     -----
@@ -50,7 +50,7 @@ def msd_overview(dataset, dt=1., **kwargs):
     """
     Plot individual and ensemble MSDs of the given dataset
 
-    All keyword arguments are forwarded to `!plt.loglog()` for plotting of the
+    All keyword arguments are forwarded to ``plt.loglog()`` for plotting of the
     individual trajectory MSDs
 
     Parameters
@@ -62,7 +62,7 @@ def msd_overview(dataset, dt=1., **kwargs):
         rescale the horizontal axis of the plot. Optionally, give a string to
         identify the units, e.g. ``dt = (2, 'seconds')`` if your trajectories
         have a lapse time of 2 seconds. Note that you might want to set
-        `!plt.xlabel()` yourself if you omit the unit string.
+        ``plt.xlabel()`` yourself if you omit the unit string.
 
     Returns
     -------
@@ -72,7 +72,7 @@ def msd_overview(dataset, dt=1., **kwargs):
     Notes
     -----
     Only intended as a quick overview plot, for more customization write your
-    own plotting routine using `analysis.MSD <tracklib.analysis.msd.MSD>`
+    own plotting routine using `analysis.MSD <tracklib.analysis.p2.MSD>`
     """
     if isinstance(dt, tuple):
         unit_str = dt[1]
@@ -123,7 +123,7 @@ def trajectories_spatial(dataset, **kwargs):
     colordict : dict
         determines which tag is colored in which color. This should be a dict
         whose keys are the tags in the dataset, while the entries are anything
-        recognized by the `!'color'` kwarg of `!plt.plot()`. If omitted, will
+        recognized by the `!'color'` kwarg of ``plt.plot()``. If omitted, will
         cycle through the default color cycle.
     fallback_color : str, or RGB tuple
         the color to use for anything not appearing in `!'colordict'`
@@ -131,7 +131,7 @@ def trajectories_spatial(dataset, **kwargs):
     Returns
     -------
     list of lines
-        the aggregated output of `!plt.plot()`
+        the aggregated output of ``plt.plot()``
 
     Notes
     -----
@@ -216,7 +216,7 @@ def distance_distribution(dataset, ax=None, **kwargs):
     for single locus trajectories it is simply the absolute value of the
     trajectory.
 
-    All keyword arguments will be forwarded to `!plt.hist()`
+    All keyword arguments will be forwarded to ``plt.hist()``
 
     Parameters
     ----------
@@ -228,7 +228,7 @@ def distance_distribution(dataset, ax=None, **kwargs):
     Returns
     -------
     tuple
-        the output of `!plt.hist()`, i.e. a tuple ``(n, bins, patches)``.
+        the output of ``plt.hist()``, i.e. a tuple ``(n, bins, patches)``.
 
     Notes
     -----

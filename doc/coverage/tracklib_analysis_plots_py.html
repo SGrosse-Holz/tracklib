@@ -65,7 +65,7 @@
     <p id="t12" class="pln"><span class="n"><a href="#t12">12</a></span><span class="t">    <span class="str">"""</span>&nbsp;</span><span class="r"></span></p>
     <p id="t13" class="pln"><span class="n"><a href="#t13">13</a></span><span class="t"><span class="str">    Plot a histogram of trajectory lengths for the given dataset</span>&nbsp;</span><span class="r"></span></p>
     <p id="t14" class="pln"><span class="n"><a href="#t14">14</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
-    <p id="t15" class="pln"><span class="n"><a href="#t15">15</a></span><span class="t"><span class="str">    All keyword arguments will be forwarded to `!plt.hist()`.</span>&nbsp;</span><span class="r"></span></p>
+    <p id="t15" class="pln"><span class="n"><a href="#t15">15</a></span><span class="t"><span class="str">    All keyword arguments will be forwarded to ``plt.hist()``.</span>&nbsp;</span><span class="r"></span></p>
     <p id="t16" class="pln"><span class="n"><a href="#t16">16</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
     <p id="t17" class="pln"><span class="n"><a href="#t17">17</a></span><span class="t"><span class="str">    Parameters</span>&nbsp;</span><span class="r"></span></p>
     <p id="t18" class="pln"><span class="n"><a href="#t18">18</a></span><span class="t"><span class="str">    ----------</span>&nbsp;</span><span class="r"></span></p>
@@ -77,7 +77,7 @@
     <p id="t24" class="pln"><span class="n"><a href="#t24">24</a></span><span class="t"><span class="str">    Returns</span>&nbsp;</span><span class="r"></span></p>
     <p id="t25" class="pln"><span class="n"><a href="#t25">25</a></span><span class="t"><span class="str">    -------</span>&nbsp;</span><span class="r"></span></p>
     <p id="t26" class="pln"><span class="n"><a href="#t26">26</a></span><span class="t"><span class="str">    tuple</span>&nbsp;</span><span class="r"></span></p>
-    <p id="t27" class="pln"><span class="n"><a href="#t27">27</a></span><span class="t"><span class="str">        the return value of `!plt.hist()`, i.e. a tuple ``(n, bins, patches)``</span>&nbsp;</span><span class="r"></span></p>
+    <p id="t27" class="pln"><span class="n"><a href="#t27">27</a></span><span class="t"><span class="str">        the return value of ``plt.hist()``, i.e. a tuple ``(n, bins, patches)``</span>&nbsp;</span><span class="r"></span></p>
     <p id="t28" class="pln"><span class="n"><a href="#t28">28</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
     <p id="t29" class="pln"><span class="n"><a href="#t29">29</a></span><span class="t"><span class="str">    Notes</span>&nbsp;</span><span class="r"></span></p>
     <p id="t30" class="pln"><span class="n"><a href="#t30">30</a></span><span class="t"><span class="str">    -----</span>&nbsp;</span><span class="r"></span></p>
@@ -103,7 +103,7 @@
     <p id="t50" class="pln"><span class="n"><a href="#t50">50</a></span><span class="t">    <span class="str">"""</span>&nbsp;</span><span class="r"></span></p>
     <p id="t51" class="pln"><span class="n"><a href="#t51">51</a></span><span class="t"><span class="str">    Plot individual and ensemble MSDs of the given dataset</span>&nbsp;</span><span class="r"></span></p>
     <p id="t52" class="pln"><span class="n"><a href="#t52">52</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
-    <p id="t53" class="pln"><span class="n"><a href="#t53">53</a></span><span class="t"><span class="str">    All keyword arguments are forwarded to `!plt.loglog()` for plotting of the</span>&nbsp;</span><span class="r"></span></p>
+    <p id="t53" class="pln"><span class="n"><a href="#t53">53</a></span><span class="t"><span class="str">    All keyword arguments are forwarded to ``plt.loglog()`` for plotting of the</span>&nbsp;</span><span class="r"></span></p>
     <p id="t54" class="pln"><span class="n"><a href="#t54">54</a></span><span class="t"><span class="str">    individual trajectory MSDs</span>&nbsp;</span><span class="r"></span></p>
     <p id="t55" class="pln"><span class="n"><a href="#t55">55</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
     <p id="t56" class="pln"><span class="n"><a href="#t56">56</a></span><span class="t"><span class="str">    Parameters</span>&nbsp;</span><span class="r"></span></p>
@@ -115,7 +115,7 @@
     <p id="t62" class="pln"><span class="n"><a href="#t62">62</a></span><span class="t"><span class="str">        rescale the horizontal axis of the plot. Optionally, give a string to</span>&nbsp;</span><span class="r"></span></p>
     <p id="t63" class="pln"><span class="n"><a href="#t63">63</a></span><span class="t"><span class="str">        identify the units, e.g. ``dt = (2, 'seconds')`` if your trajectories</span>&nbsp;</span><span class="r"></span></p>
     <p id="t64" class="pln"><span class="n"><a href="#t64">64</a></span><span class="t"><span class="str">        have a lapse time of 2 seconds. Note that you might want to set</span>&nbsp;</span><span class="r"></span></p>
-    <p id="t65" class="pln"><span class="n"><a href="#t65">65</a></span><span class="t"><span class="str">        `!plt.xlabel()` yourself if you omit the unit string.</span>&nbsp;</span><span class="r"></span></p>
+    <p id="t65" class="pln"><span class="n"><a href="#t65">65</a></span><span class="t"><span class="str">        ``plt.xlabel()`` yourself if you omit the unit string.</span>&nbsp;</span><span class="r"></span></p>
     <p id="t66" class="pln"><span class="n"><a href="#t66">66</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
     <p id="t67" class="pln"><span class="n"><a href="#t67">67</a></span><span class="t"><span class="str">    Returns</span>&nbsp;</span><span class="r"></span></p>
     <p id="t68" class="pln"><span class="n"><a href="#t68">68</a></span><span class="t"><span class="str">    -------</span>&nbsp;</span><span class="r"></span></p>
@@ -125,7 +125,7 @@
     <p id="t72" class="pln"><span class="n"><a href="#t72">72</a></span><span class="t"><span class="str">    Notes</span>&nbsp;</span><span class="r"></span></p>
     <p id="t73" class="pln"><span class="n"><a href="#t73">73</a></span><span class="t"><span class="str">    -----</span>&nbsp;</span><span class="r"></span></p>
     <p id="t74" class="pln"><span class="n"><a href="#t74">74</a></span><span class="t"><span class="str">    Only intended as a quick overview plot, for more customization write your</span>&nbsp;</span><span class="r"></span></p>
-    <p id="t75" class="pln"><span class="n"><a href="#t75">75</a></span><span class="t"><span class="str">    own plotting routine using `analysis.MSD &lt;tracklib.analysis.msd.MSD>`</span>&nbsp;</span><span class="r"></span></p>
+    <p id="t75" class="pln"><span class="n"><a href="#t75">75</a></span><span class="t"><span class="str">    own plotting routine using `analysis.MSD &lt;tracklib.analysis.p2.MSD>`</span>&nbsp;</span><span class="r"></span></p>
     <p id="t76" class="pln"><span class="n"><a href="#t76">76</a></span><span class="t"><span class="str">    """</span>&nbsp;</span><span class="r"></span></p>
     <p id="t77" class="run"><span class="n"><a href="#t77">77</a></span><span class="t">    <span class="key">if</span> <span class="nam">isinstance</span><span class="op">(</span><span class="nam">dt</span><span class="op">,</span> <span class="nam">tuple</span><span class="op">)</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
     <p id="t78" class="run"><span class="n"><a href="#t78">78</a></span><span class="t">        <span class="nam">unit_str</span> <span class="op">=</span> <span class="nam">dt</span><span class="op">[</span><span class="num">1</span><span class="op">]</span>&nbsp;</span><span class="r"></span></p>
@@ -176,7 +176,7 @@
     <p id="t123" class="pln"><span class="n"><a href="#t123">123</a></span><span class="t"><span class="str">    colordict : dict</span>&nbsp;</span><span class="r"></span></p>
     <p id="t124" class="pln"><span class="n"><a href="#t124">124</a></span><span class="t"><span class="str">        determines which tag is colored in which color. This should be a dict</span>&nbsp;</span><span class="r"></span></p>
     <p id="t125" class="pln"><span class="n"><a href="#t125">125</a></span><span class="t"><span class="str">        whose keys are the tags in the dataset, while the entries are anything</span>&nbsp;</span><span class="r"></span></p>
-    <p id="t126" class="pln"><span class="n"><a href="#t126">126</a></span><span class="t"><span class="str">        recognized by the `!'color'` kwarg of `!plt.plot()`. If omitted, will</span>&nbsp;</span><span class="r"></span></p>
+    <p id="t126" class="pln"><span class="n"><a href="#t126">126</a></span><span class="t"><span class="str">        recognized by the `!'color'` kwarg of ``plt.plot()``. If omitted, will</span>&nbsp;</span><span class="r"></span></p>
     <p id="t127" class="pln"><span class="n"><a href="#t127">127</a></span><span class="t"><span class="str">        cycle through the default color cycle.</span>&nbsp;</span><span class="r"></span></p>
     <p id="t128" class="pln"><span class="n"><a href="#t128">128</a></span><span class="t"><span class="str">    fallback_color : str, or RGB tuple</span>&nbsp;</span><span class="r"></span></p>
     <p id="t129" class="pln"><span class="n"><a href="#t129">129</a></span><span class="t"><span class="str">        the color to use for anything not appearing in `!'colordict'`</span>&nbsp;</span><span class="r"></span></p>
@@ -184,7 +184,7 @@
     <p id="t131" class="pln"><span class="n"><a href="#t131">131</a></span><span class="t"><span class="str">    Returns</span>&nbsp;</span><span class="r"></span></p>
     <p id="t132" class="pln"><span class="n"><a href="#t132">132</a></span><span class="t"><span class="str">    -------</span>&nbsp;</span><span class="r"></span></p>
     <p id="t133" class="pln"><span class="n"><a href="#t133">133</a></span><span class="t"><span class="str">    list of lines</span>&nbsp;</span><span class="r"></span></p>
-    <p id="t134" class="pln"><span class="n"><a href="#t134">134</a></span><span class="t"><span class="str">        the aggregated output of `!plt.plot()`</span>&nbsp;</span><span class="r"></span></p>
+    <p id="t134" class="pln"><span class="n"><a href="#t134">134</a></span><span class="t"><span class="str">        the aggregated output of ``plt.plot()``</span>&nbsp;</span><span class="r"></span></p>
     <p id="t135" class="pln"><span class="n"><a href="#t135">135</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
     <p id="t136" class="pln"><span class="n"><a href="#t136">136</a></span><span class="t"><span class="str">    Notes</span>&nbsp;</span><span class="r"></span></p>
     <p id="t137" class="pln"><span class="n"><a href="#t137">137</a></span><span class="t"><span class="str">    -----</span>&nbsp;</span><span class="r"></span></p>
@@ -269,7 +269,7 @@
     <p id="t216" class="pln"><span class="n"><a href="#t216">216</a></span><span class="t"><span class="str">    for single locus trajectories it is simply the absolute value of the</span>&nbsp;</span><span class="r"></span></p>
     <p id="t217" class="pln"><span class="n"><a href="#t217">217</a></span><span class="t"><span class="str">    trajectory.</span>&nbsp;</span><span class="r"></span></p>
     <p id="t218" class="pln"><span class="n"><a href="#t218">218</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
-    <p id="t219" class="pln"><span class="n"><a href="#t219">219</a></span><span class="t"><span class="str">    All keyword arguments will be forwarded to `!plt.hist()`</span>&nbsp;</span><span class="r"></span></p>
+    <p id="t219" class="pln"><span class="n"><a href="#t219">219</a></span><span class="t"><span class="str">    All keyword arguments will be forwarded to ``plt.hist()``</span>&nbsp;</span><span class="r"></span></p>
     <p id="t220" class="pln"><span class="n"><a href="#t220">220</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
     <p id="t221" class="pln"><span class="n"><a href="#t221">221</a></span><span class="t"><span class="str">    Parameters</span>&nbsp;</span><span class="r"></span></p>
     <p id="t222" class="pln"><span class="n"><a href="#t222">222</a></span><span class="t"><span class="str">    ----------</span>&nbsp;</span><span class="r"></span></p>
@@ -281,7 +281,7 @@
     <p id="t228" class="pln"><span class="n"><a href="#t228">228</a></span><span class="t"><span class="str">    Returns</span>&nbsp;</span><span class="r"></span></p>
     <p id="t229" class="pln"><span class="n"><a href="#t229">229</a></span><span class="t"><span class="str">    -------</span>&nbsp;</span><span class="r"></span></p>
     <p id="t230" class="pln"><span class="n"><a href="#t230">230</a></span><span class="t"><span class="str">    tuple</span>&nbsp;</span><span class="r"></span></p>
-    <p id="t231" class="pln"><span class="n"><a href="#t231">231</a></span><span class="t"><span class="str">        the output of `!plt.hist()`, i.e. a tuple ``(n, bins, patches)``.</span>&nbsp;</span><span class="r"></span></p>
+    <p id="t231" class="pln"><span class="n"><a href="#t231">231</a></span><span class="t"><span class="str">        the output of ``plt.hist()``, i.e. a tuple ``(n, bins, patches)``.</span>&nbsp;</span><span class="r"></span></p>
     <p id="t232" class="pln"><span class="n"><a href="#t232">232</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
     <p id="t233" class="pln"><span class="n"><a href="#t233">233</a></span><span class="t"><span class="str">    Notes</span>&nbsp;</span><span class="r"></span></p>
     <p id="t234" class="pln"><span class="n"><a href="#t234">234</a></span><span class="t"><span class="str">    -----</span>&nbsp;</span><span class="r"></span></p>
@@ -318,7 +318,7 @@
     <div class="content">
         <p>
             <a class="nav" href="index.html">&#xab; index</a> &nbsp; &nbsp; <a class="nav" href="https://coverage.readthedocs.io">coverage.py v5.2.1</a>,
-            created at 2022-01-29 19:22 -0500
+            created at 2022-02-02 11:28 -0500
         </p>
     </div>
 </div>

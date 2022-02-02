@@ -60,14 +60,11 @@ for fname in glob("tracklib*.rst", 0, 1)
 endfor
 
 edit! tracklib.rst
+call search("toctree")
+norm ko.. contents::   :local:
 call search("^tracklib.trajectory")
 call search("automodule")
 norm o   :exclude-members: Trajectory_1N, Trajectory_2N, Trajectory_1d, Trajectory_2d, Trajectory_3d, Trajectory_1N1d, Trajectory_1N2d, Trajectory_1N3d, Trajectory_2N1d, Trajectory_2N2d, Trajectory_2N3d
-write!
-
-edit! tracklib.analysis.neda.rst
-call search("^\.\. contents::")
-norm }o.. autofunction:: tracklib.analysis.neda.neda.main
 write!
 
 edit! tracklib.analysis.msdfit.rst

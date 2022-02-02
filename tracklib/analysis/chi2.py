@@ -32,8 +32,8 @@ def chi2vsMSD(dataset, n=10, msd=None):
         the window size / length of the snippets to look at
     msd : (T,) array-like
         the MSD to use for defining the reference Gaussian process. If omitted,
-        this will be the empirical `MSD` of the data, as given by
-        ``MSD(dataset)``.
+        this will be the empirical `MSD <tracklib.analysis.p2.MSD>` of the
+        data, as given by ``MSD(dataset)``.
 
     Returns
     -------
@@ -75,10 +75,10 @@ def summary_plot(dataset, dof=None, p=0.05, ax=None, **kwargs):
     Produce a summary plot of chi2 scores.
 
     Histogram the chi-square scores calculated with `chi2vsMSD`. This assumes
-    that each trajectory has a metadata field `!'chi2scores'`. Optionally also
+    that each trajectory has a metadata field ``'chi2scores'``. Optionally also
     plots significance thresholds and/or the expected chi2 distribution.
 
-    Any keyword arguments not listed below will be forwarded to `!plt.hist`.
+    Any keyword arguments not listed below will be forwarded to ``plt.hist``.
 
     Parameters
     ----------

@@ -17,11 +17,13 @@ class SplineFit(core.Fit):
     0`` case, in which the MSD converges to a constant at infinite time. To
     achieve this within the spline fits, the time coordinate is compactified
     from ``t in [1, T]`` to ``x in [0, 1]``:
+
     - if ``ss_order == 0``, we need ``t = inf`` to be accessible. We therefore
       choose the compactification ``x = 4/π*arctan(log(t/T))``, such that ``t =
       inf`` corresponds to ``x = 2``.
     - if ``ss_order == 1``, we simply work in log-space, and normalize: ``x =
       log(t)/log(T)``.
+
     These compactifications are of course applied only internally.
 
     For the y-coordinate of the spline we apply a simple log-transform, ``y =
@@ -41,7 +43,7 @@ class SplineFit(core.Fit):
         this can be used to initialize the current fit from the resulting
         spline of a previous one. Very useful when running the above-mentioned
         model selection task over spline knots. First entry should be the
-        `!Fit` object used, second one should be the resulting dict with keys
+        `Fit` object used, second one should be the resulting dict with keys
         ``'params'`` and ``'logL'``.
 
     Notes
@@ -425,10 +427,12 @@ class TwoLocusRouseFit(core.Fit):
     implementation to fit this MSD to data.
 
     The parameters for this MSD are
+
     - the (squared) localization error ``noise2``
     - the Rouse scaling prefactor Γ of a single locus on the polymer
     - the steady state variance J of the distance between the loci. This
       encodes the chain length between them
+
     The parameter vector for this fit is thus ``d*[log(noise2), log(Γ),
     log(J)]``.
 

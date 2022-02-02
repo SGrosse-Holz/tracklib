@@ -16,7 +16,7 @@
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="tracklib.models" href="tracklib.models.html" />
-    <link rel="prev" title="tracklib.analysis.neda" href="tracklib.analysis.neda.html" /> 
+    <link rel="prev" title="tracklib.analysis.msdfit" href="tracklib.analysis.msdfit.html" /> 
   </head><body>
     <div class="related" role="navigation" aria-label="related navigation">
       <h3>Navigation</h3>
@@ -31,7 +31,7 @@
           <a href="tracklib.models.html" title="tracklib.models"
              accesskey="N">next</a> |</li>
         <li class="right" >
-          <a href="tracklib.analysis.neda.html" title="tracklib.analysis.neda"
+          <a href="tracklib.analysis.msdfit.html" title="tracklib.analysis.msdfit"
              accesskey="P">previous</a> |</li>
         <li class="nav-item nav-item-0"><a href="index.html">tracklib 0.1 documentation</a> &#187;</li>
           <li class="nav-item nav-item-1"><a href="tracklib.html" accesskey="U">tracklib</a> &#187;</li> 
@@ -59,7 +59,7 @@ used throughout the library</p>
 <dt id="tracklib.io.load.csv">
 <code class="sig-prename descclassname">tracklib.io.load.</code><code class="sig-name descname">csv</code><span class="sig-paren">(</span><em class="sig-param">filename, columns=['x', 'y', 't', 'id'], tags='', meta_post={}, **kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#tracklib.io.load.csv" title="Permalink to this definition">¶</a></dt>
 <dd><p>Load data from a .csv file.</p>
-<p>This uses <code class="xref any docutils literal notranslate"><span class="pre">np.genfromtxt</span></code>, and all kwargs are forwarded to it. The most
+<p>This uses <code class="docutils literal notranslate"><span class="pre">np.genfromtxt</span></code>, and all kwargs are forwarded to it. The most
 important ones are <code class="docutils literal notranslate"><span class="pre">'delimiter'</span></code> and <code class="docutils literal notranslate"><span class="pre">'skip_header'</span></code>.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -87,7 +87,7 @@ With the latter we simply take the mean of the array.</p></li>
 </dd>
 </dl>
 <p class="rubric">Examples</p>
-<p>This function can be used to load data from <code class="xref any docutils literal notranslate"><span class="pre">pandas.DataFrame</span></code> tables, if
+<p>This function can be used to load data from <code class="docutils literal notranslate"><span class="pre">pandas.DataFrame</span></code> tables, if
 they conform to the format described above:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">io</span>
 <span class="gp">... </span><span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
@@ -144,7 +144,7 @@ they conform to the format described above:</p>
 <p>The columns in the file will be <code class="docutils literal notranslate"><span class="pre">['id',</span> <span class="pre">'frame',</span> <span class="pre">'x',</span> <span class="pre">'y',</span> <span class="pre">'z',</span> <span class="pre">'x2',</span>
 <span class="pre">'y2',</span> <span class="pre">'z2']</span></code>, where of course only those coordinates present in the data
 set will be written.</p>
-<p>Missing frames, i.e. those where all of the coordinates are <code class="xref any docutils literal notranslate"><span class="pre">np.nan</span></code> will
+<p>Missing frames, i.e. those where all of the coordinates are <code class="docutils literal notranslate"><span class="pre">np.nan</span></code> will
 simply be omitted.</p>
 <p>Since <a class="reference internal" href="tracklib.html#tracklib.taggedset.TaggedSet" title="tracklib.taggedset.TaggedSet"><code class="xref any py py-class docutils literal notranslate"><span class="pre">TaggedSet</span></code></a> and <a class="reference internal" href="tracklib.html#tracklib.trajectory.Trajectory" title="tracklib.trajectory.Trajectory"><code class="xref any py py-class docutils literal notranslate"><span class="pre">Trajectory</span></code></a> have more structure than can reasonably
 represented in <code class="docutils literal notranslate"><span class="pre">.csv</span></code> files, this function has no aspirations of writing
@@ -188,8 +188,8 @@ with the trajectory will be written to an entry <code class="docutils literal no
 </ul>
 
   <h4>Previous topic</h4>
-  <p class="topless"><a href="tracklib.analysis.neda.html"
-                        title="previous chapter">tracklib.analysis.neda</a></p>
+  <p class="topless"><a href="tracklib.analysis.msdfit.html"
+                        title="previous chapter">tracklib.analysis.msdfit</a></p>
   <h4>Next topic</h4>
   <p class="topless"><a href="tracklib.models.html"
                         title="next chapter">tracklib.models</a></p>
@@ -227,7 +227,7 @@ with the trajectory will be written to an entry <code class="docutils literal no
           <a href="tracklib.models.html" title="tracklib.models"
              >next</a> |</li>
         <li class="right" >
-          <a href="tracklib.analysis.neda.html" title="tracklib.analysis.neda"
+          <a href="tracklib.analysis.msdfit.html" title="tracklib.analysis.msdfit"
              >previous</a> |</li>
         <li class="nav-item nav-item-0"><a href="index.html">tracklib 0.1 documentation</a> &#187;</li>
           <li class="nav-item nav-item-1"><a href="tracklib.html" >tracklib</a> &#187;</li> 

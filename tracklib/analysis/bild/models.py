@@ -1,14 +1,15 @@
 """
-The inference models, and the interface they have to conform to.
-"""
+Inference models and the interface they should conform to
 
+The `MultiStateModel` defines the interface used for inference by the rest of
+the BILD module. We provide specific implementations, the `MultiStateRouse`
+model, as well as the `FactorizedModel`, which essentially constitutes an HMM.
+"""
 import abc
-import functools
 
 from tqdm.auto import tqdm
 
 import numpy as np
-import scipy.optimize
 import scipy.stats
 
 from tracklib import Trajectory
@@ -22,13 +23,16 @@ class MultiStateModel(metaclass=abc.ABCMeta):
     Abstract base class for inference models
 
     The most important capability of any model is the likelihood function
-    `logL` for a combination of `Loopingprofile` and `Trajectory`. Furthermore, a
-    model should provide an initial guess for a good `Loopingprofile`.
+    `logL` for a combination of `Loopingprofile` and `Trajectory`. Furthermore,
+    a model should be able to tell how many states it has and what number of
+    spatial dimensions it expects through the `nStates` and `d` properties
+    respectively.
+    
+    Finally, there are some convenience functions that are recommended, but not
+    required to implement:
 
-    The method `trajectory_from_loopingprofile` is considered an optional part of
-    the interface, since it is not important to the inference, but might come
-    in handy when working with a `MultiStateModel`. So it is recommended but not
-    required.
+     + provide an initial guess for a good profile by `initial_loopingprofile`
+     + sample from the likelihood by `trajectory_from_loopingprofile`
     """
     @property
     def nStates(self):
@@ -63,7 +67,7 @@ class MultiStateModel(metaclass=abc.ABCMeta):
     @abc.abstractmethod
     def logL(self, loopingprofile, traj):
         """
-        Calculate (log-)likelihood for (`Loopingprofile`, `Trajectory`) pair.
+        Calculate log-likelihood for (`Loopingprofile`, `Trajectory`) pair.
 
         Parameters
         ----------
@@ -77,21 +81,69 @@ class MultiStateModel(metaclass=abc.ABCMeta):
         """
         raise NotImplementedError # pragma: no cover
 
-    def trajectory_from_loopingprofile(self, loopingprofile, localization_error, missing_frames):
+    def trajectory_from_loopingprofile(self, profile,
+                                       localization_error=None,
+                                       missing_frames=None,
+                                       preproc=None):
         """
-        Generate a `Trajectory` from this `MultiStateModel` and the given `Loopingprofile`
+        Generate a `Trajectory` for the given `Loopingprofile`
 
         Parameters
         ----------
-        loopingprofile : Loopingprofile
-        localization_error : float, optional
-            how much Gaussian noise to add to the trajectory.
+        profile : Loopingprofile
+        localization_error : float or (d,) np.ndarray, dtype=float
+            how much Gaussian noise to add to the trajectory. Specify either as
+            a single float, in which case a Gaussian random variable of that
+            standard deviation will be added to each dimension, or as an array
+            with one value of the standard deviation for each dimension
+            individually.
+        missing_frames : None, float in [0, 1), int, or np.ndarray
+            frames to remove from the generated trajectory. Can be
+             + ``None`` or ``0`` : remove no frames
+             + ``float in (0, 1)`` : remove frames at random, with this
+               probability
+             + ``int`` : remove this many frames at random
+             + ``np.ndarray, dtype=int`` : indices of the frames to remove
+        preproc : string
+            specific to this base implementation. Set to
+            ``'localization_error'`` or ``'missing_frames'`` to resolve the
+            corresponding parameter according to the rules outlined above and
+            return it.
 
         Returns
         -------
         Trajectory
+
+        Notes
+        -----
+        Even though this method provides default preprocessing for
+        ``localization_error`` and ``missing_frames``, implementations are not
+        forced to use them. So the meaning of these arguments might be
+        different from what's outlined here.
         """
-        raise NotImplementedError # pragma: no cover
+        if preproc == 'localization_error':
+            if np.isscalar(localization_error):
+                localization_error = self.d*[localization_error]
+            localization_error = np.asarray(localization_error)
+            if localization_error.shape != (self.d,):
+                raise ValueError("Did not understand localization_error") # pragma: no cover
+            return localization_error
+
+        elif preproc == 'missing_frames':
+            if missing_frames is None or missing_frames == 0:
+                missing_frames = np.array([], dtype=int)
+            if np.isscalar(missing_frames):
+                if 0 < missing_frames and missing_frames < 1:
+                    missing_frames = np.nonzero(np.random.rand(len(profile)) < missing_frames)[0]
+                else:
+                    missing_frames = np.random.choice(len(profile), size=missing_frames, replace=False)
+                    missing_frames = missing_frames.astype(int)
+
+            return missing_frames
+
+        else: # pragma: no cover
+            raise NotImplementedError
+
 
 class MultiStateRouse(MultiStateModel):
     """
@@ -112,51 +164,49 @@ class MultiStateRouse(MultiStateModel):
         spring constant
     d : int, optional
         spatial dimension
-    looppositions : list of 2-tuples of int, optional
-        list of positions of the extra bond. For each entry, a new
-        `rouse.Model` instance will be set up. Remember to include an unlooped
-        model (if wanted) by including a position like ``(0, 0)``. Each entry
-        can alternatively be a 3-tuple, where the 3rd entry then specifies the
-        strength of the extra bond relative to the backbone, e.g. ``(0, 5,
-        0.5)`` introduces an additional bond between monomers 0 and 5 with
-        strength ``0.5*k``. Finally, instead of a single tuple, each bond
-        specification can be a list of such tuples if multiple added bonds are
-        needed.
+    looppositions : list of tuples
+        specification of the extra bonds to add for the different states.  Each
+        entry corresponds to one possible state of the model and should be a
+        tuple ``(left_mon, right_mon, rel_strength=1)`` or a list of such;
+        specification of ``rel_strength`` is optional. This will introduce an
+        additional bond between the monomer indexed ``left_mon`` and the one
+        indexed ``right_mon``, with strength ``rel_strength*k``. Note that you
+        can remove the i-th backbone bond by giving ``(i, i+1, -1)``. Remember
+        that (if relevant) you also have to include the unlooped state, which
+        you can do by giving ``None`` instead of a tuple; alternatively, give a
+        vacuous extra bond like ``(0, 0)``.
     measurement : "end2end" or (N,) np.ndarray
         which distance to measure. The default setting "end2end" is equivalent
         to specifying a vector ``np.array([-1, 0, ..., 0, 1])``, i.e. measuring
         the distance from the first to the last monomer.
-    localization_error : float or np.array, optional
-        a global value for the localization error. By default, we use the value
-        stored in ``traj.meta['localization_error']``, which allows
-        trajectory-wise specification of error. But for example for fitting it
-        might be useful to have one global setting for localization error, at
-        which point it becomes part of the model. Give a scalar value to have
-        the same error apply to all dimensions
+    localization_error : float, (d,) np.array, or None, optional
+        localization error assumed by the model, e.g. in calculating the
+        likelihood or generating trajectories. If ``None``, try to use
+        ``traj.meta['localization_error']`` where possible. If scalar, will be
+        broadcast to all spatial dimensions.
 
     Attributes
     ----------
     models : list of `rouse.Model`
-        the models used for inference
+        the Rouse models for the individual states
     measurement : (N,) np.ndarray
-        the measurement vector for this model
+        the measurement vector
     localization_error : array or None
-        if ``None``, use ``traj.meta['localization_error']`` for each
-        trajectory ``traj``.
+        if ``None``, use ``traj.meta['localization_error']`` where possible
 
     Notes
     -----
-    The `initial_loopingprofile` for this `MultiStateModel` is the MLE assuming time scale
-    separation. I.e. we calculate the timepoint-wise MLE using the exact steady
-    state distributions of each model.
+    This class also provides a function to convert to a `FactorizedModel`,
+    using the exact steady state distributions of the Rouse models. This is
+    used for example to quickly guess an initial looping profile.
 
     See also
     --------
     MultiStateModel, rouse.Model
     """
     def __init__(self, N, D, k, d=3,
-                 looppositions=((0, 0), (0, -1)), # no mutable default parameters!
-                                                  # (thus tuple instead of list)
+                 looppositions=(None, (0, -1)), # no mutable default parameters!
+                                                # (thus tuple instead of list)
                  measurement="end2end",
                  localization_error=None,
                  ):
@@ -166,15 +216,17 @@ class MultiStateRouse(MultiStateModel):
             measurement = np.zeros(N)
             measurement[0]  = -1
             measurement[-1] =  1
+
+        assert len(measurement) == N
         self.measurement = measurement
 
         if localization_error is not None and np.isscalar(localization_error):
-            localization_error = np.array(d*[localization_error])
+            localization_error = localization_error*np.ones(d)
         self.localization_error = localization_error
 
         self.models = []
         for loop in looppositions:
-            if np.isscalar(loop[0]):
+            if loop is not None and np.isscalar(loop[0]):
                 loop = [loop]
             mod = rouse.Model(N, D, k, d, add_bonds=loop)
             self.models.append(mod)
@@ -188,51 +240,41 @@ class MultiStateRouse(MultiStateModel):
         return self._d
 
     def _get_noise(self, traj):
+        # for internal use: get the localization error that should apply to a
+        # given trajectory
         if self.localization_error is not None:
             return np.asarray(self.localization_error)
         else:
             return np.asarray(traj.meta['localization_error'])
 
     def initial_loopingprofile(self, traj):
-        # We give the MLE assuming time scale separation
-        # This is exactly the same procedure as for FactorizedModel, where we
-        # utilize the steady state distributions of the individual Rouse
-        # models.
-        noise = self._get_noise(traj)
+        """
+        Give an initial guess for a looping profile
 
-        Ms = []
-        Cs = []
-        for mod in self.models:
-            M, C = mod.steady_state()
-            Ms.append(self.measurement @ M)
-            Cs.append(self.measurement @ C @ self.measurement)
-        Ms = np.expand_dims(Ms, 0)                # (1, n, d)
-        Cs = np.expand_dims(Cs, (0, 2))           # (1, n, 1)
-        Cs = Cs + np.expand_dims(noise*noise, (0, 1)) # (1, n, d)
+        Parameters
+        ----------
+        traj : Trajectory
+            the trajectory under investigation
 
-        # assemble (T, n, d) array
-        valid_times = np.nonzero(~np.any(np.isnan(traj[:]), axis=1))[0]
-        chi2s = (traj[valid_times][:, np.newaxis, :] - Ms)**2 / Cs
-
-        logLs = -0.5*(chi2s + np.log(Cs)) - 0.5*np.log(2*np.pi)*np.ones(chi2s.shape)
-        logLs = np.sum(logLs, axis=2) # (T, n)
-
-        best_states = np.argmax(logLs, axis=1)
-
-        states = np.zeros(len(traj), dtype=int)
-        states[:(valid_times[0]+1)] = best_states[0]
-        last_time = valid_times[0]
-
-        for cur_time, cur_state in zip(valid_times[1:], best_states[1:]):
-            states[(last_time+1):(cur_time+1)] = cur_state
-            last_time = cur_time
-
-        if last_time < len(traj):
-            states[(last_time+1):] = best_states[-1]
-
-        return Loopingprofile(states)
+        Returns
+        -------
+        Loopingprofile
+        """
+        return self.toFactorized().initial_loopingprofile(traj)
 
     def logL(self, profile, traj):
+        """
+        Rouse likelihood, evaluated by Kalman filter
+
+        Parameters
+        ----------
+        profile : Loopingprofile
+        traj : Trajectory
+
+        Returns
+        -------
+        float
+        """
         localization_error = self._get_noise(traj)
 
         # Evolution of covariance matrix for each dimension depends only on the
@@ -300,6 +342,22 @@ class MultiStateRouse(MultiStateModel):
                                        localization_error=None,
                                        missing_frames=None,
                                        ):
+        """
+        Generative model
+
+        Parameters
+        ----------
+        profile : Loopingprofile
+            the profile from whose associated ensemble to sample
+        localization_error : float or (d,) np.ndarray, dtype=float
+            see `MultiStateModel.trajectory_from_loopingprofile`
+        missing_frames : None, float in [0, 1), int, or np.ndarray
+            see `MultiStateModel.trajectory_from_loopingprofile`
+
+        Returns
+        -------
+        Trajectory
+        """
         # Pre-processing
         # localization_error
         if localization_error is None:
@@ -307,21 +365,10 @@ class MultiStateRouse(MultiStateModel):
                 raise ValueError("Need to specify either localization_error or model.localization_error") # pragma: no cover
             else:
                 localization_error = self.localization_error
-        if np.isscalar(localization_error):
-            localization_error = self.d*[localization_error]
-        localization_error = np.asarray(localization_error)
-        if localization_error.shape != (self.d,):
-            raise ValueError("Did not understand localization_error") # pragma: no cover
+        localization_error = super().trajectory_from_loopingprofile(profile, preproc='localization_error', localization_error=localization_error)
 
         # missing_frames
-        if missing_frames is None:
-            missing_frames = np.array([], dtype=int)
-        if np.isscalar(missing_frames):
-            if 0 < missing_frames and missing_frames < 1:
-                missing_frames = np.nonzero(np.random.rand(len(profile)) < missing_frames)[0]
-            else:
-                missing_frames = np.random.choice(len(profile), size=missing_frames, replace=False)
-                missing_frames = missing_frames.astype(int)
+        missing_frames = super().trajectory_from_loopingprofile(profile, preproc='missing_frames', missing_frames=missing_frames)
 
         # Assemble trajectory
         data = np.empty((len(profile), self.d), dtype=float)
@@ -339,9 +386,11 @@ class MultiStateRouse(MultiStateModel):
         # Kick out frames that should be missing
         data[missing_frames, :] = np.nan
 
+        # Add localization error
+        data += localization_error[None, :] * np.random.normal(size=data.shape)
+
         # Return as Trajectory
-        noise = localization_error[np.newaxis, :]
-        return Trajectory.fromArray(data + noise*np.random.normal(size=data.shape),
+        return Trajectory.fromArray(data,
                                     localization_error=localization_error,
                                     loopingprofile=profile,
                                     )
@@ -358,9 +407,10 @@ class MultiStateRouse(MultiStateModel):
         FactorizedModel
         """
         distributions = []
+        noise2_per_d = np.sum(self.localization_error**2)/self.d if self.localization_error else 0
         for mod in self.models:
             _, C = mod.steady_state()
-            s2 = self.measurement @ C @ self.measurement + np.sum(self.localization_error**2)/self.d
+            s2 = self.measurement @ C @ self.measurement + noise2_per_d
             distributions.append(scipy.stats.maxwell(scale=np.sqrt(s2)))
 
         return FactorizedModel(distributions, d=self.d)
@@ -371,9 +421,7 @@ class FactorizedModel(MultiStateModel):
 
     This model assumes that each point is sampled from one of a given list of
     distributions, where there is no correlation between the choice of
-    distribution for each point. It runs significantly faster than the full
-    `RouseModel`, but is of course inaccurate if the Rouse time is longer or
-    comparable to the frame rate of the recorded trajectories.
+    distribution for each point.
 
     Parameters
     ----------
@@ -382,8 +430,8 @@ class FactorizedModel(MultiStateModel):
         Maxwell), but can be pretty arbitrary. The only function they have to
         provide is ``logpdf()``, which should take a scalar or vector of
         distance values and return a corresponding number of outputs. If you
-        plan on using `trajectory_from_loopingtrace`, the distributions should
-        also have an ``rvs()`` method for sampling.
+        plan on using `trajectory_from_loopingprofile`, the distributions
+        should also have an ``rvs()`` method for sampling.
 
     Attributes
     ----------
@@ -393,11 +441,14 @@ class FactorizedModel(MultiStateModel):
     -----
     This being a heuristical model, we assume that the localization error is
     already incorporated in the `!distributions`, as would be the case if they
-    come from experimental data. Therefore, this class ignores the
+    came from experimental data. Therefore, this class ignores the
     ``meta['localization_error']`` field of `Trajectory`.
 
+    The ``d`` attribute mandated by the `MultiStateRouse` interface is used
+    only for generation of trajectories.
+
     Instances of this class memoize trajectories they have seen before. To
-    reset the memoization, you can either reinstantiate or clear the cache
+    reset the memoization, you can either reinstantiate, or clear the cache
     manually:
     
     >>> model = FactorizedModel(model.distributions)
@@ -406,11 +457,7 @@ class FactorizedModel(MultiStateModel):
     If using ``scipy.stats.maxwell``, make sure to use it correctly, i.e. you
     have to specify ``scale=...``. Writing ``scipy.stats.maxwell(5)`` instead
     of ``scipy.stats.maxwell(scale=5)`` shifts the distribution instead of
-    scaling it and leads to ``-inf`` values in the likelihood, which then screw
-    up the MCMC. The classic error to get for this is ``invalid value
-    encountered in double_scalars``. This is caused by ``new_logL - cur_logL``
-    reading ``- inf + inf`` at the first MCMC iteration, if `logL` returns
-    ``-inf``.
+    scaling it and leads to ``-inf`` values in the likelihood.
 
     Examples
     --------
@@ -420,7 +467,7 @@ class FactorizedModel(MultiStateModel):
 
     >>> model = FactorizedModel([scipy.stats.gaussian_kde(dists_0),
     ...                          scipy.stats.gaussian_kde(dists_1),
-    ...                          scipy.stats.gaussian_kde(dists_1)])
+    ...                          scipy.stats.gaussian_kde(dists_2)])
 
     """
     def __init__(self, distributions, d=3):
@@ -437,10 +484,8 @@ class FactorizedModel(MultiStateModel):
         return self._d
 
     def _memo(self, traj):
-        """
-        (internal) memoize `traj`
-        """
-        if not traj in self._known_trajs:
+        # memoize `traj`
+        if traj not in self._known_trajs:
             with np.errstate(divide='ignore'): # nans in the trajectory raise 'divide by zero in log'
                 logL_table = np.array([dist.logpdf(traj.abs()[:][:, 0]) 
                                        for dist in self.distributions
@@ -454,6 +499,17 @@ class FactorizedModel(MultiStateModel):
         self._known_trajs = dict()
 
     def initial_loopingprofile(self, traj):
+        """
+        Gives the MLE profile for the given trajectory
+
+        Parameters
+        ----------
+        traj : Trajectory
+
+        Returns
+        -------
+        Loopingprofile
+        """
         self._memo(traj)
 
         valid_times = np.nonzero(~np.any(np.isnan(traj[:]), axis=1))[0]
@@ -474,18 +530,42 @@ class FactorizedModel(MultiStateModel):
 
     def logL(self, profile, traj):
         self._memo(traj)
-        return np.nansum(self._known_trajs[traj]['logL_table'][profile.state, :])
+        return np.nansum([self._known_trajs[traj]['logL_table'][profile[i], i] for i in range(len(profile))])
 
-    def trajectory_from_loopingprofile(self, profile, localization_error=0., missing_frames=None):
-        # Pre-proc missing_frames
-        if missing_frames is None:
-            missing_frames = np.array([], dtype=int)
-        if np.isscalar(missing_frames):
-            if 0 < missing_frames and missing_frames < 1:
-                missing_frames = np.nonzero(np.random.rand(len(profile)) < missing_frames)[0]
-            else:
-                missing_frames = np.random.choice(len(profile), size=missing_frames, replace=False)
-                missing_frames = missing_frames.astype(int)
+    def trajectory_from_loopingprofile(self, profile,
+                                       localization_error=0.,
+                                       missing_frames=None):
+        """
+        Generative model
+
+        Parameters
+        ----------
+        profile : Loopingprofile
+            the profile from whose associated ensemble to sample
+        localization_error : float or (d,) np.ndarray, dtype=float
+            see `MultiStateModel.trajectory_from_loopingprofile`; note that
+            since the localization error should already be accounted for in the
+            `distributions` of the model, it is *not* added to the trajectory
+            here. Instead, it is just written to
+            ``traj.meta['localization_error']``.
+        missing_frames : None, float in [0, 1), int, or np.ndarray
+            see `MultiStateModel.trajectory_from_loopingprofile`
+
+        Returns
+        -------
+        Trajectory
+
+        Notes
+        -----
+        The `FactorizedModel` only contains distributions for the scalar
+        distance between the points, amounting to the assumption that the full
+        distribution of distance vectors is isotropic. Thus, in generating the
+        trajectory we sample a magnitude from the given distributions and a
+        direction from the unit sphere.
+        """
+        # Pre-proc
+        localization_error = super().trajectory_from_loopingprofile(profile, preproc='localization_error', localization_error=localization_error)
+        missing_frames = super().trajectory_from_loopingprofile(profile, preproc='missing_frames', missing_frames=missing_frames)
 
         # Note that the distributions in the model give us only the length, not
         #   the orientation. So we also have to sample unit vectors
@@ -498,109 +578,6 @@ class FactorizedModel(MultiStateModel):
         data[missing_frames, :] = np.nan
 
         return Trajectory.fromArray(data,
-                                    localization_error=np.array(self.d*[localization_error]),
+                                    localization_error=localization_error,
                                     loopingprofile=profile,
                                     )
-
-def _neg_logL_traj(traj, model):
-    # For internal use in parallelization
-    return -model.logL(traj.meta['loopingprofile'], traj)
-
-def fit(data, modelfamily,
-        show_progress=False,
-        map_function=map,
-        **kwargs):
-    """
-    Find the best fit model to a calibration dataset
-
-    Parameters
-    ----------
-    data : TaggedSet of Trajectory
-        the calibration data. Each `Trajectory` should have a `meta
-        <Trajectory.meta>` entry ``'loopingtrace'`` indicating the true/assumed
-        `Loopingtrace` for this trajectory.
-    modelfamily : ParametricFamily of Models
-        the family of models to consider.
-    show_progress : bool, optional
-        set to ``True`` to get progress info. Note that since we do not know
-        how many iterations we need for convergence, there is no ETA, just
-        elapsed time.
-    map_function : map-like callable
-        a function to replace the built-in ``map()``, e.g. with a parallel
-        version. Will be used as
-        ``np.sum(list(map_function(likelihood_given_parameters, data)))``, i.e.
-        order does not matter. ``multiprocessing.Pool.imap_unordered`` would be
-        a good go-to.
-    kwargs : kwargs
-        will be forwarded to `!scipy.optimize.minimize`. We use the defaults
-        ``method='L-BFGS-B'``, ``maxfun=300``, ``ftol=1e-5``.
-
-    Returns
-    -------
-    res : fitresult
-        the structure returned by `!scipy.optimize.minimize`. The best fit
-        parameters are ``res.x``, while their covariance matrix can be obtained
-        as ``res.hess_inv.todens()``.
-
-    Examples
-    --------
-    A good measure for relative uncertainty of the estimate is given by
-    ``(√det(Σ) / Π(x))^(1/n)``, i.e. the major axes of the covariance ellipsoid
-    over the point estimates, normalized by the dimensionality:
-
-    >>> res = neda.models.fit(data, modelfam)
-    ... relative_uncertainty = ( np.sqrt(np.linalg.det(res.hess_inv.todense())) \
-    ...                        / np.prod(res.x) )**(1/modelfam.nParams)
-
-    The function being minimized here is the negative log-likelihood of the
-    data set, given parameters to the `modelfamily`. Specifically, this
-    function is
-
-    >>> def minimization_target(params):
-    ...     mappable = functools.partial(_neg_logL_traj, model=modelfamily(*params))
-    ...     return np.nansum(list(map_function(mappable, data)))
-
-    See also
-    --------
-    ParametricFamily
-
-    **Troubleshooting**
-     - make sure that the magnitude of parameter values is around one. The
-       minimizer (see `!scipy.optimize.minimize`) defaults to a fixed step
-       gradient descent, which is useless if parameters are orders of magnitude
-       bigger than 1. You can also try to play with the minimizer's options to
-       make it use an adaptive step size.
-     - make sure units match up. A common mistake is to have a unit mismatch
-       between localization error and trajectories (e.g. one in μm and the
-       other in nm). If the localization error is too big (here by a factor of
-       1000), the fit for `!D` will converge to zero (i.e. ``1e-10``).
-     - the ``'hess_inv'`` field returned with ``method='L-BFGS-B'`` might not
-       be super reliable, even if the point estimate is pretty good. Check
-       initial conditions when using this.
-    """
-    # Set up progressbar
-    pbar = tqdm(disable = not show_progress)
-
-    # Set up minimization target
-    def neg_logL_ds(params):
-        mappable = functools.partial(_neg_logL_traj, model=modelfamily(*params))
-        out = np.nansum(list(map_function(mappable, data)))
-        pbar.update()
-        return out
-
-    minimize_kwargs = {
-            'method' : 'L-BFGS-B',
-            'bounds' : modelfamily.bounds,
-            'options' : {'maxfun' : 300, 'ftol' : 1e-5},
-            }
-    # 'People' might try to override the defaults individually
-    if not 'options' in kwargs:
-        for key in minimize_kwargs['options']:
-            if key in kwargs:
-                minimize_kwargs['options'][key] = kwargs[key]
-                del kwargs[key]
-    minimize_kwargs.update(kwargs)
-
-    res = scipy.optimize.minimize(neg_logL_ds, modelfamily.start_params, **minimize_kwargs)
-    pbar.close()
-    return res

@@ -859,7 +859,7 @@ class TestUtilPlotting(myTestCase):
         self.assertIsNot(ell, None)
         ell = tl.util.plotting.ellipse_from_cov([1, 2], [[1, 1], [1, 2]], color='r')
 
-# from test_bild import *
+from test_bild import *
 from test_msdfit import *
 
 if __name__ == '__main__':

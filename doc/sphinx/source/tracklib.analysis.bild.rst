@@ -4,26 +4,18 @@ tracklib.analysis.bild
 .. contents::
    :local:
 
-tracklib.analysis.bild.bild
+tracklib.analysis.bild.amis
 ---------------------------
 
-.. automodule:: tracklib.analysis.bild.bild
+.. automodule:: tracklib.analysis.bild.amis
    :members:
    :undoc-members:
    :show-inheritance:
 
-tracklib.analysis.bild.kebys
-----------------------------
-
-.. automodule:: tracklib.analysis.bild.kebys
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-tracklib.analysis.bild.mcmc
+tracklib.analysis.bild.core
 ---------------------------
 
-.. automodule:: tracklib.analysis.bild.mcmc
+.. automodule:: tracklib.analysis.bild.core
    :members:
    :undoc-members:
    :show-inheritance:
@@ -36,34 +28,10 @@ tracklib.analysis.bild.models
    :undoc-members:
    :show-inheritance:
 
-tracklib.analysis.bild.neda
----------------------------
-
-.. automodule:: tracklib.analysis.bild.neda
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-tracklib.analysis.bild.plot
----------------------------
-
-.. automodule:: tracklib.analysis.bild.plot
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
 tracklib.analysis.bild.postproc
 -------------------------------
 
 .. automodule:: tracklib.analysis.bild.postproc
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-tracklib.analysis.bild.priors
------------------------------
-
-.. automodule:: tracklib.analysis.bild.priors
    :members:
    :undoc-members:
    :show-inheritance:

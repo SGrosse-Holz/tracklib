@@ -24,23 +24,6 @@ __all__ = [
     "Profiler",
 ]
 
-################## Implementation notes vs. first version #####################
-##
-##  - we move to a purely MSD based formulation. This means functions like params2msd() should
-##    provide MSD(Δt) as a callable, able to handle Δt = inf (for ss_order = 0)
-##  - we assume that MSD(Δt) is vectorized (if non-trivial: np.vectorize)
-##  - we retain the drift / offset (ss_order = 1 / 0) term. It might come in handy at some point
-    ##  - separation of interfaces: we define a `FitType`, taking on the role of the old `Fit` and
-    ##    to be thought of as specifying *how* we run a fit (i.e. this is the one getting subclassed
-    ##    for specific fit shapes), and a `Fitter`, taking on the role of the old `Profiler`, plus
-    ##    running the initial fit for the point estimate
-##  - edit: we keep the `Fit` and `Profiler` layout, it just works well
-##  - note that profile likelihoods are not local optima, but only optimal in one direction  (well, duh).
-##    this means that when selecting the closest point to start from, we should pick one that belongs to
-##    the proper profile. We therefore augment `Fit`'s output dict with `iparam`.
-##
-###############################################################################
-
 # Verbosity rules: 0 = no output, 1 = warnings only, 2 = informational, 3 = debug info
 verbosity = 1
 def vprint(v, *args, **kwargs):
@@ -53,9 +36,11 @@ def MSDfun(fun):
     """
     Decorator for MSD functions
 
-    This is a decorator to use when implementing `params2msdm` in `Fit`. It
-    takes over some of the generic polishing. It assumes that the decorated
-    function has the signature ``function(np.array) --> np.array`` and
+    This is a decorator to use when implementing `params2msdm
+    <Fit.params2msdm>` in `Fit`. It takes over some of the generic polishing.
+    It assumes that the decorated function has the signature
+    ``function(np.array) --> np.array`` and
+
     - ensures that the argument is cast to an array if necessary (such that you
       can then also call ``msd(5)`` instead of ``msd(np.array([5]))``
     - ensures that ``dt > 0`` by taking an absolute value and setting
@@ -420,7 +405,7 @@ class Fit(metaclass=ABCMeta):
     optimization by removing the large absolute value offset from the
     log-likelihood. This functionality is also exposed to the end user, who can
     overwrite the ``initial_offset`` method to give a non-zero offset together
-    with the initial values provided via ``initial_params``.
+    with the initial values provided via `initial_params`.
     """
     def __init__(self, data):
         self.data = data
@@ -501,8 +486,8 @@ class Fit(metaclass=ABCMeta):
         Give initial values for the parameters
 
         You can use ``self.data`` to perform some ad hoc estimation (e.g. from
-        the empirical MSD, using `tracklib.analysis.MSD`) or just return
-        constants.
+        the empirical MSD, using `analysis.MSD <tracklib.analysis.p2.MSD>`) or
+        just return constants.
 
         Returns
         -------
@@ -696,6 +681,7 @@ class Fit(metaclass=ABCMeta):
         Notes
         -----
         The returned ``min_target`` takes additional keyword arguments:
+
         - ``just_return_full_params`` : bool, ``False`` by default. If
           ``True``, don't calculate the actual target function, just return the
           parameter values after fixing
@@ -874,6 +860,7 @@ class Profiler():
     This class provides a top layer on top of `Fit`, enabling more
     comprehensive exploration of the posterior after finding the (MAP) point
     estimate. Generally, it operates in two modes:
+
     - conditional posterior: wiggle each individual parameter, keeping all
       others fixed to the point estimate values, thus calculating conditional
       posterior values. In parameter space, this is a (multi-dimensional) cross
@@ -1302,7 +1289,7 @@ class Profiler():
         Returns
         -------
         dict
-            appropriate point from `!self.ress`
+            appropriate point from ``self.ress``
 
         See also
         --------
@@ -1542,7 +1529,7 @@ class Profiler():
         ----------
         iparam : 'all' or np.ndarray, dtype=int
             the parameters to sweep. If 'all', will sweep all independent
-            parameters, i.e. those not fixed via the `!Fit.fix_values`
+            parameters, i.e. those not fixed via the `Fit.fix_values`
             mechanism.
 
         Returns

@@ -26,7 +26,7 @@ def csv(data, filename, header=True, delimiter='\t'):
     'y2', 'z2']``, where of course only those coordinates present in the data
     set will be written.
 
-    Missing frames, i.e. those where all of the coordinates are `!np.nan` will
+    Missing frames, i.e. those where all of the coordinates are ``np.nan`` will
     simply be omitted.
 
     Since `TaggedSet` and `Trajectory` have more structure than can reasonably

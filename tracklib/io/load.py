@@ -13,7 +13,7 @@ def csv(filename, columns=['x', 'y', 't', 'id'], tags='', meta_post={}, **kwargs
     """
     Load data from a .csv file.
 
-    This uses `!np.genfromtxt`, and all kwargs are forwarded to it. The most
+    This uses ``np.genfromtxt``, and all kwargs are forwarded to it. The most
     important ones are ``'delimiter'`` and ``'skip_header'``.
     
     Parameters
@@ -46,7 +46,7 @@ def csv(filename, columns=['x', 'y', 't', 'id'], tags='', meta_post={}, **kwargs
 
     Examples
     --------
-    This function can be used to load data from `!pandas.DataFrame` tables, if
+    This function can be used to load data from ``pandas.DataFrame`` tables, if
     they conform to the format described above:
 
     >>> import io

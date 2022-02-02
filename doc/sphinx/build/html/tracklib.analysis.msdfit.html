@@ -15,7 +15,7 @@
     <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="tracklib.analysis.neda" href="tracklib.analysis.neda.html" />
+    <link rel="next" title="tracklib.io" href="tracklib.io.html" />
     <link rel="prev" title="tracklib.analysis.bild" href="tracklib.analysis.bild.html" /> 
   </head><body>
     <div class="related" role="navigation" aria-label="related navigation">
@@ -28,7 +28,7 @@
           <a href="py-modindex.html" title="Python Module Index"
              >modules</a> |</li>
         <li class="right" >
-          <a href="tracklib.analysis.neda.html" title="tracklib.analysis.neda"
+          <a href="tracklib.io.html" title="tracklib.io"
              accesskey="N">next</a> |</li>
         <li class="right" >
           <a href="tracklib.analysis.bild.html" title="tracklib.analysis.bild"
@@ -48,8 +48,8 @@
 <h1>tracklib.analysis.msdfit<a class="headerlink" href="#tracklib-analysis-msdfit" title="Permalink to this headline">¶</a></h1>
 <div class="contents local topic" id="contents">
 <ul class="simple">
-<li><p><a class="reference internal" href="#module-tracklib.analysis.msdfit.core" id="id5">tracklib.analysis.msdfit.core</a></p></li>
-<li><p><a class="reference internal" href="#module-tracklib.analysis.msdfit.lib" id="id6">tracklib.analysis.msdfit.lib</a></p></li>
+<li><p><a class="reference internal" href="#module-tracklib.analysis.msdfit.core" id="id1">tracklib.analysis.msdfit.core</a></p></li>
+<li><p><a class="reference internal" href="#module-tracklib.analysis.msdfit.lib" id="id2">tracklib.analysis.msdfit.lib</a></p></li>
 </ul>
 </div>
 <span class="target" id="module-tracklib.analysis.msdfit"></span><p>Bayesian MSD fitting</p>
@@ -66,7 +66,9 @@ criterion is <code class="docutils literal notranslate"><span class="pre">MSD(in
 prove the following relation between the MSD μ and autocovariance γ of the
 process:</p>
 <blockquote>
-<div><p>μ(k) = 2*( γ(0) - γ(k) )</p>
+<div><div class="highlight-text notranslate"><div class="highlight"><pre><span></span>μ(k) = 2*( γ(0) - γ(k) )
+</pre></div>
+</div>
 </div></blockquote>
 <p>Thus, the full autocovariance function can be obtained from the MSD and the
 steady state covariance <code class="docutils literal notranslate"><span class="pre">γ(0)</span></code>. For decaying correlations (<code class="docutils literal notranslate"><span class="pre">γ(k)</span> <span class="pre">--&gt;</span> <span class="pre">0</span> <span class="pre">as</span>
@@ -74,11 +76,11 @@ steady state covariance <code class="docutils literal notranslate"><span class="
 of the MSD. Finally, this allows us to calculate the covariance matrix of
 the process as</p>
 <blockquote>
-<div><dl class="simple">
-<dt>C_ij := &lt;x_i*x_j&gt;</dt><dd><p>= γ(<a href="#id1"><span class="problematic" id="id2">|i-j|</span></a>)
-= γ(0) - 1/2*μ(<a href="#id3"><span class="problematic" id="id4">|i-j|</span></a>)</p>
-</dd>
-</dl>
+<div><div class="highlight-text notranslate"><div class="highlight"><pre><span></span>C_ij := &lt;x_i*x_j&gt;
+      = γ(|i-j|)
+      = γ(0) - 1/2*μ(|i-j|)
+</pre></div>
+</div>
 </div></blockquote>
 <p>We call this case a steady state of order 0.</p>
 </li>
@@ -88,18 +90,18 @@ this case the Gaussian process of interest is the one generating the
 increments of the trajectory, whose autocorrelation is the second derivative
 of the MSD:</p>
 <blockquote>
-<div><p>γ(k) = 1/2 * (d/dk)^2 μ(k)</p>
+<div><div class="highlight-text notranslate"><div class="highlight"><pre><span></span>γ(k) = 1/2 * (d/dk)^2 μ(k)
+</pre></div>
+</div>
 </div></blockquote>
 <p>where derivatives should be understood in a weak (“distributional”) sense.
 More straightforwardly, the correlation matrix of the increments is given by</p>
 <blockquote>
-<div><dl class="simple">
-<dt>C_ij := &lt;(x_{i+1} - x_i)(x_{j+1}-x_j)&gt;</dt><dd><dl class="simple">
-<dt>= 1/2 * ( μ(t_{i+1} - t_j) + μ(t_i - t_{j+1})</dt><dd><p>-μ(t_{i+1} - t_{j+1}) - μ(t_i - t_j) )</p>
-</dd>
-</dl>
-</dd>
-</dl>
+<div><div class="highlight-text notranslate"><div class="highlight"><pre><span></span>C_ij := &lt;(x_{i+1} - x_i)(x_{j+1}-x_j)&gt;
+      = 1/2 * ( μ(t_{i+1} - t_j) + μ(t_i - t_{j+1})
+               -μ(t_{i+1} - t_{j+1}) - μ(t_i - t_j) )
+</pre></div>
+</div>
 </div></blockquote>
 <p>where by definition we let <code class="docutils literal notranslate"><span class="pre">μ(-k)</span> <span class="pre">=</span> <span class="pre">μ(k)</span></code>. In this case, we talk about a
 steady state of order 1.</p>
@@ -120,7 +122,7 @@ just sample the posterior by MCMC.</p>
 <p class="rubric">Examples</p>
 <p>TODO: once <code class="xref any docutils literal notranslate"><span class="pre">lib</span></code> is implemented, add some examples</p>
 <p>An example implementation of an MSD sampler for sampling the posterior, given
-data from a <code class="xref any docutils literal notranslate"><span class="pre">Profiler</span></code> instance.
+data from a <a class="reference internal" href="#tracklib.analysis.msdfit.core.Profiler" title="tracklib.analysis.msdfit.core.Profiler"><code class="xref any py py-class docutils literal notranslate"><span class="pre">Profiler</span></code></a> instance.
 TODO: test this</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">tracklib</span> <span class="k">as</span> <span class="nn">tl</span>
 <span class="gp">... </span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
@@ -176,7 +178,7 @@ TODO: test this</p>
 <p><a class="reference internal" href="tracklib.util.html#module-tracklib.util.mcmc" title="tracklib.util.mcmc"><code class="xref py py-mod docutils literal notranslate"><span class="pre">tracklib.util.mcmc</span></code></a>, <a class="reference internal" href="tracklib.models.html#module-tracklib.models.rouse" title="tracklib.models.rouse"><code class="xref py py-mod docutils literal notranslate"><span class="pre">tracklib.models.rouse</span></code></a></p>
 </div>
 <div class="section" id="module-tracklib.analysis.msdfit.core">
-<span id="tracklib-analysis-msdfit-core"></span><h2><a class="toc-backref" href="#id5">tracklib.analysis.msdfit.core</a><a class="headerlink" href="#module-tracklib.analysis.msdfit.core" title="Permalink to this headline">¶</a></h2>
+<span id="tracklib-analysis-msdfit-core"></span><h2><a class="toc-backref" href="#id1">tracklib.analysis.msdfit.core</a><a class="headerlink" href="#module-tracklib.analysis.msdfit.core" title="Permalink to this headline">¶</a></h2>
 <p>Core implementation of msdfit</p>
 <div class="admonition seealso">
 <p class="admonition-title">See also</p>
@@ -186,14 +188,12 @@ TODO: test this</p>
 <dt id="tracklib.analysis.msdfit.core.MSDfun">
 <code class="sig-prename descclassname">tracklib.analysis.msdfit.core.</code><code class="sig-name descname">MSDfun</code><span class="sig-paren">(</span><em class="sig-param">fun</em><span class="sig-paren">)</span><a class="headerlink" href="#tracklib.analysis.msdfit.core.MSDfun" title="Permalink to this definition">¶</a></dt>
 <dd><p>Decorator for MSD functions</p>
-<p>This is a decorator to use when implementing <a class="reference internal" href="#tracklib.analysis.msdfit.core.Fit.params2msdm" title="tracklib.analysis.msdfit.core.Fit.params2msdm"><code class="xref any py py-meth docutils literal notranslate"><span class="pre">params2msdm</span></code></a> in <a class="reference internal" href="#tracklib.analysis.msdfit.core.Fit" title="tracklib.analysis.msdfit.core.Fit"><code class="xref any py py-class docutils literal notranslate"><span class="pre">Fit</span></code></a>. It
-takes over some of the generic polishing. It assumes that the decorated
-function has the signature <code class="docutils literal notranslate"><span class="pre">function(np.array)</span> <span class="pre">--&gt;</span> <span class="pre">np.array</span></code> and
-- ensures that the argument is cast to an array if necessary (such that you</p>
-<blockquote>
-<div><p>can then also call <code class="docutils literal notranslate"><span class="pre">msd(5)</span></code> instead of <code class="docutils literal notranslate"><span class="pre">msd(np.array([5]))</span></code></p>
-</div></blockquote>
+<p>This is a decorator to use when implementing <a class="reference internal" href="#tracklib.analysis.msdfit.core.Fit.params2msdm" title="tracklib.analysis.msdfit.core.Fit.params2msdm"><code class="xref any py py-meth docutils literal notranslate"><span class="pre">params2msdm</span></code></a> in <a class="reference internal" href="#tracklib.analysis.msdfit.core.Fit" title="tracklib.analysis.msdfit.core.Fit"><code class="xref any py py-class docutils literal notranslate"><span class="pre">Fit</span></code></a>. It takes over some of the generic polishing.
+It assumes that the decorated function has the signature
+<code class="docutils literal notranslate"><span class="pre">function(np.array)</span> <span class="pre">--&gt;</span> <span class="pre">np.array</span></code> and</p>
 <ul class="simple">
+<li><p>ensures that the argument is cast to an array if necessary (such that you
+can then also call <code class="docutils literal notranslate"><span class="pre">msd(5)</span></code> instead of <code class="docutils literal notranslate"><span class="pre">msd(np.array([5]))</span></code></p></li>
 <li><p>ensures that <code class="docutils literal notranslate"><span class="pre">dt</span> <span class="pre">&gt;</span> <span class="pre">0</span></code> by taking an absolute value and setting
 <code class="docutils literal notranslate"><span class="pre">msd[dt==0]</span> <span class="pre">=</span> <span class="pre">0</span></code> without calling the wrapped function. You can thus
 ignore the <code class="docutils literal notranslate"><span class="pre">dt</span> <span class="pre">==</span> <span class="pre">0</span></code> case in implementing an MSD function. Note that
@@ -434,7 +434,7 @@ successive optimization steps, we can fix the problem with gradient-based
 optimization by removing the large absolute value offset from the
 log-likelihood. This functionality is also exposed to the end user, who can
 overwrite the <code class="docutils literal notranslate"><span class="pre">initial_offset</span></code> method to give a non-zero offset together
-with the initial values provided via <code class="docutils literal notranslate"><span class="pre">initial_params</span></code>.</p>
+with the initial values provided via <a class="reference internal" href="#tracklib.analysis.msdfit.core.Fit.initial_params" title="tracklib.analysis.msdfit.core.Fit.initial_params"><code class="xref any py py-meth docutils literal notranslate"><span class="pre">initial_params</span></code></a>.</p>
 <dl class="method">
 <dt id="tracklib.analysis.msdfit.core.Fit.vprint">
 <code class="sig-name descname">vprint</code><span class="sig-paren">(</span><em class="sig-param">v</em>, <em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#tracklib.analysis.msdfit.core.Fit.vprint" title="Permalink to this definition">¶</a></dt>
@@ -484,8 +484,8 @@ i.e. <code class="docutils literal notranslate"><span class="pre">return</span> 
 <em class="property">abstract </em><code class="sig-name descname">initial_params</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#tracklib.analysis.msdfit.core.Fit.initial_params" title="Permalink to this definition">¶</a></dt>
 <dd><p>Give initial values for the parameters</p>
 <p>You can use <code class="docutils literal notranslate"><span class="pre">self.data</span></code> to perform some ad hoc estimation (e.g. from
-the empirical MSD, using <code class="xref any docutils literal notranslate"><span class="pre">tracklib.analysis.MSD</span></code>) or just return
-constants.</p>
+the empirical MSD, using <a class="reference internal" href="tracklib.analysis.html#tracklib.analysis.p2.MSD" title="tracklib.analysis.p2.MSD"><code class="xref any py py-func docutils literal notranslate"><span class="pre">analysis.MSD</span></code></a>) or
+just return constants.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Returns</dt>
 <dd class="field-odd"><p><strong>params</strong> (<em>np.ndarray</em>) – initial values for the parameters. Should satisfy <code class="docutils literal notranslate"><span class="pre">len(params)</span> <span class="pre">==</span>
@@ -591,13 +591,11 @@ exploring parameter space.</p></li>
 </dd>
 </dl>
 <p class="rubric">Notes</p>
-<p>The returned <code class="docutils literal notranslate"><span class="pre">min_target</span></code> takes additional keyword arguments:
-- <code class="docutils literal notranslate"><span class="pre">just_return_full_params</span></code> : bool, <code class="docutils literal notranslate"><span class="pre">False</span></code> by default. If</p>
-<blockquote>
-<div><p><code class="docutils literal notranslate"><span class="pre">True</span></code>, don’t calculate the actual target function, just return the
-parameter values after fixing</p>
-</div></blockquote>
+<p>The returned <code class="docutils literal notranslate"><span class="pre">min_target</span></code> takes additional keyword arguments:</p>
 <ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">just_return_full_params</span></code> : bool, <code class="docutils literal notranslate"><span class="pre">False</span></code> by default. If
+<code class="docutils literal notranslate"><span class="pre">True</span></code>, don’t calculate the actual target function, just return the
+parameter values after fixing</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">do_fixing</span></code> : bool, defaults to <code class="xref any docutils literal notranslate"><span class="pre">do_fixing</span></code> as given to
 <a class="reference internal" href="#tracklib.analysis.msdfit.core.Fit.get_min_target" title="tracklib.analysis.msdfit.core.Fit.get_min_target"><code class="xref any py py-meth docutils literal notranslate"><span class="pre">get_min_target</span></code></a>.</p></li>
 <li><p>fixer, offset : just handed over as arguments for style (scoping)</p></li>
@@ -653,14 +651,12 @@ is non-trivial).</p>
 <p>Exploration of the posterior after finding the point estimate</p>
 <p>This class provides a top layer on top of <a class="reference internal" href="#tracklib.analysis.msdfit.core.Fit" title="tracklib.analysis.msdfit.core.Fit"><code class="xref any py py-class docutils literal notranslate"><span class="pre">Fit</span></code></a>, enabling more
 comprehensive exploration of the posterior after finding the (MAP) point
-estimate. Generally, it operates in two modes:
-- conditional posterior: wiggle each individual parameter, keeping all</p>
-<blockquote>
-<div><p>others fixed to the point estimate values, thus calculating conditional
-posterior values. In parameter space, this is a (multi-dimensional) cross
-along the coordinate axes.</p>
-</div></blockquote>
+estimate. Generally, it operates in two modes:</p>
 <ul class="simple">
+<li><p>conditional posterior: wiggle each individual parameter, keeping all
+others fixed to the point estimate values, thus calculating conditional
+posterior values. In parameter space, this is a (multi-dimensional) cross
+along the coordinate axes.</p></li>
 <li><p>profile posterior: instead of simply evaluating the posterior at each
 wiggle, keep the parameter fixed at the new value and optimize all
 others. Thus, in parameter space we are following the ridges of the
@@ -1025,7 +1021,7 @@ internally</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
-<dd class="field-even"><p><em>dict</em> – appropriate point from <code class="xref any docutils literal notranslate"><span class="pre">self.ress</span></code></p>
+<dd class="field-even"><p><em>dict</em> – appropriate point from <code class="docutils literal notranslate"><span class="pre">self.ress</span></code></p>
 </dd>
 </dl>
 <div class="admonition seealso">
@@ -1125,7 +1121,7 @@ corresponding bound (might be <code class="docutils literal notranslate"><span c
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><p><strong>iparam</strong> (<em>'all'</em><em> or </em><em>np.ndarray</em><em>, </em><em>dtype=int</em>) – the parameters to sweep. If ‘all’, will sweep all independent
-parameters, i.e. those not fixed via the <code class="xref any docutils literal notranslate"><span class="pre">Fit.fix_values</span></code>
+parameters, i.e. those not fixed via the <a class="reference internal" href="#tracklib.analysis.msdfit.core.Fit.fix_values" title="tracklib.analysis.msdfit.core.Fit.fix_values"><code class="xref any py py-attr docutils literal notranslate"><span class="pre">Fit.fix_values</span></code></a>
 mechanism.</p>
 </dd>
 <dt class="field-even">Returns</dt>
@@ -1143,7 +1139,7 @@ bound.</p>
 
 </div>
 <div class="section" id="module-tracklib.analysis.msdfit.lib">
-<span id="tracklib-analysis-msdfit-lib"></span><h2><a class="toc-backref" href="#id6">tracklib.analysis.msdfit.lib</a><a class="headerlink" href="#module-tracklib.analysis.msdfit.lib" title="Permalink to this headline">¶</a></h2>
+<span id="tracklib-analysis-msdfit-lib"></span><h2><a class="toc-backref" href="#id2">tracklib.analysis.msdfit.lib</a><a class="headerlink" href="#module-tracklib.analysis.msdfit.lib" title="Permalink to this headline">¶</a></h2>
 <dl class="class">
 <dt id="tracklib.analysis.msdfit.lib.SplineFit">
 <em class="property">class </em><code class="sig-prename descclassname">tracklib.analysis.msdfit.lib.</code><code class="sig-name descname">SplineFit</code><span class="sig-paren">(</span><em class="sig-param">data</em>, <em class="sig-param">ss_order</em>, <em class="sig-param">n</em>, <em class="sig-param">previous_spline_fit_and_result=None</em><span class="sig-paren">)</span><a class="headerlink" href="#tracklib.analysis.msdfit.lib.SplineFit" title="Permalink to this definition">¶</a></dt>
@@ -1155,13 +1151,11 @@ conditions for the splines are set such that the fitted MSD extrapolates
 beyond the data as a powerlaw, except for large times in the <code class="docutils literal notranslate"><span class="pre">ss_order</span> <span class="pre">==</span>
 <span class="pre">0</span></code> case, in which the MSD converges to a constant at infinite time. To
 achieve this within the spline fits, the time coordinate is compactified
-from <code class="docutils literal notranslate"><span class="pre">t</span> <span class="pre">in</span> <span class="pre">[1,</span> <span class="pre">T]</span></code> to <code class="docutils literal notranslate"><span class="pre">x</span> <span class="pre">in</span> <span class="pre">[0,</span> <span class="pre">1]</span></code>:
-- if <code class="docutils literal notranslate"><span class="pre">ss_order</span> <span class="pre">==</span> <span class="pre">0</span></code>, we need <code class="docutils literal notranslate"><span class="pre">t</span> <span class="pre">=</span> <span class="pre">inf</span></code> to be accessible. We therefore</p>
-<blockquote>
-<div><p>choose the compactification <code class="docutils literal notranslate"><span class="pre">x</span> <span class="pre">=</span> <span class="pre">4/π*arctan(log(t/T))</span></code>, such that <code class="docutils literal notranslate"><span class="pre">t</span> <span class="pre">=</span>
-<span class="pre">inf</span></code> corresponds to <code class="docutils literal notranslate"><span class="pre">x</span> <span class="pre">=</span> <span class="pre">2</span></code>.</p>
-</div></blockquote>
+from <code class="docutils literal notranslate"><span class="pre">t</span> <span class="pre">in</span> <span class="pre">[1,</span> <span class="pre">T]</span></code> to <code class="docutils literal notranslate"><span class="pre">x</span> <span class="pre">in</span> <span class="pre">[0,</span> <span class="pre">1]</span></code>:</p>
 <ul class="simple">
+<li><p>if <code class="docutils literal notranslate"><span class="pre">ss_order</span> <span class="pre">==</span> <span class="pre">0</span></code>, we need <code class="docutils literal notranslate"><span class="pre">t</span> <span class="pre">=</span> <span class="pre">inf</span></code> to be accessible. We therefore
+choose the compactification <code class="docutils literal notranslate"><span class="pre">x</span> <span class="pre">=</span> <span class="pre">4/π*arctan(log(t/T))</span></code>, such that <code class="docutils literal notranslate"><span class="pre">t</span> <span class="pre">=</span>
+<span class="pre">inf</span></code> corresponds to <code class="docutils literal notranslate"><span class="pre">x</span> <span class="pre">=</span> <span class="pre">2</span></code>.</p></li>
 <li><p>if <code class="docutils literal notranslate"><span class="pre">ss_order</span> <span class="pre">==</span> <span class="pre">1</span></code>, we simply work in log-space, and normalize: <code class="docutils literal notranslate"><span class="pre">x</span> <span class="pre">=</span>
 <span class="pre">log(t)/log(T)</span></code>.</p></li>
 </ul>
@@ -1179,7 +1173,7 @@ naturally by powerlaws.</p>
 <li><p><strong>previous_spline_fit_and_result</strong> (<em>tuple</em><em> (</em><a class="reference internal" href="#tracklib.analysis.msdfit.lib.SplineFit" title="tracklib.analysis.msdfit.lib.SplineFit"><em>SplineFit</em></a><em>, </em><em>dict</em><em>)</em>) – this can be used to initialize the current fit from the resulting
 spline of a previous one. Very useful when running the above-mentioned
 model selection task over spline knots. First entry should be the
-<code class="xref any docutils literal notranslate"><span class="pre">Fit</span></code> object used, second one should be the resulting dict with keys
+<a class="reference internal" href="#tracklib.analysis.msdfit.core.Fit" title="tracklib.analysis.msdfit.core.Fit"><code class="xref any py py-class docutils literal notranslate"><span class="pre">Fit</span></code></a> object used, second one should be the resulting dict with keys
 <code class="docutils literal notranslate"><span class="pre">'params'</span></code> and <code class="docutils literal notranslate"><span class="pre">'logL'</span></code>.</p></li>
 </ul>
 </dd>
@@ -1308,13 +1302,13 @@ same polymer. A simple model for these dynamics is given by the infinite
 continuous Rouse model, which gives an analytical expression for the MSD
 implemented in <a class="reference internal" href="tracklib.models.html#tracklib.models.rouse.twoLocusMSD" title="tracklib.models.rouse.twoLocusMSD"><code class="xref any py py-func docutils literal notranslate"><span class="pre">tracklib.models.rouse.twoLocusMSD</span></code></a>. Here we provide an
 implementation to fit this MSD to data.</p>
-<p>The parameters for this MSD are
-- the (squared) localization error <code class="docutils literal notranslate"><span class="pre">noise2</span></code>
-- the Rouse scaling prefactor Γ of a single locus on the polymer
-- the steady state variance J of the distance between the loci. This</p>
-<blockquote>
-<div><p>encodes the chain length between them</p>
-</div></blockquote>
+<p>The parameters for this MSD are</p>
+<ul class="simple">
+<li><p>the (squared) localization error <code class="docutils literal notranslate"><span class="pre">noise2</span></code></p></li>
+<li><p>the Rouse scaling prefactor Γ of a single locus on the polymer</p></li>
+<li><p>the steady state variance J of the distance between the loci. This
+encodes the chain length between them</p></li>
+</ul>
 <p>The parameter vector for this fit is thus <code class="docutils literal notranslate"><span class="pre">d*[log(noise2),</span> <span class="pre">log(Γ),</span>
 <span class="pre">log(J)]</span></code>.</p>
 <p>Since all of these are positive quantities with units, it seems natural to
@@ -1360,8 +1354,8 @@ error, so by default we fix Γ and J to be the same for all dimensions.</p>
   <p class="topless"><a href="tracklib.analysis.bild.html"
                         title="previous chapter">tracklib.analysis.bild</a></p>
   <h4>Next topic</h4>
-  <p class="topless"><a href="tracklib.analysis.neda.html"
-                        title="next chapter">tracklib.analysis.neda</a></p>
+  <p class="topless"><a href="tracklib.io.html"
+                        title="next chapter">tracklib.io</a></p>
   <div role="note" aria-label="source link">
     <h3>This Page</h3>
     <ul class="this-page-menu">
@@ -1393,7 +1387,7 @@ error, so by default we fix Γ and J to be the same for all dimensions.</p>
           <a href="py-modindex.html" title="Python Module Index"
              >modules</a> |</li>
         <li class="right" >
-          <a href="tracklib.analysis.neda.html" title="tracklib.analysis.neda"
+          <a href="tracklib.io.html" title="tracklib.io"
              >next</a> |</li>
         <li class="right" >
           <a href="tracklib.analysis.bild.html" title="tracklib.analysis.bild"

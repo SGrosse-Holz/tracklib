@@ -11,7 +11,7 @@ class Trajectory(ABC):
     Represents all kinds of trajectories.
 
     This class represents trajectories with 1 or 2 loci in 1, 2, or 3 spatial
-    dimensions. Consequently, the internal `!np.ndarray` has shape (`N`, `T`,
+    dimensions. Consequently, the internal ``np.ndarray`` has shape (`N`, `T`,
     `d`).  Besides the actual trajectory data, this class also contains a dict
     for meta data. This can be used by the end-user, is also intended for use
     within the library though. For reference, see :ref:`traj_meta_fields`
@@ -65,7 +65,7 @@ class Trajectory(ABC):
             interpreted as ``(T, d)`` or ``(T,)``, respectively.
         t : (T,) array-like, optional
             the frame number for each data point in the array. Use this if your
-            array has missing data points; they will be patched with `!np.nan`.
+            array has missing data points; they will be patched with ``np.nan``.
 
         Returns
         -------
@@ -124,7 +124,7 @@ class Trajectory(ABC):
 
         We regard a frame as unusable as soon as any data is missing. So this
         function counts the number of frames in the trajectory where none of
-        the data is `!np.nan`.
+        the data is ``np.nan``.
 
         Returns
         -------

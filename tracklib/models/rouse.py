@@ -240,9 +240,9 @@ class Model:
         to simply set ``model._dynamics['needs_updating'] = True``, which will
         ensure that stuff is recalculated as needed.
 
-        Ultimately, this is just a wrapper for the `update_*` functions. If you
-        know what you're doing, you can also just call these individually as
-        needed.
+        Ultimately, this is just a wrapper for the ``update_*`` functions. If
+        you know what you're doing, you can also just call these individually
+        as needed.
 
         Parameters
         ----------

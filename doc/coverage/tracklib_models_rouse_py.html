@@ -293,9 +293,9 @@
     <p id="t240" class="pln"><span class="n"><a href="#t240">240</a></span><span class="t"><span class="str">        to simply set ``model._dynamics['needs_updating'] = True``, which will</span>&nbsp;</span><span class="r"></span></p>
     <p id="t241" class="pln"><span class="n"><a href="#t241">241</a></span><span class="t"><span class="str">        ensure that stuff is recalculated as needed.</span>&nbsp;</span><span class="r"></span></p>
     <p id="t242" class="pln"><span class="n"><a href="#t242">242</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
-    <p id="t243" class="pln"><span class="n"><a href="#t243">243</a></span><span class="t"><span class="str">        Ultimately, this is just a wrapper for the `update_*` functions. If you</span>&nbsp;</span><span class="r"></span></p>
-    <p id="t244" class="pln"><span class="n"><a href="#t244">244</a></span><span class="t"><span class="str">        know what you're doing, you can also just call these individually as</span>&nbsp;</span><span class="r"></span></p>
-    <p id="t245" class="pln"><span class="n"><a href="#t245">245</a></span><span class="t"><span class="str">        needed.</span>&nbsp;</span><span class="r"></span></p>
+    <p id="t243" class="pln"><span class="n"><a href="#t243">243</a></span><span class="t"><span class="str">        Ultimately, this is just a wrapper for the ``update_*`` functions. If</span>&nbsp;</span><span class="r"></span></p>
+    <p id="t244" class="pln"><span class="n"><a href="#t244">244</a></span><span class="t"><span class="str">        you know what you're doing, you can also just call these individually</span>&nbsp;</span><span class="r"></span></p>
+    <p id="t245" class="pln"><span class="n"><a href="#t245">245</a></span><span class="t"><span class="str">        as needed.</span>&nbsp;</span><span class="r"></span></p>
     <p id="t246" class="pln"><span class="n"><a href="#t246">246</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
     <p id="t247" class="pln"><span class="n"><a href="#t247">247</a></span><span class="t"><span class="str">        Parameters</span>&nbsp;</span><span class="r"></span></p>
     <p id="t248" class="pln"><span class="n"><a href="#t248">248</a></span><span class="t"><span class="str">        ----------</span>&nbsp;</span><span class="r"></span></p>
@@ -742,9 +742,9 @@
     <p id="t689" class="pln"><span class="n"><a href="#t689">689</a></span><span class="t"><span class="str">        exp(-k*A*dt) @ C``, where ``C`` is the steady state covariance as</span>&nbsp;</span><span class="r"></span></p>
     <p id="t690" class="pln"><span class="n"><a href="#t690">690</a></span><span class="t"><span class="str">        returned by `steady_state()`. Note that for any equilibrating degrees</span>&nbsp;</span><span class="r"></span></p>
     <p id="t691" class="pln"><span class="n"><a href="#t691">691</a></span><span class="t"><span class="str">        of freedom the ACF can also be calculated from the MSD as</span>&nbsp;</span><span class="r"></span></p>
-    <p id="t692" class="pln"><span class="n"><a href="#t692">692</a></span><span class="t"><span class="str">        ```</span>&nbsp;</span><span class="r"></span></p>
-    <p id="t693" class="pln"><span class="n"><a href="#t693">693</a></span><span class="t"><span class="str">        ACF(&#916;t) = 0.5*( MSD(&#8734;) - MSD(&#916;t) )</span>&nbsp;</span><span class="r"></span></p>
-    <p id="t694" class="pln"><span class="n"><a href="#t694">694</a></span><span class="t"><span class="str">        ```</span>&nbsp;</span><span class="r"></span></p>
+    <p id="t692" class="pln"><span class="n"><a href="#t692">692</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
+    <p id="t693" class="pln"><span class="n"><a href="#t693">693</a></span><span class="t"><span class="str">            ACF(&#916;t) = 0.5*( MSD(&#8734;) - MSD(&#916;t) )</span>&nbsp;</span><span class="r"></span></p>
+    <p id="t694" class="pln"><span class="n"><a href="#t694">694</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
     <p id="t695" class="pln"><span class="n"><a href="#t695">695</a></span><span class="t"><span class="str">        so sticking to the MSD is preferred. Any non-equilibrating dofs are</span>&nbsp;</span><span class="r"></span></p>
     <p id="t696" class="pln"><span class="n"><a href="#t696">696</a></span><span class="t"><span class="str">        pinned to zero by the Moore-Penrose inverse.</span>&nbsp;</span><span class="r"></span></p>
     <p id="t697" class="pln"><span class="n"><a href="#t697">697</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
@@ -930,7 +930,7 @@
     <div class="content">
         <p>
             <a class="nav" href="index.html">&#xab; index</a> &nbsp; &nbsp; <a class="nav" href="https://coverage.readthedocs.io">coverage.py v5.2.1</a>,
-            created at 2022-01-29 19:22 -0500
+            created at 2022-02-02 11:28 -0500
         </p>
     </div>
 </div>

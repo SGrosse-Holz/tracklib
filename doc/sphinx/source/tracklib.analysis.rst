@@ -8,16 +8,7 @@ tracklib.analysis
 
    tracklib.analysis.bild
    tracklib.analysis.msdfit
-   tracklib.analysis.neda
 
-
-tracklib.analysis..msdfit\_old
-------------------------------
-
-.. automodule:: tracklib.analysis..msdfit_old
-   :members:
-   :undoc-members:
-   :show-inheritance:
 
 tracklib.analysis.chi2
 ----------------------
@@ -47,14 +38,6 @@ tracklib.analysis.plots
 -----------------------
 
 .. automodule:: tracklib.analysis.plots
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-tracklib.analysis.vacf
-----------------------
-
-.. automodule:: tracklib.analysis.vacf
    :members:
    :undoc-members:
    :show-inheritance:
