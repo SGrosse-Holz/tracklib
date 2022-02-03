@@ -867,8 +867,9 @@ def twoLocusMSD(dts, Gamma, J):
     tau = (J / Gamma)**2 / np.pi
     ret = np.empty(dts.shape, dtype=float)
     ret[ind_zero]   = 0
-    ret[ind_finite] = 2*Gamma * np.sqrt(dts[ind_finite]) * (1 - np.exp(-tau/dts[ind_finite])) \
-                        + 2*J * scipy.special.erfc( np.sqrt(tau/dts[ind_finite]) )
+    with np.errstate(under='ignore'):
+        ret[ind_finite] = 2*Gamma * np.sqrt(dts[ind_finite]) * (1 - np.exp(-tau/dts[ind_finite])) \
+                            + 2*J * scipy.special.erfc( np.sqrt(tau/dts[ind_finite]) )
     ret[ind_inf]    = 2*J
     return ret
 

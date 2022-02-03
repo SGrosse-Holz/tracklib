@@ -534,6 +534,9 @@ class TestModelsRouseMSDfun(myTestCase):
         with self.assertRaises(ValueError):
             _ = tl.models.rouse.twoLocusMSD([np.nan], 1, 1)
 
+        # check all time scales
+        _ = tl.models.rouse.twoLocusMSD(np.logspace(-10, 10, 10), 1, 1)
+
 class TestModelsStatgauss(myTestCase):
     def test_sampleMSD(self):
         traces = tl.models.statgauss.sampleMSD(np.linspace(0, 5, 10), n=5, subtractMean=True)
