@@ -75,6 +75,7 @@ TODO: test this
 
 >>> import tracklib as tl
 ... import numpy as np
+... from scipy import stats
 ...
 ... class PosteriorSampler(tl.util.mcmc.Sampler):
 ...     def __init__(self, profiler, mci=None, stepsize=0.1):

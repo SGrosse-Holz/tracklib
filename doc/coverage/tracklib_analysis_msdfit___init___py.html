@@ -128,64 +128,65 @@
     <p id="t75" class="pln"><span class="n"><a href="#t75">75</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
     <p id="t76" class="pln"><span class="n"><a href="#t76">76</a></span><span class="t"><span class="str">>>> import tracklib as tl</span>&nbsp;</span><span class="r"></span></p>
     <p id="t77" class="pln"><span class="n"><a href="#t77">77</a></span><span class="t"><span class="str">... import numpy as np</span>&nbsp;</span><span class="r"></span></p>
-    <p id="t78" class="pln"><span class="n"><a href="#t78">78</a></span><span class="t"><span class="str">...</span>&nbsp;</span><span class="r"></span></p>
-    <p id="t79" class="pln"><span class="n"><a href="#t79">79</a></span><span class="t"><span class="str">... class PosteriorSampler(tl.util.mcmc.Sampler):</span>&nbsp;</span><span class="r"></span></p>
-    <p id="t80" class="pln"><span class="n"><a href="#t80">80</a></span><span class="t"><span class="str">...     def __init__(self, profiler, mci=None, stepsize=0.1):</span>&nbsp;</span><span class="r"></span></p>
-    <p id="t81" class="pln"><span class="n"><a href="#t81">81</a></span><span class="t"><span class="str">...         \"\"\"</span>&nbsp;</span><span class="r"></span></p>
-    <p id="t82" class="pln"><span class="n"><a href="#t82">82</a></span><span class="t"><span class="str">...         `mci` is the output of a previous run of the profiler (if there was</span>&nbsp;</span><span class="r"></span></p>
-    <p id="t83" class="pln"><span class="n"><a href="#t83">83</a></span><span class="t"><span class="str">...         one). This is used to set the stepsize of the MCMC according to the</span>&nbsp;</span><span class="r"></span></p>
-    <p id="t84" class="pln"><span class="n"><a href="#t84">84</a></span><span class="t"><span class="str">...         guesses on the posterior shape from those results.</span>&nbsp;</span><span class="r"></span></p>
-    <p id="t85" class="pln"><span class="n"><a href="#t85">85</a></span><span class="t"><span class="str">...         \"\"\"</span>&nbsp;</span><span class="r"></span></p>
-    <p id="t86" class="pln"><span class="n"><a href="#t86">86</a></span><span class="t"><span class="str">...         self.profiler = profiler</span>&nbsp;</span><span class="r"></span></p>
-    <p id="t87" class="pln"><span class="n"><a href="#t87">87</a></span><span class="t"><span class="str">... </span>&nbsp;</span><span class="r"></span></p>
-    <p id="t88" class="pln"><span class="n"><a href="#t88">88</a></span><span class="t"><span class="str">...         fix_values = self.profiler.fit.fix_values</span>&nbsp;</span><span class="r"></span></p>
-    <p id="t89" class="pln"><span class="n"><a href="#t89">89</a></span><span class="t"><span class="str">...         self.min_target_from_fit = self.profiler.fit.get_min_target(fix_values=fix_values)</span>&nbsp;</span><span class="r"></span></p>
-    <p id="t90" class="pln"><span class="n"><a href="#t90">90</a></span><span class="t"><span class="str">... </span>&nbsp;</span><span class="r"></span></p>
-    <p id="t91" class="pln"><span class="n"><a href="#t91">91</a></span><span class="t"><span class="str">...         # Figure out, which parameters are actually independent</span>&nbsp;</span><span class="r"></span></p>
-    <p id="t92" class="pln"><span class="n"><a href="#t92">92</a></span><span class="t"><span class="str">...         ifix = [i for i, _ in fix_values]</span>&nbsp;</span><span class="r"></span></p>
-    <p id="t93" class="pln"><span class="n"><a href="#t93">93</a></span><span class="t"><span class="str">...         i_independent = np.array([i for i in range(len(self.profiler.fit.bounds)) if i not in ifix])</span>&nbsp;</span><span class="r"></span></p>
-    <p id="t94" class="pln"><span class="n"><a href="#t94">94</a></span><span class="t"><span class="str">... </span>&nbsp;</span><span class="r"></span></p>
-    <p id="t95" class="pln"><span class="n"><a href="#t95">95</a></span><span class="t"><span class="str">...         # Set stepsizes (if not given by mci)</span>&nbsp;</span><span class="r"></span></p>
-    <p id="t96" class="pln"><span class="n"><a href="#t96">96</a></span><span class="t"><span class="str">...         self.stepsizes = np.array(len(i_independent)*[stepsize])</span>&nbsp;</span><span class="r"></span></p>
-    <p id="t97" class="pln"><span class="n"><a href="#t97">97</a></span><span class="t"><span class="str">...         if mci is not None:</span>&nbsp;</span><span class="r"></span></p>
-    <p id="t98" class="pln"><span class="n"><a href="#t98">98</a></span><span class="t"><span class="str">...             for iparam in range(len(mci)):</span>&nbsp;</span><span class="r"></span></p>
-    <p id="t99" class="pln"><span class="n"><a href="#t99">99</a></span><span class="t"><span class="str">...                 if not np.any(np.isnan(mci[iparam])) and iparam in i_independent:</span>&nbsp;</span><span class="r"></span></p>
-    <p id="t100" class="pln"><span class="n"><a href="#t100">100</a></span><span class="t"><span class="str">...                     m, *ci = mci[iparam]</span>&nbsp;</span><span class="r"></span></p>
-    <p id="t101" class="pln"><span class="n"><a href="#t101">101</a></span><span class="t"><span class="str">...                     step = np.min(np.abs(ci - m))</span>&nbsp;</span><span class="r"></span></p>
-    <p id="t102" class="pln"><span class="n"><a href="#t102">102</a></span><span class="t"><span class="str">...                     self.stepsizes[i_independent == iparam] = step</span>&nbsp;</span><span class="r"></span></p>
-    <p id="t103" class="pln"><span class="n"><a href="#t103">103</a></span><span class="t"><span class="str">... </span>&nbsp;</span><span class="r"></span></p>
-    <p id="t104" class="pln"><span class="n"><a href="#t104">104</a></span><span class="t"><span class="str">...     def get_initial_values(self):</span>&nbsp;</span><span class="r"></span></p>
-    <p id="t105" class="pln"><span class="n"><a href="#t105">105</a></span><span class="t"><span class="str">...         p0 = self.profiler.point_estimate['params'].copy()</span>&nbsp;</span><span class="r"></span></p>
-    <p id="t106" class="pln"><span class="n"><a href="#t106">106</a></span><span class="t"><span class="str">...         ifix = np.array([i for i, _ in self.profiler.fit.fix_values])</span>&nbsp;</span><span class="r"></span></p>
-    <p id="t107" class="pln"><span class="n"><a href="#t107">107</a></span><span class="t"><span class="str">...         p0[ifix] = np.nan</span>&nbsp;</span><span class="r"></span></p>
-    <p id="t108" class="pln"><span class="n"><a href="#t108">108</a></span><span class="t"><span class="str">...         return p0[~np.isnan(p0)]</span>&nbsp;</span><span class="r"></span></p>
-    <p id="t109" class="pln"><span class="n"><a href="#t109">109</a></span><span class="t"><span class="str">... </span>&nbsp;</span><span class="r"></span></p>
-    <p id="t110" class="pln"><span class="n"><a href="#t110">110</a></span><span class="t"><span class="str">...     # Implement MCMC interface</span>&nbsp;</span><span class="r"></span></p>
-    <p id="t111" class="pln"><span class="n"><a href="#t111">111</a></span><span class="t"><span class="str">...     def logL(self, params):</span>&nbsp;</span><span class="r"></span></p>
-    <p id="t112" class="pln"><span class="n"><a href="#t112">112</a></span><span class="t"><span class="str">...         return -self.min_target_from_fit(params)</span>&nbsp;</span><span class="r"></span></p>
-    <p id="t113" class="pln"><span class="n"><a href="#t113">113</a></span><span class="t"><span class="str">... </span>&nbsp;</span><span class="r"></span></p>
-    <p id="t114" class="pln"><span class="n"><a href="#t114">114</a></span><span class="t"><span class="str">...     def propose_update(self, current_params):</span>&nbsp;</span><span class="r"></span></p>
-    <p id="t115" class="pln"><span class="n"><a href="#t115">115</a></span><span class="t"><span class="str">...         i_update = np.random.choice(len(current_params))</span>&nbsp;</span><span class="r"></span></p>
-    <p id="t116" class="pln"><span class="n"><a href="#t116">116</a></span><span class="t"><span class="str">...         new_params = current_params.copy()</span>&nbsp;</span><span class="r"></span></p>
-    <p id="t117" class="pln"><span class="n"><a href="#t117">117</a></span><span class="t"><span class="str">...         step_dist = stats.norm(scale=self.stepsizes[i_update])</span>&nbsp;</span><span class="r"></span></p>
-    <p id="t118" class="pln"><span class="n"><a href="#t118">118</a></span><span class="t"><span class="str">...         step = step_dist.rvs()</span>&nbsp;</span><span class="r"></span></p>
-    <p id="t119" class="pln"><span class="n"><a href="#t119">119</a></span><span class="t"><span class="str">...         new_params[i_update] += step</span>&nbsp;</span><span class="r"></span></p>
-    <p id="t120" class="pln"><span class="n"><a href="#t120">120</a></span><span class="t"><span class="str">... </span>&nbsp;</span><span class="r"></span></p>
-    <p id="t121" class="pln"><span class="n"><a href="#t121">121</a></span><span class="t"><span class="str">...         return new_params, 1, 1 # don't have to care about fwd/bwd probabilities, bc Gaussian is symmetric</span>&nbsp;</span><span class="r"></span></p>
-    <p id="t122" class="pln"><span class="n"><a href="#t122">122</a></span><span class="t"><span class="str">...         # return new_params, step_dist.logpdf(step), step_dist.logpdf(-step) # "more correct"</span>&nbsp;</span><span class="r"></span></p>
-    <p id="t123" class="pln"><span class="n"><a href="#t123">123</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
-    <p id="t124" class="pln"><span class="n"><a href="#t124">124</a></span><span class="t"><span class="str">See also</span>&nbsp;</span><span class="r"></span></p>
-    <p id="t125" class="pln"><span class="n"><a href="#t125">125</a></span><span class="t"><span class="str">--------</span>&nbsp;</span><span class="r"></span></p>
-    <p id="t126" class="pln"><span class="n"><a href="#t126">126</a></span><span class="t"><span class="str">tracklib.util.mcmc, tracklib.models.rouse</span>&nbsp;</span><span class="r"></span></p>
-    <p id="t127" class="pln"><span class="n"><a href="#t127">127</a></span><span class="t"><span class="str">"""</span>&nbsp;</span><span class="r"></span></p>
-    <p id="t128" class="run"><span class="n"><a href="#t128">128</a></span><span class="t"><span class="key">from</span> <span class="op">.</span><span class="nam">core</span> <span class="key">import</span> <span class="op">*</span>&nbsp;</span><span class="r"></span></p>
-    <p id="t129" class="run"><span class="n"><a href="#t129">129</a></span><span class="t"><span class="key">from</span> <span class="op">.</span> <span class="key">import</span> <span class="nam">lib</span>&nbsp;</span><span class="r"></span></p>
+    <p id="t78" class="pln"><span class="n"><a href="#t78">78</a></span><span class="t"><span class="str">... from scipy import stats</span>&nbsp;</span><span class="r"></span></p>
+    <p id="t79" class="pln"><span class="n"><a href="#t79">79</a></span><span class="t"><span class="str">...</span>&nbsp;</span><span class="r"></span></p>
+    <p id="t80" class="pln"><span class="n"><a href="#t80">80</a></span><span class="t"><span class="str">... class PosteriorSampler(tl.util.mcmc.Sampler):</span>&nbsp;</span><span class="r"></span></p>
+    <p id="t81" class="pln"><span class="n"><a href="#t81">81</a></span><span class="t"><span class="str">...     def __init__(self, profiler, mci=None, stepsize=0.1):</span>&nbsp;</span><span class="r"></span></p>
+    <p id="t82" class="pln"><span class="n"><a href="#t82">82</a></span><span class="t"><span class="str">...         \"\"\"</span>&nbsp;</span><span class="r"></span></p>
+    <p id="t83" class="pln"><span class="n"><a href="#t83">83</a></span><span class="t"><span class="str">...         `mci` is the output of a previous run of the profiler (if there was</span>&nbsp;</span><span class="r"></span></p>
+    <p id="t84" class="pln"><span class="n"><a href="#t84">84</a></span><span class="t"><span class="str">...         one). This is used to set the stepsize of the MCMC according to the</span>&nbsp;</span><span class="r"></span></p>
+    <p id="t85" class="pln"><span class="n"><a href="#t85">85</a></span><span class="t"><span class="str">...         guesses on the posterior shape from those results.</span>&nbsp;</span><span class="r"></span></p>
+    <p id="t86" class="pln"><span class="n"><a href="#t86">86</a></span><span class="t"><span class="str">...         \"\"\"</span>&nbsp;</span><span class="r"></span></p>
+    <p id="t87" class="pln"><span class="n"><a href="#t87">87</a></span><span class="t"><span class="str">...         self.profiler = profiler</span>&nbsp;</span><span class="r"></span></p>
+    <p id="t88" class="pln"><span class="n"><a href="#t88">88</a></span><span class="t"><span class="str">... </span>&nbsp;</span><span class="r"></span></p>
+    <p id="t89" class="pln"><span class="n"><a href="#t89">89</a></span><span class="t"><span class="str">...         fix_values = self.profiler.fit.fix_values</span>&nbsp;</span><span class="r"></span></p>
+    <p id="t90" class="pln"><span class="n"><a href="#t90">90</a></span><span class="t"><span class="str">...         self.min_target_from_fit = self.profiler.fit.get_min_target(fix_values=fix_values)</span>&nbsp;</span><span class="r"></span></p>
+    <p id="t91" class="pln"><span class="n"><a href="#t91">91</a></span><span class="t"><span class="str">... </span>&nbsp;</span><span class="r"></span></p>
+    <p id="t92" class="pln"><span class="n"><a href="#t92">92</a></span><span class="t"><span class="str">...         # Figure out, which parameters are actually independent</span>&nbsp;</span><span class="r"></span></p>
+    <p id="t93" class="pln"><span class="n"><a href="#t93">93</a></span><span class="t"><span class="str">...         ifix = [i for i, _ in fix_values]</span>&nbsp;</span><span class="r"></span></p>
+    <p id="t94" class="pln"><span class="n"><a href="#t94">94</a></span><span class="t"><span class="str">...         i_independent = np.array([i for i in range(len(self.profiler.fit.bounds)) if i not in ifix])</span>&nbsp;</span><span class="r"></span></p>
+    <p id="t95" class="pln"><span class="n"><a href="#t95">95</a></span><span class="t"><span class="str">... </span>&nbsp;</span><span class="r"></span></p>
+    <p id="t96" class="pln"><span class="n"><a href="#t96">96</a></span><span class="t"><span class="str">...         # Set stepsizes (if not given by mci)</span>&nbsp;</span><span class="r"></span></p>
+    <p id="t97" class="pln"><span class="n"><a href="#t97">97</a></span><span class="t"><span class="str">...         self.stepsizes = np.array(len(i_independent)*[stepsize])</span>&nbsp;</span><span class="r"></span></p>
+    <p id="t98" class="pln"><span class="n"><a href="#t98">98</a></span><span class="t"><span class="str">...         if mci is not None:</span>&nbsp;</span><span class="r"></span></p>
+    <p id="t99" class="pln"><span class="n"><a href="#t99">99</a></span><span class="t"><span class="str">...             for iparam in range(len(mci)):</span>&nbsp;</span><span class="r"></span></p>
+    <p id="t100" class="pln"><span class="n"><a href="#t100">100</a></span><span class="t"><span class="str">...                 if not np.any(np.isnan(mci[iparam])) and iparam in i_independent:</span>&nbsp;</span><span class="r"></span></p>
+    <p id="t101" class="pln"><span class="n"><a href="#t101">101</a></span><span class="t"><span class="str">...                     m, *ci = mci[iparam]</span>&nbsp;</span><span class="r"></span></p>
+    <p id="t102" class="pln"><span class="n"><a href="#t102">102</a></span><span class="t"><span class="str">...                     step = np.min(np.abs(ci - m))</span>&nbsp;</span><span class="r"></span></p>
+    <p id="t103" class="pln"><span class="n"><a href="#t103">103</a></span><span class="t"><span class="str">...                     self.stepsizes[i_independent == iparam] = step</span>&nbsp;</span><span class="r"></span></p>
+    <p id="t104" class="pln"><span class="n"><a href="#t104">104</a></span><span class="t"><span class="str">... </span>&nbsp;</span><span class="r"></span></p>
+    <p id="t105" class="pln"><span class="n"><a href="#t105">105</a></span><span class="t"><span class="str">...     def get_initial_values(self):</span>&nbsp;</span><span class="r"></span></p>
+    <p id="t106" class="pln"><span class="n"><a href="#t106">106</a></span><span class="t"><span class="str">...         p0 = self.profiler.point_estimate['params'].copy()</span>&nbsp;</span><span class="r"></span></p>
+    <p id="t107" class="pln"><span class="n"><a href="#t107">107</a></span><span class="t"><span class="str">...         ifix = np.array([i for i, _ in self.profiler.fit.fix_values])</span>&nbsp;</span><span class="r"></span></p>
+    <p id="t108" class="pln"><span class="n"><a href="#t108">108</a></span><span class="t"><span class="str">...         p0[ifix] = np.nan</span>&nbsp;</span><span class="r"></span></p>
+    <p id="t109" class="pln"><span class="n"><a href="#t109">109</a></span><span class="t"><span class="str">...         return p0[~np.isnan(p0)]</span>&nbsp;</span><span class="r"></span></p>
+    <p id="t110" class="pln"><span class="n"><a href="#t110">110</a></span><span class="t"><span class="str">... </span>&nbsp;</span><span class="r"></span></p>
+    <p id="t111" class="pln"><span class="n"><a href="#t111">111</a></span><span class="t"><span class="str">...     # Implement MCMC interface</span>&nbsp;</span><span class="r"></span></p>
+    <p id="t112" class="pln"><span class="n"><a href="#t112">112</a></span><span class="t"><span class="str">...     def logL(self, params):</span>&nbsp;</span><span class="r"></span></p>
+    <p id="t113" class="pln"><span class="n"><a href="#t113">113</a></span><span class="t"><span class="str">...         return -self.min_target_from_fit(params)</span>&nbsp;</span><span class="r"></span></p>
+    <p id="t114" class="pln"><span class="n"><a href="#t114">114</a></span><span class="t"><span class="str">... </span>&nbsp;</span><span class="r"></span></p>
+    <p id="t115" class="pln"><span class="n"><a href="#t115">115</a></span><span class="t"><span class="str">...     def propose_update(self, current_params):</span>&nbsp;</span><span class="r"></span></p>
+    <p id="t116" class="pln"><span class="n"><a href="#t116">116</a></span><span class="t"><span class="str">...         i_update = np.random.choice(len(current_params))</span>&nbsp;</span><span class="r"></span></p>
+    <p id="t117" class="pln"><span class="n"><a href="#t117">117</a></span><span class="t"><span class="str">...         new_params = current_params.copy()</span>&nbsp;</span><span class="r"></span></p>
+    <p id="t118" class="pln"><span class="n"><a href="#t118">118</a></span><span class="t"><span class="str">...         step_dist = stats.norm(scale=self.stepsizes[i_update])</span>&nbsp;</span><span class="r"></span></p>
+    <p id="t119" class="pln"><span class="n"><a href="#t119">119</a></span><span class="t"><span class="str">...         step = step_dist.rvs()</span>&nbsp;</span><span class="r"></span></p>
+    <p id="t120" class="pln"><span class="n"><a href="#t120">120</a></span><span class="t"><span class="str">...         new_params[i_update] += step</span>&nbsp;</span><span class="r"></span></p>
+    <p id="t121" class="pln"><span class="n"><a href="#t121">121</a></span><span class="t"><span class="str">... </span>&nbsp;</span><span class="r"></span></p>
+    <p id="t122" class="pln"><span class="n"><a href="#t122">122</a></span><span class="t"><span class="str">...         return new_params, 1, 1 # don't have to care about fwd/bwd probabilities, bc Gaussian is symmetric</span>&nbsp;</span><span class="r"></span></p>
+    <p id="t123" class="pln"><span class="n"><a href="#t123">123</a></span><span class="t"><span class="str">...         # return new_params, step_dist.logpdf(step), step_dist.logpdf(-step) # "more correct"</span>&nbsp;</span><span class="r"></span></p>
+    <p id="t124" class="pln"><span class="n"><a href="#t124">124</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
+    <p id="t125" class="pln"><span class="n"><a href="#t125">125</a></span><span class="t"><span class="str">See also</span>&nbsp;</span><span class="r"></span></p>
+    <p id="t126" class="pln"><span class="n"><a href="#t126">126</a></span><span class="t"><span class="str">--------</span>&nbsp;</span><span class="r"></span></p>
+    <p id="t127" class="pln"><span class="n"><a href="#t127">127</a></span><span class="t"><span class="str">tracklib.util.mcmc, tracklib.models.rouse</span>&nbsp;</span><span class="r"></span></p>
+    <p id="t128" class="pln"><span class="n"><a href="#t128">128</a></span><span class="t"><span class="str">"""</span>&nbsp;</span><span class="r"></span></p>
+    <p id="t129" class="run"><span class="n"><a href="#t129">129</a></span><span class="t"><span class="key">from</span> <span class="op">.</span><span class="nam">core</span> <span class="key">import</span> <span class="op">*</span>&nbsp;</span><span class="r"></span></p>
+    <p id="t130" class="run"><span class="n"><a href="#t130">130</a></span><span class="t"><span class="key">from</span> <span class="op">.</span> <span class="key">import</span> <span class="nam">lib</span>&nbsp;</span><span class="r"></span></p>
 </div>
 <div id="footer">
     <div class="content">
         <p>
             <a class="nav" href="index.html">&#xab; index</a> &nbsp; &nbsp; <a class="nav" href="https://coverage.readthedocs.io">coverage.py v5.2.1</a>,
-            created at 2022-02-02 11:28 -0500
+            created at 2022-02-09 10:49 -0500
         </p>
     </div>
 </div>

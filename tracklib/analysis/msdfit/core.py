@@ -1241,7 +1241,8 @@ class Profiler():
                                    **fit_kw,
                                   )
             except RuntimeError: # okay, this didn't work, whatever # pragma: no cover
-                pass
+                self.vprint(2, "Gradient refinement failed. Point estimate might be imprecise. Not a fatal error, resuming operation")
+
         else: # we're starting from somewhere known, so start out trying to
               # move by gradient, use simplex if that doesn't work
             try:
