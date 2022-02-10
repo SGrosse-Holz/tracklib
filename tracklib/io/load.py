@@ -13,8 +13,9 @@ def csv(filename, columns=['x', 'y', 't', 'id'], tags='', meta_post={}, **kwargs
     """
     Load data from a .csv file.
 
-    This uses ``np.genfromtxt``, and all kwargs are forwarded to it. The most
-    important ones are ``'delimiter'`` and ``'skip_header'``.
+    This uses ``np.genfromtxt``, and all kwargs are forwarded to it. By
+    default, we assume the delimiter ``','`` and utf8 encoding for string data,
+    but these can of course be changed. Refer to ``numpy.genfromtxt``.
     
     Parameters
     ----------
@@ -70,7 +71,7 @@ def csv(filename, columns=['x', 'y', 't', 'id'], tags='', meta_post={}, **kwargs
     """
     col_inds = {}
     for i, key in enumerate(columns):
-        if type(key) == str:
+        if type(key) == str: # make sure to exclude None's
             col_inds[key] = i
 
     keys = col_inds.keys()
@@ -89,72 +90,90 @@ def csv(filename, columns=['x', 'y', 't', 'id'], tags='', meta_post={}, **kwargs
         d = 1
     else: # pragma: no cover
         raise ValueError("No valid coordinates found in specification: {}".format(columns))
-    N = 1
-    if 'x2' in keys or 'y2' in keys or 'z2' in keys:
-        N = 2
-        for key in keys & {'x', 'y', 'z'}:
-            assert key + '2' in keys
-        for key in keys & {'x2', 'y2', 'z2'}:
-            assert key[:1] in keys
 
-    # Sort into useful order
-    col_ind_list = [col_inds['id'], col_inds['t']]
-    for key in ['x', 'y', 'z', 'x2', 'y2', 'z2']:
-        try:
-            col_ind_list.append(col_inds[key])
-        except KeyError:
-            pass
-    metakeys = []
-    for key in keys - ['id', 't', 'x', 'y', 'z', 'x2', 'y2', 'z2']:
-        col_ind_list.append(col_inds[key])
-        metakeys.append(key)
+    # data_keys = ['x', 'x2', 'y', 'y2', ...]
+    data_keys = sorted(keys & {'x', 'y', 'z', 'x2', 'y2', 'z2'})
+    N = 1
+    if any('2' in key for key in keys):
+        N = 2
+        for key in data_keys:
+            assert key[0] in data_keys
+            assert key[0]+'2' in data_keys
+
+    # ['id', 't', {data}, {meta}]
+    # this is mostly to keep track of which keys exist
+    sorted_keys = ['id', 't', data_keys,
+                   keys - {'id', 't', *data_keys}]
 
     # Read data
+    gft_kwargs = dict(delimiter=',', dtype=None, encoding='utf8')
+    gft_kwargs.update(kwargs)
+    data = np.genfromtxt(filename, **gft_kwargs)
+
+    # This feels suboptimal... maybe there's a better way?
+    data_cols = [col_inds[key] for key in sorted_keys[2]]
+    meta_cols = [col_inds[key] for key in sorted_keys[3]]
     try:
-        data = np.genfromtxt(filename, **kwargs)[:, col_ind_list]
+        # sorted_data = [id-array, t-array, data-array, list of meta-arrays]
+        sorted_data = [
+            np.array([line[col_inds['id']] for line in data]),
+            np.array([line[col_inds['t' ]] for line in data]).astype(int),
+            np.array([[line[col] for col in data_cols]
+                      for line in data
+                     ]).astype(float), # shape: (-1, N*d), sorted x, x2, y, ...
+            [np.array([line[col] for line in data]) for col in meta_cols],
+        ]
     except IndexError:
-        raise ValueError("'columns' contains more entries than the file has columns")
-    ids = set(data[:, 0])
+        raise ValueError("Too many columns for file. Did you use the right delimiter?")
+    del data
+    ids = set(sorted_data[0])
 
-    # Generate individual Trajectories
-    def gen():
-        for myid in ids:
-            mydata = data[np.where(data[:, 0] == myid)[0], :]
-            myt = mydata[:, 1].astype(int)
-            myt -= np.min(myt)
-            trajdata = np.empty((N, np.max(myt)+1, d), dtype=float)
-            trajdata[:] = np.nan
-            for n in range(N):
-                trajdata[n, myt, :] = mydata[:, (n*d + 2):((n+1)*d + 2)]
+    # Assemble data set
+    out = TaggedSet()
+    for myid in ids:
+        ind = sorted_data[0] == myid
+        mydata = np.moveaxis(sorted_data[2][ind].reshape((-1, d, N)), 2, 0)
+        myt = sorted_data[1][ind]
+        myt -= np.min(myt)
 
-            meta = {}
-            for i, key in enumerate(metakeys):
-                meta_dat = mydata[:, 2 + N*d + i]
-                if key in meta_post.keys():
-                    if meta_post[key] == 'unique':
-                        ms = set(meta_dat)
-                        if len(ms) > 1:
-                            raise RuntimeError("Data in column '{}' is not unique for trajectory with id {}".format(key, myid))
-                        meta[key] = ms.pop()
-                    elif meta_post[key] == 'mean':
-                        meta[key] = np.mean(meta_dat)
-                else:
-                    meta[key] = np.empty(np.max(myt)+1)
-                    meta[key][:] = np.nan
-                    meta[key][myt] = mydata[:, 2 + N*d + i]
+        trajdata = np.empty((N, np.max(myt)+1, d), dtype=float)
+        trajdata[:] = np.nan
+        trajdata[:, myt, :] = mydata
 
-            yield (Trajectory.fromArray(trajdata, **meta), tags)
+        meta = {}
+        for i, key in enumerate(sorted_keys[3]):
+            mymeta = sorted_data[3][i][ind]
+            if key in meta_post:
+                post = meta_post[key]
+                if post == 'unique':
+                    ms = set(mymeta)
+                    if len(ms) > 1:
+                        raise RuntimeError("Data in column '{}' is not unique for trajectory with id {}".format(key, myid))
+                    meta[key] = ms.pop()
+                elif post == 'mean':
+                    meta[key] = np.mean(mymeta)
+                elif post == 'nanmean':
+                    meta[key] = np.nanmean(mymeta.astype(float))
+                else: # pragma: no cover
+                    raise ValueError(f"invalid meta post-proc: {post}")
+            else: # assume that we have floats and fill with nan's
+                meta[key] = np.empty(np.max(myt)+1, dtype=float)
+                meta[key][:] = np.nan
+                meta[key][myt] = mymeta
 
-    return TaggedSet(gen())
+        out.add(Trajectory.fromArray(trajdata, **meta), tags)
+
+    return out
 
 def evalSPT(filename, tags=set()):
     """
     Load data in the format used by evalSPT
 
-    This is a shortcut for ``csv(filename, ['x', 'y', 't', 'id'], tags)``.
+    This is a shortcut for ``csv(filename, ['x', 'y', 't', 'id'], tags,
+    delimiter='\t')``.
 
     See also
     --------
     csv
     """
-    return csv(filename, ['x', 'y', 't', 'id'], tags)
+    return csv(filename, ['x', 'y', 't', 'id'], tags, delimiter='\t')
