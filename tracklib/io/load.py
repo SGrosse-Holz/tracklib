@@ -9,7 +9,7 @@ import numpy as np
 
 from tracklib import Trajectory, TaggedSet
 
-def csv(filename, columns=['x', 'y', 't', 'id'], tags='', meta_post={}, **kwargs):
+def csv(filename, columns=['x', 'y', 't', 'id'], tags=None, meta_post={}, **kwargs):
     """
     Load data from a .csv file.
 
