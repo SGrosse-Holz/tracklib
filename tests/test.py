@@ -32,6 +32,7 @@ __all__ = [
     'TestAnalysisKLD',
     'TestAnalysisPlots',
     'TestUtilUtil',
+    'TestUtilStats',
     'TestUtilMCMC',
     'TestUtilMCMCMCMCRun',
     'TestUtilSweep',
@@ -343,10 +344,10 @@ class TestIOLoad(myTestCase):
     def test_csv(self):
         filename = "testdata/twoLocus.csv"
         # file contents:
-        # line,id,noise,x,y,frame,x2,y2,meta_mean,meta_unique
-        # 1,32,10,0.6,0.8,10,0.5,1.0,1,5
-        # 2,32,1.5,0.7,0.5,9,0.7,0.8,2,5
-        # 3,20,5.3,1.2,1.3,11,-0.8,-1.2,3,6
+        # line,id,noise,x,y,frame,x2,y2,meta_mean,meta_unique,meta_nanmean
+        # 1,32,10,0.6,0.8,10,0.5,1.0,1,5,
+        # 2,32,1.5,0.7,0.5,9,0.7,0.8,2,5,test
+        # 3,20,5.3,1.2,1.3,11,-0.8,-1.2,3,6,5
 
         # First two are just dummies
         with self.assertRaises(ValueError): # too many columns specified
@@ -360,20 +361,25 @@ class TestIOLoad(myTestCase):
                     meta_post={'meta_mean' : 'mean', 'meta_unique' : 'unique'}, delimiter=',', skip_header=1)
 
         ds = tl.io.load.csv(
-                filename, [None, 'id', 'noise', 'x', 'y', 't', 'x2', 'y2', 'meta_mean', 'meta_unique'],
-                meta_post={'meta_mean' : 'mean', 'meta_unique' : 'unique'}, delimiter=',', skip_header=1)
+                filename, [None, 'id', 'noise', 'x', 'y', 't', 'x2', 'y2', 'meta_mean', 'meta_unique', 'meta_nanmean'],
+                meta_post={'meta_mean' : 'mean',
+                           'meta_unique' : 'unique',
+                           'meta_nanmean' : 'nanmean',
+                           }, delimiter=',', skip_header=1)
 
         ds.makeSelection(selector = lambda traj, _ : len(traj) >= 2)
         self.assert_array_equal(ds[0][:], np.array([[[0.7, 0.5], [0.6, 0.8]], [[0.7, 0.8], [0.5, 1.0]]]))
         self.assert_array_equal(ds[0].meta['noise'], np.array([1.5, 10]))
         self.assertEqual(ds[0].meta['meta_mean'], 1.5)
         self.assertEqual(ds[0].meta['meta_unique'], 5)
+        self.assertEqual(ds[0].meta['meta_nanmean'], 1)
 
         ds.makeSelection(selector = lambda traj, _ : len(traj) < 2)
         self.assert_array_equal(ds[0][:], np.array([[[1.2, 1.3]], [[-0.8, -1.2]]]))
         self.assert_array_equal(ds[0].meta['noise'], np.array([5.3]))
         self.assertEqual(ds[0].meta['meta_mean'], 3)
         self.assertEqual(ds[0].meta['meta_unique'], 6)
+        self.assertEqual(ds[0].meta['meta_nanmean'], 5)
 
         with self.assertRaises(RuntimeError):
             ds = tl.io.load.csv(
@@ -697,14 +703,28 @@ class TestUtilUtil(myTestCase):
 
         xnew, dy = tl.util.log_derivative(y)
 
+class TestUtilStats(myTestCase):
     def test_KMsurvival(self):
-        km = tl.util.KM_survival([1, 2, 3, 4, 5], [0, 0, 0, 0, 0], S1at=None)
+        km = tl.util.stats.KM_survival([1, 2, 3, 4, 5], [0, 0, 0, 0, 0], S1at=None)
         self.assert_array_equal(km[:, 0], [1, 2, 3, 4, 5])
         self.assert_array_equal(np.round(km[:, 1], 10), [0.8, 0.6, 0.4, 0.2, 0.0]) # km is calculated via exp(log(...)), so off by 1e-16 is okay
 
-        km = tl.util.KM_survival([1, 2, 3, 4, 5], [0, 0, 0, 0, 0])
+        km = tl.util.stats.KM_survival([1, 2, 3, 4, 5], [0, 0, 0, 0, 0])
         self.assert_array_equal(km[:, 0], [0, 1, 2, 3, 4, 5])
         self.assert_array_equal(np.round(km[:, 1], 10), [1, 0.8, 0.6, 0.4, 0.2, 0.0]) # km is calculated via exp(log(...)), so off by 1e-16 is okay
+
+    def test_MLEexp(self):
+        data = np.random.exponential(1, size=10000)
+
+        m, lo, hi = tl.util.stats.MLE_censored_exponential(data, np.zeros(len(data), dtype=bool))
+        self.assertEqual(np.mean(data), m)
+        self.assertGreater(m, lo)
+        self.assertGreater(hi, m)
+
+        ind = data > 2
+        data[ind] = 2
+        m, _, _ = tl.util.stats.MLE_censored_exponential(data, ind)
+        self.assertLess(np.abs(m-1), 0.1)
 
 class TestUtilMCMC(myTestCase):
     myprint = print
