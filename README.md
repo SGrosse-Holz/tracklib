@@ -1,3 +1,5 @@
+[![DOI](https://zenodo.org/badge/287222587.svg)](https://zenodo.org/badge/latestdoi/287222587)
+
 This is a library for downstream analysis of single particle tracking data.
 
 For installation with pip:
