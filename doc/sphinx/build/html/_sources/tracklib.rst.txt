@@ -12,14 +12,6 @@ tracklib
    tracklib.util
 
 
-tracklib.clean
---------------
-
-.. automodule:: tracklib.clean
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
 tracklib.taggedset
 ------------------
 

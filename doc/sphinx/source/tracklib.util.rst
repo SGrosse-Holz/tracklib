@@ -4,6 +4,14 @@ tracklib.util
 .. contents::
    :local:
 
+tracklib.util.clean
+-------------------
+
+.. automodule:: tracklib.util.clean
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 tracklib.util.mcmc
 ------------------
 
@@ -24,6 +32,14 @@ tracklib.util.plotting
 ----------------------
 
 .. automodule:: tracklib.util.plotting
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+tracklib.util.stats
+-------------------
+
+.. automodule:: tracklib.util.stats
    :members:
    :undoc-members:
    :show-inheritance:

@@ -303,7 +303,7 @@ class Test1TaggedSet(unittest.TestCase):
             self.ls.map_unique(fun2)
         self.assertIsNone(tl.TaggedSet().map_unique(funTrue))
 
-class TestClean(myTestCase):
+class TestUtilClean(myTestCase):
     def setUp(self):
         # Split with threshold = 2 => trajectories of lengths [2, 3, 3]
         self.traj = tl.Trajectory.fromArray([1., 2, 4.1, 4.5, 3, -0.5, -1, -0.7])
@@ -314,11 +314,11 @@ class TestClean(myTestCase):
         self.ds.add(tl.Trajectory.fromArray([1.2, 1.4, np.nan, np.nan, 10.0, 10.2]))
 
     def test_split_trajectory(self):
-        split_trajs = tl.clean.split_trajectory_at_big_steps(self.traj, 2)
+        split_trajs = tl.util.clean.split_trajectory_at_big_steps(self.traj, 2)
         self.assert_array_equal(np.sort([len(traj) for traj in split_trajs]), np.array([2, 3, 3]))
 
     def test_split_dataset(self):
-        split_ds = tl.clean.split_dataset_at_big_steps(self.ds, 3)
+        split_ds = tl.util.clean.split_dataset_at_big_steps(self.ds, 3)
         self.assert_array_equal(np.sort([len(traj) for traj in split_ds]), np.array([4, 5, 6]))
 
 class TestIOLoad(myTestCase):

@@ -47,15 +47,71 @@
 <h1>tracklib.util<a class="headerlink" href="#tracklib-util" title="Permalink to this headline">¶</a></h1>
 <div class="contents local topic" id="contents">
 <ul class="simple">
-<li><p><a class="reference internal" href="#module-tracklib.util.mcmc" id="id1">tracklib.util.mcmc</a></p></li>
-<li><p><a class="reference internal" href="#module-tracklib.util.parallel" id="id2">tracklib.util.parallel</a></p></li>
-<li><p><a class="reference internal" href="#module-tracklib.util.plotting" id="id3">tracklib.util.plotting</a></p></li>
-<li><p><a class="reference internal" href="#module-tracklib.util.sweep" id="id4">tracklib.util.sweep</a></p></li>
-<li><p><a class="reference internal" href="#module-tracklib.util.util" id="id5">tracklib.util.util</a></p></li>
+<li><p><a class="reference internal" href="#module-tracklib.util.clean" id="id1">tracklib.util.clean</a></p></li>
+<li><p><a class="reference internal" href="#module-tracklib.util.mcmc" id="id2">tracklib.util.mcmc</a></p></li>
+<li><p><a class="reference internal" href="#module-tracklib.util.parallel" id="id3">tracklib.util.parallel</a></p></li>
+<li><p><a class="reference internal" href="#module-tracklib.util.plotting" id="id4">tracklib.util.plotting</a></p></li>
+<li><p><a class="reference internal" href="#module-tracklib.util.stats" id="id5">tracklib.util.stats</a></p></li>
+<li><p><a class="reference internal" href="#module-tracklib.util.sweep" id="id6">tracklib.util.sweep</a></p></li>
+<li><p><a class="reference internal" href="#module-tracklib.util.util" id="id7">tracklib.util.util</a></p></li>
 </ul>
 </div>
+<div class="section" id="module-tracklib.util.clean">
+<span id="tracklib-util-clean"></span><h2><a class="toc-backref" href="#id1">tracklib.util.clean</a><a class="headerlink" href="#module-tracklib.util.clean" title="Permalink to this headline">¶</a></h2>
+<p>Everything to do with cleaning up experimental data</p>
+<dl class="function">
+<dt id="tracklib.util.clean.split_trajectory_at_big_steps">
+<code class="sig-prename descclassname">tracklib.util.clean.</code><code class="sig-name descname">split_trajectory_at_big_steps</code><span class="sig-paren">(</span><em class="sig-param">traj</em>, <em class="sig-param">threshold</em><span class="sig-paren">)</span><a class="headerlink" href="#tracklib.util.clean.split_trajectory_at_big_steps" title="Permalink to this definition">¶</a></dt>
+<dd><p>Removes suspected mislinkages.</p>
+<p>Exception: two consecutive big steps such that the overall displacement is
+smaller than the threshold are single misconnections in otherwise fine
+trajectories. In this case we will simply remove the misconnected point.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>traj</strong> (<a class="reference internal" href="tracklib.html#tracklib.trajectory.Trajectory" title="tracklib.trajectory.Trajectory"><em>Trajectory</em></a>) – the trajectory to investigate</p></li>
+<li><p><strong>threshold</strong> (<em>float</em>) – the maximum allowed frame to frame displacement</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><em>set of tracklib.Trajectory</em></p>
+</dd>
+</dl>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><a class="reference internal" href="#tracklib.util.clean.split_dataset_at_big_steps" title="tracklib.util.clean.split_dataset_at_big_steps"><code class="xref py py-func docutils literal notranslate"><span class="pre">split_dataset_at_big_steps()</span></code></a></p>
+</div>
+<p class="rubric">Notes</p>
+<p>As of now, this only works on trajectories with <code class="docutils literal notranslate"><span class="pre">N=1</span></code>.</p>
+<p>This really just checks for frame-to-frame connections exceeding the
+threshold. So if there are missing frames in a trajectory, the step across
+those missing data will not be considered.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="tracklib.util.clean.split_dataset_at_big_steps">
+<code class="sig-prename descclassname">tracklib.util.clean.</code><code class="sig-name descname">split_dataset_at_big_steps</code><span class="sig-paren">(</span><em class="sig-param">data</em>, <em class="sig-param">threshold</em><span class="sig-paren">)</span><a class="headerlink" href="#tracklib.util.clean.split_dataset_at_big_steps" title="Permalink to this definition">¶</a></dt>
+<dd><p>Apply <a class="reference internal" href="#tracklib.util.clean.split_trajectory_at_big_steps" title="tracklib.util.clean.split_trajectory_at_big_steps"><code class="xref any py py-func docutils literal notranslate"><span class="pre">split_trajectory_at_big_steps</span></code></a> to a whole data set</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>data</strong> (<a class="reference internal" href="tracklib.html#tracklib.taggedset.TaggedSet" title="tracklib.taggedset.TaggedSet"><em>TaggedSet</em></a>) – the dataset</p></li>
+<li><p><strong>threshold</strong> (<em>float</em>) – the maximum allowed step size</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><em>TaggedSet</em> – a new data set with the split trajectories</p>
+</dd>
+</dl>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><a class="reference internal" href="#tracklib.util.clean.split_trajectory_at_big_steps" title="tracklib.util.clean.split_trajectory_at_big_steps"><code class="xref py py-func docutils literal notranslate"><span class="pre">split_trajectory_at_big_steps()</span></code></a></p>
+</div>
+</dd></dl>
+
+</div>
 <div class="section" id="module-tracklib.util.mcmc">
-<span id="tracklib-util-mcmc"></span><h2><a class="toc-backref" href="#id1">tracklib.util.mcmc</a><a class="headerlink" href="#module-tracklib.util.mcmc" title="Permalink to this headline">¶</a></h2>
+<span id="tracklib-util-mcmc"></span><h2><a class="toc-backref" href="#id2">tracklib.util.mcmc</a><a class="headerlink" href="#module-tracklib.util.mcmc" title="Permalink to this headline">¶</a></h2>
 <p>A small module for running MCMC sampling. It provides the abstract base class
 <a class="reference internal" href="#tracklib.util.mcmc.Sampler" title="tracklib.util.mcmc.Sampler"><code class="xref any py py-class docutils literal notranslate"><span class="pre">Sampler</span></code></a> that can be subclassed for concrete sampling schemes.</p>
 <dl class="class">
@@ -365,7 +421,7 @@ the burn-in period.</p>
 
 </div>
 <div class="section" id="module-tracklib.util.parallel">
-<span id="tracklib-util-parallel"></span><h2><a class="toc-backref" href="#id2">tracklib.util.parallel</a><a class="headerlink" href="#module-tracklib.util.parallel" title="Permalink to this headline">¶</a></h2>
+<span id="tracklib-util-parallel"></span><h2><a class="toc-backref" href="#id3">tracklib.util.parallel</a><a class="headerlink" href="#module-tracklib.util.parallel" title="Permalink to this headline">¶</a></h2>
 <p>Parallelization for tracklib functions</p>
 <p>Use this as context for parallel-aware functions:
 &gt;&gt;&gt; import tracklib as tl
@@ -399,7 +455,7 @@ order. Example: <code class="docutils literal notranslate"><span class="pre">mul
 
 </div>
 <div class="section" id="module-tracklib.util.plotting">
-<span id="tracklib-util-plotting"></span><h2><a class="toc-backref" href="#id3">tracklib.util.plotting</a><a class="headerlink" href="#module-tracklib.util.plotting" title="Permalink to this headline">¶</a></h2>
+<span id="tracklib-util-plotting"></span><h2><a class="toc-backref" href="#id4">tracklib.util.plotting</a><a class="headerlink" href="#module-tracklib.util.plotting" title="Permalink to this headline">¶</a></h2>
 <p>Some helper functions for plotting stuff with matplotlib</p>
 <dl class="function">
 <dt id="tracklib.util.plotting.ellipse_from_cov">
@@ -421,8 +477,55 @@ order. Example: <code class="docutils literal notranslate"><span class="pre">mul
 </dd></dl>
 
 </div>
+<div class="section" id="module-tracklib.util.stats">
+<span id="tracklib-util-stats"></span><h2><a class="toc-backref" href="#id5">tracklib.util.stats</a><a class="headerlink" href="#module-tracklib.util.stats" title="Permalink to this headline">¶</a></h2>
+<p>Statistical tools</p>
+<dl class="function">
+<dt id="tracklib.util.stats.KM_survival">
+<code class="sig-prename descclassname">tracklib.util.stats.</code><code class="sig-name descname">KM_survival</code><span class="sig-paren">(</span><em class="sig-param">data</em>, <em class="sig-param">censored</em>, <em class="sig-param">conf=0.95</em>, <em class="sig-param">Tmax=inf</em>, <em class="sig-param">S1at=0</em><span class="sig-paren">)</span><a class="headerlink" href="#tracklib.util.stats.KM_survival" title="Permalink to this definition">¶</a></dt>
+<dd><p>Kaplan-Meier survival estimator on censored data</p>
+<p>This is the standard survival estimator for right-censored data, i.e. data
+points that are marked as “censored” enter the estimate as <code class="docutils literal notranslate"><span class="pre">t_true</span> <span class="pre">&gt;</span> <span class="pre">t</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>data</strong> (<em>(</em><em>N</em><em>,</em><em>) </em><em>array-like</em>) – individual survival times</p></li>
+<li><p><strong>censored</strong> (<em>(</em><em>N</em><em>,</em><em>) </em><em>array-like</em><em>, </em><em>boolean</em>) – indicate for each data point whether it is right-censored or not.</p></li>
+<li><p><strong>conf</strong> (<em>float in</em><em> (</em><em>0</em><em>, </em><em>1</em><em>)</em><em>, </em><em>optional</em>) – the confidence bounds on the survival curve to calculate</p></li>
+<li><p><strong>Tmax</strong> (<em>float</em>) – can be used to compute survival only up to some time <code class="docutils literal notranslate"><span class="pre">Tmax</span></code>.</p></li>
+<li><p><strong>S1at</strong> (<em>float</em><em>, </em><em>optional</em>) – give a natural lower limit for survival times where S = 1.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><em>(T, 4) array</em> – the columns of this array are: t, S(t), l(t), u(t), where l and u are
+lower and upper confidence levels respectively.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="tracklib.util.stats.MLE_censored_exponential">
+<code class="sig-prename descclassname">tracklib.util.stats.</code><code class="sig-name descname">MLE_censored_exponential</code><span class="sig-paren">(</span><em class="sig-param">data</em>, <em class="sig-param">censored</em>, <em class="sig-param">conf=0.95</em><span class="sig-paren">)</span><a class="headerlink" href="#tracklib.util.stats.MLE_censored_exponential" title="Permalink to this definition">¶</a></dt>
+<dd><p>MLE estimate for exponential distribution, given right-censored data</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>data</strong> (<em>array-like</em><em>, </em><em>dtype=float</em>) – the (scalar) values</p></li>
+<li><p><strong>censored</strong> (<em>array-like</em><em>, </em><em>dtype=bool</em><em>, </em><em>same shape as data</em>) – whether the corresponding value in <code class="xref any docutils literal notranslate"><span class="pre">data</span></code> is censored (<code class="docutils literal notranslate"><span class="pre">True</span></code>) or
+completely observed (<code class="docutils literal notranslate"><span class="pre">False</span></code>).</p></li>
+<li><p><strong>conf</strong> (<em>float in</em><em> [</em><em>0</em><em>, </em><em>1</em><em>]</em><em>, </em><em>optional</em>) – the confidence level to use in calculating bounds</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>m, low, high</strong> (<em>float</em>) – point estimate for the mean of the exponential distribution, and
+confidence bounds.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
 <div class="section" id="module-tracklib.util.sweep">
-<span id="tracklib-util-sweep"></span><h2><a class="toc-backref" href="#id4">tracklib.util.sweep</a><a class="headerlink" href="#module-tracklib.util.sweep" title="Permalink to this headline">¶</a></h2>
+<span id="tracklib-util-sweep"></span><h2><a class="toc-backref" href="#id6">tracklib.util.sweep</a><a class="headerlink" href="#module-tracklib.util.sweep" title="Permalink to this headline">¶</a></h2>
 <dl class="class">
 <dt id="tracklib.util.sweep.Sweeper">
 <em class="property">class </em><code class="sig-prename descclassname">tracklib.util.sweep.</code><code class="sig-name descname">Sweeper</code><span class="sig-paren">(</span><em class="sig-param">dataset</em>, <em class="sig-param">fun</em>, <em class="sig-param">copy=True</em>, <em class="sig-param">repeats=1</em>, <em class="sig-param">processes=1</em><span class="sig-paren">)</span><a class="headerlink" href="#tracklib.util.sweep.Sweeper" title="Permalink to this definition">¶</a></dt>
@@ -524,7 +627,7 @@ marked as <code class="docutils literal notranslate"><span class="pre">None</spa
 
 </div>
 <div class="section" id="module-tracklib.util.util">
-<span id="tracklib-util-util"></span><h2><a class="toc-backref" href="#id5">tracklib.util.util</a><a class="headerlink" href="#module-tracklib.util.util" title="Permalink to this headline">¶</a></h2>
+<span id="tracklib-util-util"></span><h2><a class="toc-backref" href="#id7">tracklib.util.util</a><a class="headerlink" href="#module-tracklib.util.util" title="Permalink to this headline">¶</a></h2>
 <p>Random assortment of useful auxiliary stuff</p>
 <dl class="function">
 <dt id="tracklib.util.util.distribute_noiselevel">
@@ -572,29 +675,6 @@ decrease spacing.</p></li>
 </dl>
 </dd></dl>
 
-<dl class="function">
-<dt id="tracklib.util.util.KM_survival">
-<code class="sig-prename descclassname">tracklib.util.util.</code><code class="sig-name descname">KM_survival</code><span class="sig-paren">(</span><em class="sig-param">data</em>, <em class="sig-param">censored</em>, <em class="sig-param">conf=0.95</em>, <em class="sig-param">Tmax=inf</em>, <em class="sig-param">S1at=0</em><span class="sig-paren">)</span><a class="headerlink" href="#tracklib.util.util.KM_survival" title="Permalink to this definition">¶</a></dt>
-<dd><p>Kaplan-Meier survival estimator on censored data</p>
-<p>This is the standard survival estimator for right-censored data, i.e. data
-points that are marked as “censored” enter the estimate as <code class="docutils literal notranslate"><span class="pre">t_true</span> <span class="pre">&gt;</span> <span class="pre">t</span></code>.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>data</strong> (<em>(</em><em>N</em><em>,</em><em>) </em><em>array-like</em>) – individual survival times</p></li>
-<li><p><strong>censored</strong> (<em>(</em><em>N</em><em>,</em><em>) </em><em>array-like</em><em>, </em><em>boolean</em>) – indicate for each data point whether it is right-censored or not.</p></li>
-<li><p><strong>conf</strong> (<em>float in</em><em> (</em><em>0</em><em>, </em><em>1</em><em>)</em><em>, </em><em>optional</em>) – the confidence bounds on the survival curve to calculate</p></li>
-<li><p><strong>Tmax</strong> (<em>float</em>) – can be used to compute survival only up to some time <code class="docutils literal notranslate"><span class="pre">Tmax</span></code>.</p></li>
-<li><p><strong>S1at</strong> (<em>float</em><em>, </em><em>optional</em>) – give a natural lower limit for survival times where S = 1.</p></li>
-</ul>
-</dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p><em>(T, 4) array</em> – the columns of this array are: t, S(t), l(t), u(t), where l and u are
-lower and upper confidence levels respectively.</p>
-</dd>
-</dl>
-</dd></dl>
-
 </div>
 </div>
 
@@ -607,9 +687,11 @@ lower and upper confidence levels respectively.</p>
   <h3><a href="index.html">Table of Contents</a></h3>
   <ul>
 <li><a class="reference internal" href="#">tracklib.util</a><ul>
+<li><a class="reference internal" href="#module-tracklib.util.clean">tracklib.util.clean</a></li>
 <li><a class="reference internal" href="#module-tracklib.util.mcmc">tracklib.util.mcmc</a></li>
 <li><a class="reference internal" href="#module-tracklib.util.parallel">tracklib.util.parallel</a></li>
 <li><a class="reference internal" href="#module-tracklib.util.plotting">tracklib.util.plotting</a></li>
+<li><a class="reference internal" href="#module-tracklib.util.stats">tracklib.util.stats</a></li>
 <li><a class="reference internal" href="#module-tracklib.util.sweep">tracklib.util.sweep</a></li>
 <li><a class="reference internal" href="#module-tracklib.util.util">tracklib.util.util</a></li>
 </ul>
