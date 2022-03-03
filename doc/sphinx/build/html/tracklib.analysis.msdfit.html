@@ -1333,6 +1333,38 @@ error, so by default we fix Γ and J to be the same for all dimensions.</p>
 
 </dd></dl>
 
+<dl class="class">
+<dt id="tracklib.analysis.msdfit.lib.OneLocusRouseFit">
+<em class="property">class </em><code class="sig-prename descclassname">tracklib.analysis.msdfit.lib.</code><code class="sig-name descname">OneLocusRouseFit</code><span class="sig-paren">(</span><em class="sig-param">data</em>, <em class="sig-param">k=1</em><span class="sig-paren">)</span><a class="headerlink" href="#tracklib.analysis.msdfit.lib.OneLocusRouseFit" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#tracklib.analysis.msdfit.core.Fit" title="tracklib.analysis.msdfit.core.Fit"><code class="xref py py-class docutils literal notranslate"><span class="pre">tracklib.analysis.msdfit.core.Fit</span></code></a></p>
+<p>Fit a Rouse model for one locus on a polymer</p>
+<p>This is very parallel to the implementation of <a class="reference internal" href="#tracklib.analysis.msdfit.lib.TwoLocusRouseFit" title="tracklib.analysis.msdfit.lib.TwoLocusRouseFit"><code class="xref any py py-class docutils literal notranslate"><span class="pre">TwoLocusRouseFit</span></code></a>.</p>
+<p>The parameters for this MSD are</p>
+<ul class="simple">
+<li><p>the (squared) localization error <code class="docutils literal notranslate"><span class="pre">noise2</span></code></p></li>
+<li><p>the Rouse scaling prefactor Γ</p></li>
+</ul>
+<p>Since all of these are positive quantities with units, it seems natural to
+perform the fit in log-space. Thus we (effectively) place a 1/x prior on
+all of them.</p>
+<p>The parameter vector for this fit is thus <code class="docutils literal notranslate"><span class="pre">d*[log(noise2),</span> <span class="pre">log(Γ)]</span></code>.</p>
+<p>This class allows for separate fits to all the spatial dimensions of the
+data. In a standard setting this makes sense only for the localization
+error, so by default we fix Γ to be the same for all dimensions.</p>
+<dl class="method">
+<dt id="tracklib.analysis.msdfit.lib.OneLocusRouseFit.params2msdm">
+<code class="sig-name descname">params2msdm</code><span class="sig-paren">(</span><em class="sig-param">params</em><span class="sig-paren">)</span><a class="headerlink" href="#tracklib.analysis.msdfit.lib.OneLocusRouseFit.params2msdm" title="Permalink to this definition">¶</a></dt>
+<dd><p>Give an MSD function (and drift = 0) for given parameters</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="tracklib.analysis.msdfit.lib.OneLocusRouseFit.initial_params">
+<code class="sig-name descname">initial_params</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#tracklib.analysis.msdfit.lib.OneLocusRouseFit.initial_params" title="Permalink to this definition">¶</a></dt>
+<dd><p>Initial parameters from empirical MSD</p>
+</dd></dl>
+
+</dd></dl>
+
 </div>
 </div>
 

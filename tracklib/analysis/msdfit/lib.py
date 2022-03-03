@@ -492,6 +492,65 @@ class TwoLocusRouseFit(core.Fit):
 
         return np.log(np.array(self.d*[noise2, G, J]))
 
+class OneLocusRouseFit(core.Fit):
+    """
+    Fit a Rouse model for one locus on a polymer
+
+    This is very parallel to the implementation of `TwoLocusRouseFit`.
+
+    The parameters for this MSD are
+
+    - the (squared) localization error ``noise2``
+    - the Rouse scaling prefactor Γ
+
+    Since all of these are positive quantities with units, it seems natural to
+    perform the fit in log-space. Thus we (effectively) place a 1/x prior on
+    all of them.
+
+    The parameter vector for this fit is thus ``d*[log(noise2), log(Γ)]``.
+
+    This class allows for separate fits to all the spatial dimensions of the
+    data. In a standard setting this makes sense only for the localization
+    error, so by default we fix Γ to be the same for all dimensions.
+    """
+    def __init__(self, data, k=1):
+        super().__init__(data)
+        
+        # Parameters are log- (noise2, Γ)
+        self.ss_order = 1
+        self.bounds = 2*self.d*[(-np.inf, np.inf)]
+        self.constraints = [] # Don't need to check Cpositive, will always be true for Rouse MSDs
+
+        self.fix_values = [(2*dim+i, lambda x, i=i : x[i])
+                           for dim in range(1, self.d)
+                           for i in [1]]
+        
+    def params2msdm(self, params):
+        """
+        Give an MSD function (and drift = 0) for given parameters
+        """
+        msdm = []
+        for dim in range(self.d):
+            with np.errstate(under='ignore'): # if noise == 0
+                noise2, G = np.exp(params[(2*dim):(2*(dim+1))])
+
+            @core.MSDfun
+            def msd(dt, noise2=noise2, G=G):
+                return 2*noise2 + G*np.sqrt(dt)
+
+            msdm.append((msd, 0))
+        return msdm
+        
+    def initial_params(self):
+        """
+        Initial parameters from empirical MSD
+        """
+        e_msd = MSD(self.data) / self.d
+        G = np.nanmean(e_msd[1:5]/np.sqrt(np.arange(1, 5)))
+        noise2 = e_msd[1]/2
+
+        return np.log(np.array(self.d*[noise2, G]))
+
 # class RouseFitDiscrete(Fit):
 #     def __init__(self, data, w):
 #         super().__init__(data)
