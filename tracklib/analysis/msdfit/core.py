@@ -1078,7 +1078,7 @@ class Profiler():
                     nonidentifiable_cutoffs = [10, 10]
                 else:
                     pe = self.point_estimate['params'][iparam]
-                    step = pe*(self.bracket_step - 1)
+                    step = np.abs(pe)*(self.bracket_step - 1)
                     nonidentifiable_cutoffs = 2*[2*np.abs(pe)]
                 
                 self.bracket_strategy.append({
