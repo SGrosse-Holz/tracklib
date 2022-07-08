@@ -617,6 +617,28 @@ class Fit(metaclass=ABCMeta):
 
             full.append((ip, fun))
         return full
+
+    def number_of_fit_parameters(self, fix_values=None):
+        """
+        Get the number of independent fit parameters
+
+        The number of independent fit parameters is the full number of
+        parameters (``len(params)``) minus the number of parameters that are
+        fixed via the ``fix_values`` mechanism. This function is provided for
+        convenience.
+
+        Parameters
+        ----------
+        fix_values : list of tuples (i, fix_to), optional
+            should be the same as was / will be handed to `run`
+
+        Returns
+        -------
+        int
+            the number of fit parameters
+        """
+        n_fixed = len(self.expand_fix_values(fix_values)) # also ensures uniqueness of indices
+        return len(self.bounds) - n_fixed
                 
     def get_value_fixer(self, fix_values=None):
         """

@@ -99,10 +99,14 @@ class TestRouseLoci(myTestCase):
             self.assertGreater(res['params'][i], 0)
             self.assertLess(res['params'][i], 2)
 
+        self.assertEqual(fit.number_of_fit_parameters(), 6)
+
         # Test refining a spline fit
         fit2 = msdfit.lib.SplineFit(self.data, ss_order=0, n=6,
                                     previous_spline_fit_and_result = (fit, res),
                                     )
+
+        self.assertEqual(fit2.number_of_fit_parameters(), 10)
 
         with self.assertRaises(RuntimeError):
             res2 = fit2.run(optimization_steps=('gradient',), maxfev=10)
@@ -114,6 +118,7 @@ class TestRouseLoci(myTestCase):
         res = fit.run(full_output=True, optimization_steps=(dict(method='Nelder-Mead', options={'fatol' : 0.1, 'xatol' : 0.01}),))[-1][0]
 
         self.assertEqual(res['params'][0], -np.inf)
+        self.assertEqual(fit.number_of_fit_parameters(), 2)
 
     @patch('builtins.print')
     def testNPX(self, mock_print):
