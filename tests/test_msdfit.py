@@ -30,9 +30,12 @@ __all__ = [
 
 # We test mostly the library implementations, since the base class `Fit` is
 # abstract
+# 
 # We also test on so few data that all the results are useless and we don't
 # attempt to check for correctness of the fit. This code is supposed to be
 # technical tests and not benchmarks, so it should run fast.
+# 
+# These tests are organized not by fit class, but by synthetic motion type
 
 # Extend unittest.TestCase's capabilities to deal with numpy arrays
 class myTestCase(unittest.TestCase):
@@ -66,7 +69,11 @@ class TestDiffusive(myTestCase):
         res2 = fit.run(init_from={'params' : np.array([1e-20, 0.5, 0, 0, 0, 0]), 'logL' : 0})
 
     def testNPX(self):
-        pass # TODO
+        fit = msdfit.lib.NPXFit(self.data, ss_order=1, n=0)
+        res = fit.run()
+
+        fit = msdfit.lib.NPXFit(self.data, ss_order=1, n=1)
+        res = fit.run()
 
 class TestRouseLoci(myTestCase):
     def setUp(self):
@@ -107,6 +114,48 @@ class TestRouseLoci(myTestCase):
         res = fit.run(full_output=True, optimization_steps=(dict(method='Nelder-Mead', options={'fatol' : 0.1, 'xatol' : 0.01}),))[-1][0]
 
         self.assertEqual(res['params'][0], -np.inf)
+
+    @patch('builtins.print')
+    def testNPX(self, mock_print):
+        fit = msdfit.lib.NPXFit(self.data, ss_order=0, n=1)
+        res = fit.run()
+
+        new_fit = msdfit.lib.NPXFit(self.data, ss_order=0, n=2,
+                                    previous_NPXFit_and_result = (fit, res),
+                                    )
+        new_res = new_fit.run()
+        self.assertGreater(new_res['logL'], res['logL'])
+
+        new2_fit = msdfit.lib.NPXFit(self.data, ss_order=1, n=0,
+                                     previous_NPXFit_and_result = (new_fit, new_res),
+                                     )
+        try:
+            new2_res = new2_fit.run()
+        except RuntimeError as err:
+            pass # if fit does not converge, which might happen.
+                 # ideally we would figure out how to make sure it converges
+                 # or at least check that the right error message has been printed
+        # the below comparison is meaningless, because we compare different ss_order likelihoods
+        # self.assertLess(new2_res['logL'], new_res['logL'])
+
+        new3_fit = msdfit.lib.NPXFit(self.data, ss_order=0, n=1,
+                                     previous_NPXFit_and_result = (new2_fit, new2_res),
+                                     )
+        try:
+            new3_res = new3_fit.run()
+            self.assertLess(new3_res['logL'], new_res['logL'])
+            self.assertLess(new3_res['logL'], res['logL'])
+        except RuntimeError:
+            pass
+
+        with self.assertRaises(ValueError):
+            fit = msdfit.lib.NPXFit(self.data, ss_order=0, n=0)
+
+        with self.assertRaises(ValueError):
+            data = self.data.process(lambda traj: tl.Trajectory.fromArray(traj[:][:, 0]))
+            fit = msdfit.lib.NPXFit(data, ss_order=0, n=5,
+                                    previous_NPXFit_and_result = (new2_fit, new2_res),
+                                    )
 
 class TestRouseSingleLocus(myTestCase):
     def setUp(self):

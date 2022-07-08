@@ -286,119 +286,200 @@ class SplineFit(core.Fit):
         x_full = self.compactify(np.arange(1, self.T))
         return (full_penalty - np.max(np.abs(csp(x_full))))/start_penalizing
 
-# class NPXFit(Fit): # NPX = Noise + Powerlaw + X (i.e. spline)
-#     def __init__(self, data, ss_order, n=0):
-#         super().__init__(data)
-#         if n == 0 and ss_order == 0:
-#             raise ValueError("Incompatible assumptions: pure powerlaw (n=0) and trajectory steady state (ss_order=0)")
-#         self.n = n
-#         
-#         # Parameters are (noise2, α, log(Γ), x0, ..., x{n-1}, y1, .., yn)
-#         # If x == 0 we omit x0. So we always have 2*n spline parameters!
-#         self.ss_order = ss_order
-#         self.bounds = 2*[(1e-10, np.inf)] + [(-np.inf, np.inf)] + n*[(0, 2 if ss_order == 0 else 1)] + n*[(-np.inf, np.inf)]
-#         self.constraints = [self.constraint_dx,
-#                             self.constraint_dy,
-#                             self.constraint_logmsd,
-#                             self.constraint_Cpositive,
-#                            ]
-#         
-#         # Set up
-#         self.logt_full = np.log(np.arange(1, self.T))
-#         self.x_full = self.logt_full / self.logt_full[-1]
-#         if self.ss_order == 0:
-#             # Fit in 4/π*arctan(log) space and add point at infinity, i.e. x = 4/π*arctan(log(∞)) = 2
-#             self.x_full = np.append((4/np.pi)*np.arctan(self.x_full), 2)
-#             self.upper_bc_type = (1, 0.0)
-#         elif self.ss_order == 1:
-#             # Simply fit in log space, with natural boundary conditions
-#             self.upper_bc_type = 'natural'
-#         else:
-#             raise ValueError(f"Did not understand ss_order = {ss_order}")
-#         
-#     def _first_spline_point(self, x0, A, B):
-#         if self.ss_order == 0:
-#             logt0 = np.tan(np.pi/4*x0)*self.logt_full[-1]
-#             dcdx0 = np.pi/4*A*self.logt_full[-1]/np.cos(np.pi/4*x0)**2
-#         elif self.ss_order == 1:
-#             logt0 = x0*self.logt_full[-1]
-#             dcdx0 = A*self.logt_full[-1]
-#         else:
-#             raise ValueError
-#         y0 = A*logt0 + B
-#         return x0, logt0, y0, dcdx0
-#             
-#     def _params2logmsd(self, params):
-#         _, A, B = params[:3]
-#         if self.n == 0 or params[3] >= 1: # Note order of conditions. params[3] only exists if n > 0
-#             return A*self.logt_full + B
-#         
-#         # Set up first spline point
-#         x0, logt0, y0, dcdx0 = self._first_spline_point(params[3], A, B)
-#         i0 = np.nonzero(x0 <= self.x_full)[0][0] # exists, because we know that x0 < 1, see above
-#         
-#         # Get spline
-#         x = np.array([*params[3:(self.n+3)], self.x_full[-1]])
-#         y = np.array([y0, *params[(self.n+3):]])
-#         csp = interpolate.CubicSpline(x, y, bc_type=((1, dcdx0), self.upper_bc_type))
-#         
-#         # Put together MSD
-#         # for simplicity, we initialize as all powerlaw, then overwrite the top portion
-#         logmsd = A*self.logt_full + B
-#         logmsd[i0:] = csp(self.x_full[i0:(-1 if self.ss_order == 0 else None)])
-#         return logmsd
-#         
-#     def params2acfm(self, params):
-#         logmsd = self._params2logmsd(params)
-#         if self.ss_order == 0:
-#             msd = np.insert(np.exp(logmsd), 0, 0)
-#             ss_var = 0.5*np.exp(params[-1]) # γ(0) = 0.5*μ(∞)
-#             acf = msdss2procacf(msd + 2*params[0], ss_var + params[0])
-#         elif self.ss_order == 1:
-#             msd = np.insert(np.exp(logmsd), 0, 0)
-#             acf = msd2stepacf(msd + 2*params[0])
-#         else:
-#             raise ValueError
-#         return acf, 0
-#             
-#     def initial_params(self):
-#         # Fit linear (i.e. powerlaw), which is useful in both cases.
-#         # For ss_order == 0 we will use it as boundary condition,
-#         # for ss_order == 1 this will be the initial MSD
-#         e_msd = MSD(self.data)
-#         i_valid = np.nonzero(~np.isnan(e_msd[1:]))[0]
-#         (A, B), _ = optimize.curve_fit(lambda x, A, B : A*x + B,
-#                                        self.logt_full[i_valid],
-#                                        np.log(e_msd[i_valid+1]), # gotta skip msd[0] = 0
-#                                        p0=(1, 0),
-#                                        bounds=([0, -np.inf], np.inf),
-#                                       )
-#             
-#         x0, logt0, y0, dcdx0 = self._first_spline_point(0.5, A, B)
-#         x_init = np.linspace(x0, self.x_full[-1], self.n+1)
-#         if self.ss_order == 0:
-#             # interpolate along 2-point spline
-#             ss_var = np.nanmean(np.concatenate([np.sum(traj[:]**2, axis=1) for traj in self.data]))
-#             csp = interpolate.CubicSpline(np.array([x0, 2]),
-#                                           np.array([y0, np.log(2*ss_var)]),
-#                                           bc_type = ((1, dcdx0), (1, 0.)),
-#                                          )
-#             y_init = csp(x_init)
-#         elif self.ss_order == 1:
-#             y_init = A*self.logt_full[-1]*x_init + B
-#         else:
-#             raise ValueError
-#             
-#         return np.array([e_msd[1], A, B, *x_init[:-1], *y_init[1:]])
-#         
-#     def constraint_dx(self, params):
-#         if self.n == 0:
-#             return np.inf
-#         
-#         min_step = 1e-7 # x is compactified to (0, 1)
-#         x = np.array([*params[3:(self.n+3)], self.x_full[-1]])
-#         return np.min(np.diff(x))/min_step
-#     
+class NPXFit(core.Fit): # NPX = Noise + Powerlaw + X (i.e. spline)
+    def __init__(self, data, ss_order, n=0,
+                 previous_NPXFit_and_result=None,
+                ):
+        super().__init__(data)
+        if n == 0 and ss_order == 0:
+            raise ValueError("Incompatible assumptions: pure powerlaw (n=0) and trajectory steady state (ss_order=0)")
+        self.n = n
+        
+        # Parameters are (log(noise2), log(Γ), α, x0, ..., x{n-1}, y1, .., yn)
+        # If n == 0 we omit x0. So we always have 2*n spline parameters!
+        self.ss_order = ss_order
+        self.bounds = self.d*([(-np.inf, np.inf), (-np.inf, np.inf), (0, 2)]
+                              + n*[(0, 2 if ss_order == 0 else 1)] + n*[(-np.inf, np.inf)])
+
+        self.constraints = [self.constraint_dx,
+                            self.constraint_logmsd,
+                            self.constraint_Cpositive,
+                           ]
+        if self.n == 0: # don't need constraints
+            self.constraints = []
+
+        self.fix_values = [((2*n+3)*dim + i, lambda x, i=i: x[i])
+                           for dim in range(1, self.d)
+                           for i in range(1, 2*n+3)]
+        
+        self.logT = np.log(self.T)
+        if self.ss_order == 0:
+            # Fit in 4/π*arctan(log) space and add point at infinity, i.e. x = 4/π*arctan(log(∞)) = 2
+            self.upper_bc_type = (1, 0.0)
+            self.x_last = 2
+        elif self.ss_order == 1:
+            # Simply fit in log space, with natural boundary conditions
+            self.upper_bc_type = 'natural'
+            self.x_last = 1
+        else: # pragma: no cover
+            raise ValueError(f"Did not understand ss_order = {ss_order}")
+
+        self.prev_fit = previous_NPXFit_and_result # for (alternative) initialization
+        if self.prev_fit and not self.prev_fit[0].d == self.d:
+            raise ValueError(f"Previous NPXFit has different number of dimensions ({self.prev_fit[0].d}) from the current data set ({self.d}).")
+
+    def compactify(self, dt):
+        x = np.log(dt) / self.logT
+        if self.ss_order == 0:
+            x = (4/np.pi)*np.arctan(x)
+        return x
+
+    def decompactify_log(self, x):
+        if self.ss_order == 0:
+            x = np.tan(np.pi/4*x)
+        return x * self.logT
+
+    def _first_spline_point(self, x0, logG, alpha):
+        logt0 = self.decompactify_log(x0)
+        y0 = alpha*logt0 + logG
+
+        # also need derivative for C-spline boundary condition
+        if self.ss_order == 0:
+            dcdx0 = alpha / ( 4/np.pi*self.logT/(self.logT**2 + logt0**2) )
+        elif self.ss_order == 1:
+            dcdx0 = alpha * self.logT
+        else: # pragma: no cover
+            raise ValueError
+
+        return x0, logt0, y0, dcdx0
+
+    def _params2csp(self, params):
+        csps = self.d*[None]
+        if self.n > 0:
+            for dim in range(self.d):
+                params_1d = params[((2*self.n+3)*dim):((2*self.n+3)*(dim+1))]
+
+                x0, logt0, y0, dcdx0 = self._first_spline_point(*params_1d[[3, 1, 2]])
+                x = np.append(params_1d[3:(3+self.n)], self.x_last)
+                y = np.insert(params_1d[(3+self.n):(3+2*self.n)], 0, y0)
+
+                csps[dim] = interpolate.CubicSpline(x, y, bc_type=((1, dcdx0), self.upper_bc_type))
+
+        return csps
+
+    def params2msdm(self, params):
+        csps = self._params2csp(params)
+        msdm = []
+        for dim, csp in enumerate(csps):
+            params_1d = params[((2*self.n+3)*dim):((2*self.n+3)*(dim+1))]
+
+            with np.errstate(under='ignore'): # if noise == 0
+                noise2, G = np.exp(params_1d[[0, 1]])
+            alpha = params_1d[2]
+
+            if self.n == 0:
+                @core.MSDfun
+                def msd(dt, noise2=noise2, G=G, alpha=alpha):
+                    return 2*noise2 + G*(dt**alpha)
+            else:
+                t0 = np.exp(self.decompactify_log(params_1d[3]))
+
+                @core.MSDfun
+                def msd(dt, noise2=noise2, G=G, alpha=alpha, csp=csp):
+                    out = G*(dt**alpha)
+                    ind = dt > t0
+                    if np.any(ind):
+                        x = self.compactify(dt[ind])
+                        out[ind] = np.exp(csp(x))
+                    return out
+
+            msdm.append((msd, 0))
+        return msdm
+            
+    def initial_params(self):
+        params = np.empty((3+2*self.n)*self.d, dtype=float)
+        params[:] = np.nan
+
+        if self.prev_fit:
+            fit, res = self.prev_fit
+            csps = fit._params2csp(res['params'])
+
+            for dim in range(self.d):
+                old_params_1d = res['params'][((2*fit.n+3)*dim):((2*fit.n+3)*(dim+1))]
+                ioff = (2*self.n + 3)*dim
+                params[ioff:(ioff+3)] = old_params_1d[:3]
+                if self.n == 0:
+                    continue
+
+                if fit.n == 0 or old_params_1d[3] >= self.x_last: # note order of conditions: old_params_1d[3] only exists if fit.n > 0
+                    x_init = np.linspace(0.5, self.x_last, self.n+1)
+                    y_init = params[ioff+2]*self.decompactify_log(x_init) + params[ioff+1]
+                else:
+                    x_init = np.linspace(old_params_1d[3], self.x_last, self.n+1)
+                    y_init = csps[dim](x_init)
+
+                params[(ioff+3):(ioff+3+self.n)] = x_init[:-1]
+                params[(ioff+3+self.n):(ioff+3+2*self.n)] = y_init[1:]
+        else:
+            # Fit linear (i.e. powerlaw), which is useful in both cases.
+            # For ss_order == 0 we will use it as boundary condition,
+            # for ss_order == 1 this will be the initial MSD
+            e_msd = MSD(self.data)/self.d
+            dt_valid = np.nonzero(~np.isnan(e_msd))[0][1:]
+            (alpha, logG), _ = optimize.curve_fit(lambda x, alpha, logG : alpha*x + logG,
+                                                  np.log(dt_valid),
+                                                  np.log(e_msd[dt_valid]),
+                                                  p0=(1, 0),
+                                                  bounds=([0, -np.inf], [2, np.inf]),
+                                              )
+
+            for dim in range(self.d):
+                ioff = (2*self.n+3)*dim
+                params[ioff:(ioff+3)] = [np.log(e_msd[1]/2), logG, alpha]
+
+            if self.n > 0:
+                x0, logt0, y0, dcdx0 = self._first_spline_point(0.5, logG, alpha)
+                x_init = np.linspace(x0, self.x_last, self.n+1)
+                if self.ss_order == 0:
+                    # interpolate along 2-point spline
+                    ss_var = np.nanmean(np.concatenate([np.sum(traj[:]**2, axis=1) for traj in self.data]))/self.d
+                    csp = interpolate.CubicSpline(np.array([x0, 2]),
+                                                  np.array([y0, np.log(2*ss_var)]),
+                                                  bc_type = ((1, dcdx0), (1, 0.)),
+                                                 )
+                    y_init = csp(x_init)
+                elif self.ss_order == 1:
+                    y_init = alpha*self.decompactify_log(x_init) + logG
+                else: # pragma: no cover
+                    raise ValueError
+
+                for dim in range(self.d):
+                    ioff = (2*self.n+3)*dim
+                    params[(ioff+3):(ioff+3+self.n)] = x_init[:-1]
+                    params[(ioff+3+self.n):(ioff+3+2*self.n)] = y_init[1:]
+
+        assert ~np.any(np.isnan(params))
+        return params
+
+    def initial_offset(self):
+        if self.prev_fit is None:
+            return 0
+        else:
+            # Technically the likelihoods of two NPXFits are not comparable
+            # when ss_order is different (which is presumably rare, but might
+            # happen. However, we can assume that they are roughly the same
+            # order of magnitude, such that setting this as initial offset is
+            # probably a better guess than 0.
+            return -self.prev_fit[1]['logL']
+        
+    def constraint_dx(self, params):
+        # constraints are not applied if n == 0, so we can safely assume n > 0
+        min_step = 1e-7 # x is compactified to (0, 1)
+        x = np.stack([np.append(params[((2*self.n+3)*dim + 3):((2*self.n+3)*dim + 3+self.n)], self.x_last)
+                      for dim in range(self.d)], axis=0)
+        return np.min(np.diff(x, axis=-1))/min_step
+    
+    # Should (!) be taken care of by the Cpositive constraint
 #     def constraint_dy(self, params):
 #         # Ensure monotonicity in the MSD. This makes sense intuitively, but is it technically a condition?
 #         if self.n == 0:
@@ -408,13 +489,21 @@ class SplineFit(core.Fit):
 #         _, _, y0, _ = self._first_spline_point(*params[[3, 1, 2]])
 #         y = np.array([y0, *params[(self.n+3):]])
 #         return np.min(np.diff(y))/min_step
-#     
-#     def constraint_logmsd(self, params):
-#         start_penalizing = 200
-#         full_penalty = 500
-#         
-#         logmsd = self._params2logmsd(params)
-#         return (full_penalty - np.max(np.abs(logmsd)))/start_penalizing
+    
+    def constraint_logmsd(self, params):
+        # constraints are not applied if n == 0, so we can safely assume n > 0
+        start_penalizing = 200
+        full_penalty = 500
+
+        csps = self._params2csp(params)
+        x_full = self.compactify(np.arange(1, self.T))
+        xs = [x_full[x_full >= params[(2*self.n+3)*dim + 3]] for dim in range(self.d)]
+
+        if all(len(x) == 0 for x in xs): # pragma: no cover
+            return np.inf
+
+        logmsd = np.concatenate([csp(x) for csp, x in zip(csps, xs)])
+        return (full_penalty - np.max(np.abs(logmsd)))/start_penalizing
 
 class TwoLocusRouseFit(core.Fit):
     """
