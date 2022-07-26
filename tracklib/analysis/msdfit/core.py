@@ -181,12 +181,15 @@ def _GP_core_logL(C, x):
     with np.errstate(under='ignore'):
         s, logdet = np.linalg.slogdet(C)
     if s <= 0: # pragma: no cover
+        # Note that det > 0 does not imply positive definite
         raise BadCovarianceError("Covariance not positive definite. slogdet = ({}, {})".format(s, logdet))
         
     try:
         xCx = x @ linalg.solve(C, x, assume_a='pos')
     except (FloatingPointError, linalg.LinAlgError) as err: # pragma: no cover
         # what's the problematic case that made me insert this?
+        # --> can (probably?) happen in numerical edge cases. Should usually be
+        #     prevented by `Fit` in the first place
         GP_vprint(3, f"Problem when inverting covariance, even though slogdet = ({s}, {logdet})")
         GP_vprint(3, type(err), err)
         raise BadCovarianceError("Inverting covariance did not work")
