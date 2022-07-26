@@ -1250,7 +1250,7 @@ class Profiler():
         """
         self.run_count += 1
         if self.run_count > self.max_fit_runs:
-            raise StopIteration(f"Ran out of likelihood evaluations (max_fit_runs = {self.max_fit_runs})")
+            raise RuntimeError(f"Ran out of likelihood evaluations (max_fit_runs = {self.max_fit_runs})")
             
         if 'init_from' not in fit_kw:
             fit_kw['init_from'] = self.best_estimate
