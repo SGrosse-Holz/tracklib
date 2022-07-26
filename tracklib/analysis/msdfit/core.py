@@ -1130,16 +1130,10 @@ class Profiler():
         this exception and will then be restarted properly.
         """
         def decorated_fun(self, *args, **kwargs):
-            restarts = 0
-            while True:
+            for restarts in range(self.max_restarts_per_parameter):
                 try:
                     return fun(self, *args, **kwargs)
                 except Profiler.FoundBetterPointEstimate:
-                    restarts += 1
-                    if restarts > self.max_restarts_per_parameter:
-                        raise RuntimeError("Ran out of restarts after finding a better "
-                                          f"point estimate (max_restarts = {self.max_restarts_per_parameter})") # pragma: no cover
-
                     self.vprint(1, f"Warning: Found a better point estimate ({self.best_estimate['logL']} > {self.point_estimate['logL']})")
                     self.vprint(1, f"Will restart from there ({self.max_restarts_per_parameter-restarts} remaining)")
                     fit_kw = {}
@@ -1159,7 +1153,10 @@ class Profiler():
                     self.vprint(2, "Finding new point estimate ...")
                     self.run_fit(**fit_kw)
 
-            # If this while loop runs out of restarts, we're pretty screwed overall
+            # If this loop runs out of restarts, we're pretty screwed overall
+            raise RuntimeError("Ran out of restarts after finding a better "
+                              f"point estimate (max_restarts = {self.max_restarts_per_parameter})") # pragma: no cover
+
         return decorated_fun
     
     ### Point estimation ###
