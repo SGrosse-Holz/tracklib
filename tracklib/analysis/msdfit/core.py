@@ -1137,8 +1137,8 @@ class Profiler():
                 except Profiler.FoundBetterPointEstimate:
                     restarts += 1
                     if restarts > self.max_restarts_per_parameter:
-                        raise StopIteration("Ran out of restarts after finding a better "
-                                            f"point estimate (max_restarts = {self.max_restarts_per_parameter})") # pragma: no cover
+                        raise RuntimeError("Ran out of restarts after finding a better "
+                                          f"point estimate (max_restarts = {self.max_restarts_per_parameter})") # pragma: no cover
 
                     self.vprint(1, f"Warning: Found a better point estimate ({self.best_estimate['logL']} > {self.point_estimate['logL']})")
                     self.vprint(1, f"Will restart from there ({self.max_restarts_per_parameter-restarts} remaining)")
