@@ -739,7 +739,7 @@ class Fit(metaclass=ABCMeta):
                        - self.logprior(params) \
                        + penalty \
                        - offset
-            
+
         return min_target
 
     def run(self,
@@ -1274,8 +1274,9 @@ class Profiler():
                                    verbosity=0,
                                    **fit_kw,
                                   )
-            except RuntimeError:
+            except Exception as err:
                 self.vprint(2, "Gradient fit failed, using simplex")
+                self.vprint(3, f"^ was {type(err).__name__}: {str(err)}")
                 res = self.fit.run(optimization_steps = ('simplex',),
                                    **fit_kw,
                                   )
@@ -1528,6 +1529,8 @@ class Profiler():
         (a, a_pL), (b, b_pL) = self.initial_bracket_points()
         m = self.point_estimate['params'][self.iparam]
         m_pL = self.point_estimate['logL']
+
+        self.vprint(3, "Found initial bracket boundaries, now solving by bisection")
         
         roots = np.array([np.nan, np.nan])
         if a_pL == np.inf:
@@ -1539,7 +1542,7 @@ class Profiler():
             if np.isnan(roots[i]):
                 roots[i] = self.solve_bisection(np.asarray(bracket), np.asarray(bracket_pL))
             if i == 0:
-                self.vprint(2, f"Found left edge, now searching right one @ {roots[i]}")
+                self.vprint(2, f"Found left edge @ {roots[i]}, now searching right one")
         
         self.vprint(2, f"found CI = {roots} (point estimate = {m}, iparam = {self.iparam})\n")
         return m, roots
