@@ -1150,6 +1150,8 @@ class Profiler():
                         self.point_estimate = None
 
                     # Get a new point estimate, starting from the better one we found
+                    # Note that run_fit() starts from best_estimate if
+                    # 'init_from' is not specified
                     self.vprint(2, "Finding new point estimate ...")
                     self.run_fit(**fit_kw)
 

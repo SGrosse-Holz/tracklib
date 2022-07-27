@@ -249,7 +249,7 @@ class TestProfiler(myTestCase):
 
     def testMaxFitRuns(self):
         profiler = msdfit.Profiler(self.fit, max_fit_runs=2)
-        with self.assertRaises(StopIteration):
+        with self.assertRaises(RuntimeError):
             profiler.find_MCI()
 
     def testNonidentifiability(self):
