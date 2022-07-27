@@ -1434,7 +1434,8 @@ class Profiler():
         bracket_param = 1 if self.bracket_strategy[self.iparam]['multiplicative'] else 0
         p = x0
         pL_thres = self.point_estimate['logL'] - self.LR_target
-        while pL > pL_thres:
+        hit_bound = False
+        while pL > pL_thres and not hit_bound:
             self.vprint(3, "bracketing: {:.3f} > {:.3f} @ {}".format(pL, pL_thres, p))
             
             # Check identifiability cutoff
@@ -1453,10 +1454,20 @@ class Profiler():
                 bracket_param += step
                 p = x0 + direction*bracket_param
 
+            # Enforce bounds
+            if direction*(p - self.fit.bounds[self.iparam][ib]) >= 0:
+                hit_bound = True
+                p = self.fit.bounds[self.iparam][ib]
+
             # Update profile likelihood
             pL = self.profile_likelihood(p)
         else:
-            self.vprint(3, "bracketing: {:.3f} < {:.3f} @ {}".format(pL, pL_thres, p))
+            if pL < pL_thres:
+                self.vprint(3, "bracketing: {:.3f} < {:.3f} @ {}".format(pL, pL_thres, p))
+            else:
+                assert hit_bound # Sanity check
+                self.vprint(3, "bracket reached {} bound: {:.3f} > {:.3f} @ {}".format("lower" if direction < 0 else "upper", pL, pL_thres, p))
+                pL = np.inf
             
         return p, pL
         
