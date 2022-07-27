@@ -836,8 +836,17 @@ class Fit(metaclass=ABCMeta):
         with np.errstate(all='raise'):
             for istep, step in enumerate(optimization_steps):
                 if step == 'simplex':
-                    options = {'fatol' : 0.1, 'xatol' : 0.01}
-                    self.vprint(3, "Note: why is `xatol = 0.01` a good choice? / do we need it?")
+                    # The stopping criterion for Nelder-Mead is max |f_point -
+                    # f_simplex| < fatol AND max |x_point - x_simplex| < xatol.
+                    # We don't care about the precision in the parameters (that
+                    # should be determined by running the Profiler), so we
+                    # switch off the xatol mechanism and use only fatol.
+                    # Note that fatol is "just" a threshold on the decrease
+                    # relative to the last evaluation, not a strict bound. So
+                    # the Profiler might actually still find a better estimate,
+                    # even though it uses the same tolerance (1e-3).
+                    options = {'fatol' : 1e-3, 'xatol' : np.inf}
+
                     if maxfev is not None:
                         options['maxfev'] = maxfev
                     kwargs = dict(method = 'Nelder-Mead',
