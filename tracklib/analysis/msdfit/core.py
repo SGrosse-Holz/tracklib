@@ -742,7 +742,7 @@ class Fit(metaclass=ABCMeta):
                 params = fixer(params)
             if just_return_full_params:
                 return params
-            
+
             penalty = self._penalty(params)
             if penalty < 0: # infeasible
                 return self.max_penalty
@@ -1274,8 +1274,9 @@ class Profiler():
                 res = self.fit.run(optimization_steps = ('gradient',),
                                    **fit_kw,
                                   )
-            except RuntimeError: # okay, this didn't work, whatever # pragma: no cover
+            except Exception as err: # okay, this didn't work, whatever # pragma: no cover
                 self.vprint(2, "Gradient refinement failed. Point estimate might be imprecise. Not a fatal error, resuming operation")
+                self.vprint(3, f"^ was {type(err).__name__}: {str(err)}")
 
         else: # we're starting from somewhere known, so start out trying to
               # move by gradient, use simplex if that doesn't work
