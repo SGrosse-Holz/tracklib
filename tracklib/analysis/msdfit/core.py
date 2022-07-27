@@ -29,6 +29,21 @@ verbosity = 1
 def vprint(v, *args, **kwargs):
     if verbosity >= v: # pragma: no cover
         print("[msdfit]", (v-1)*'--', *args, **kwargs)
+
+def method_verbosity_patch(meth):
+    """
+    Decorator for class methods that allows temporary change of verbosity
+    """
+    def wrapper(self, *args, verbosity=None, **kwargs):
+        old_verbosity = self.verbosity
+        if verbosity:
+            self.verbosity = verbosity
+        try:
+            return meth(self, *args, **kwargs)
+        finally:
+            self.verbosity = old_verbosity
+
+    return wrapper
         
 ################## Covariance in terms of MSD #################################
 
@@ -742,6 +757,7 @@ class Fit(metaclass=ABCMeta):
 
         return min_target
 
+    @method_verbosity_patch
     def run(self,
             init_from = None,
             optimization_steps=('simplex',),
@@ -749,7 +765,6 @@ class Fit(metaclass=ABCMeta):
             fix_values = None,
             full_output=False,
             show_progress=False,
-            verbosity=None,
            ):
         """
         Run the fit
@@ -790,11 +805,8 @@ class Fit(metaclass=ABCMeta):
             the associated value of the likelihood (or posterior, if the prior
             is non-trivial).
         """
-        if verbosity is not None:
-            tmp = self.verbosity
-            self.verbosity = verbosity
-            verbosity = tmp
         self.data.restoreSelection(self.data_selection)
+
         for step in optimization_steps:
             assert type(step) is dict or step in {'simplex', 'gradient'}
         
@@ -868,8 +880,6 @@ class Fit(metaclass=ABCMeta):
                     total_offset += fitres.fun
                     
         bar.close()
-        if verbosity is not None:
-            self.verbosity = verbosity
         
         if full_output:
             return all_res
