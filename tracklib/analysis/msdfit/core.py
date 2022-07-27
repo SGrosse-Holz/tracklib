@@ -1484,9 +1484,21 @@ class Profiler():
         -----
         All points evaluated along the way are stored in ``self.ress``
         """
+        bracket_width = np.diff(bracket)[0]
+        if bracket_width < 1e-10:
+            # Sometimes the (profile) likelihood is discontinuous right at the
+            # (prospective) CI bound, in which case we will not converge to the
+            # LR_interval. For the CI this is no problem, it just extends to
+            # the location of the jump. To be conservative, we include the jump
+            # in the CI.
+            self.vprint(3, "bracket collapsed; likelihoods are ({:.3f}, {:.3f})".format(*bracket_pL))
+            return bracket[np.argmin(bracket_pL)]
+
         c = np.mean(bracket)
         c_pL = self.profile_likelihood(c)
         
+        self.vprint(3, f"current bracket: {c} +- {bracket_width/2:.5g} @ {bracket_pL[0]:.3f}, {c_pL:.3f}, {bracket_pL[1]:.3f}")
+
         a_fun, b_fun = self.point_estimate['logL'] - bracket_pL - self.LR_target
         c_fun = self.point_estimate['logL'] - c_pL - self.LR_target
         i_update = 0 if a_fun*c_fun > 0 else 1
