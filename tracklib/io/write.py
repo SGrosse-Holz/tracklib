@@ -4,6 +4,9 @@ Some functions for writing trajectories / data sets to file
 import numpy as np
 import scipy.io
 import csv as csv_mod
+import h5py
+
+from . import hdf5 as hdf5_mod
 
 def csv(data, filename, header=True, delimiter='\t'):
     """
@@ -80,3 +83,29 @@ def mat(data, filename):
         trajs[i] = traj
 
     scipy.io.savemat(filename, {'trajs' : trajs})
+
+def hdf5(data, filename, group='/', name=None):
+    """
+    Write to HDF5 file
+
+    Parameters
+    ----------
+    data : TaggedSet or dict
+        the stuff to write
+    filename : str or pathlib.Path
+        where to write to
+    group : str
+        where in the file to write the data. Note: if ``group == '/'`` (the
+        default) the file will be truncated before writing
+    name : str
+        the name of the new entry to create for storing the data. If None
+        (default) store directly to `!group`
+    """
+    mode = 'w' if group == '/' else 'a'
+    with h5py.File(str(filename), mode) as f:
+        try:
+            f.create_group(group)
+        except ValueError: # if group exists, specifically '/'
+            pass
+
+        hdf5_mod.write(data, name, f[group])

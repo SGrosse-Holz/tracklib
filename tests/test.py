@@ -884,6 +884,7 @@ class TestUtilPlotting(myTestCase):
 
 from test_bild import *
 from test_msdfit import *
+from test_hdf5 import *
 
 if __name__ == '__main__':
     unittest.main(module=__file__[:-3])

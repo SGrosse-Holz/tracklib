@@ -6,8 +6,10 @@ used throughout the library
 import os,sys
 
 import numpy as np
+import h5py
 
 from tracklib import Trajectory, TaggedSet
+from . import hdf5 as hdf5_mod
 
 def csv(filename, columns=['x', 'y', 't', 'id'], tags=None, meta_post={}, **kwargs):
     """
@@ -177,3 +179,22 @@ def evalSPT(filename, tags=set()):
     csv
     """
     return csv(filename, ['x', 'y', 't', 'id'], tags, delimiter='\t')
+
+def hdf5(filename, group='/'):
+    """
+    Load data from an HDF5 file
+
+    Parameters
+    ----------
+    filename : str or pathlib.Path
+        the file to read
+    group : str
+        which group in the file to read. Defaults to root, i.e. the whole file.
+
+    Returns
+    -------
+    dict or object
+        whatever is stored in the file
+    """
+    with h5py.File(str(filename), 'r') as f:
+        return hdf5_mod.read(f[group])
