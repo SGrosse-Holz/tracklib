@@ -45,6 +45,7 @@ class TestHDF5(myTestCase):
             'Trajectory' : tl.Trajectory.fromArray([1, 2, 4, 5], meta_test='moo'),
             'TaggedSet' : tl.TaggedSet(),
             'empty_tuple' : tuple(),
+            'None' : None,
         }
         data['TaggedSet'].add(5, ['moo', 'foo', 'bar'])
         data['TaggedSet'].add(8.7)
@@ -53,6 +54,7 @@ class TestHDF5(myTestCase):
         filename = 'test.hdf5'
         tl.io.write.hdf5(data, filename)
         data_read = tl.io.load.hdf5(filename)
+        self.assertEqual(data.keys(), data_read.keys())
 
         for key in data:
             if key == 'Trajectory':
@@ -77,6 +79,8 @@ class TestHDF5(myTestCase):
             elif key == 'empty_tuple':
                 self.assertEqual(type(data[key]), type(data_read[key]))
                 self.assertEqual(len(data_read[key]), 0)
+            elif key == 'None':
+                self.assertIs(data_read[key], None)
             else:
                 self.assertEqual(data[key], data_read[key])
 
