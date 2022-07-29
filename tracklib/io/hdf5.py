@@ -108,7 +108,11 @@ reader_writer_registry['np.ndarray'] = (np.ndarray, write_ndarray, read_dataset_
 
 @writer
 def write_iterable(obj, name, hdf5_base):
-    first_type = type(next(iter(obj)))
+    try:
+        first_type = type(next(iter(obj)))
+    except StopIteration:
+        return new_group(hdf5_base, name)
+
     if (not np.dtype(first_type).kind in ['O', 'U'] # don't try to write numpy arrays for objects or strings
         and all(type(entry) == first_type for entry in obj)
         and name is not None
