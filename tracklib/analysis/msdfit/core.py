@@ -1122,8 +1122,19 @@ class Profiler():
                     nonidentifiable_cutoffs = [10, 10]
                 else:
                     pe = self.point_estimate['params'][iparam]
-                    step = np.abs(pe)*(self.bracket_step - 1)
-                    nonidentifiable_cutoffs = 2*[2*np.abs(pe)]
+                    diff_bounds = np.diff(bounds)[0]
+
+                    if np.isfinite(diff_bounds):
+                        step = diff_bounds / 20 * self.bracket_step
+                        nonidentifiable_cutoffs = [30, 30] # irrelevant, bounds will kick in before
+
+                    elif np.abs(pe) < 1e-10: # point estimate == 0, so no reference scale
+                        step = 1
+                        nonidentifiable_cutoffs = [10, 10]
+
+                    else:
+                        step = np.abs(pe)*(self.bracket_step - 1)
+                        nonidentifiable_cutoffs = 2*[2*np.abs(pe)]
                 
                 self.bracket_strategy.append({
                     'multiplicative'          : multiplicative,

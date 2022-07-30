@@ -3,9 +3,9 @@ SPHINXBUILD = doc/sphinx/build
 SPHINXSOURCE = doc/sphinx/source
 TESTDIR = tests
 # TESTFILE = test.py
-TESTFILE = test_hdf5.py ###### CHANGE BACK TO test.py, this is just for dev
+TESTFILE = test_msdfit.py ###### CHANGE BACK TO test.py, this is just for dev
 # COVERAGEREPFLAGS = 
-COVERAGEREPFLAGS = --include=tracklib/io/*.py
+COVERAGEREPFLAGS = --include=tracklib/analysis/msdfit/*.py
 COVERAGEREPDIR = doc/coverage
 DEVGUIDEDIR = doc/dev_guide
 DEVGUIDEPDF = guide.pdf
