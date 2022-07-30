@@ -298,7 +298,9 @@ class NPXFit(core.Fit): # NPX = Noise + Powerlaw + X (i.e. spline)
         # Parameters are (log(noise2), log(Γ), α, x0, ..., x{n-1}, y1, .., yn)
         # If n == 0 we omit x0. So we always have 2*n spline parameters!
         self.ss_order = ss_order
-        self.bounds = self.d*([(-np.inf, np.inf), (-np.inf, np.inf), (0, 2)]
+        # Take care to not attain the upper bound (2) for the exponent, as this
+        # is where a pure powerlaw stops being positive definite
+        self.bounds = self.d*([(-np.inf, np.inf), (-np.inf, np.inf), (0, 2-1e-10)]
                               + n*[(0, 2 if ss_order == 0 else 1)] + n*[(-np.inf, np.inf)])
 
         self.constraints = [self.constraint_dx,
