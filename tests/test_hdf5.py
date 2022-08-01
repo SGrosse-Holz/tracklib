@@ -96,5 +96,17 @@ class TestHDF5(myTestCase):
         res = tl.io.load.hdf5(filename)
         self.assertEqual(res['test'], 5)
 
+    def test_ls(self):
+        filename = 'test.hdf5' # is this bad style? relying on a file written in another test...
+        ls = hdf5.ls(filename)
+        self.assertIn('TaggedSet', ls)
+        self.assertIn('[array]', ls)
+        self.assertIn('bool = True', ls)
+        self.assertIn('_HDF5_ORIG_TYPE_ = dict', ls)
+
+        ls = hdf5.ls(filename, '/Trajectory')
+        self.assertIn('[data]', ls)
+        self.assertIn('meta', ls)
+
 if __name__ == '__main__':
     unittest.main(module=__file__[:-3])

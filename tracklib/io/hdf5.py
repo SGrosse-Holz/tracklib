@@ -160,3 +160,35 @@ def read_generic_class(hdf5_container):
     obj = cls()
     obj.__dict__.update(read_group_as_dict(hdf5_container))
     return obj
+
+### Convenience functions when handling HDF5 files ###
+
+def ls(filename, group='/'):
+    """
+    List toplevel contents of file (or group within a file)
+
+    Parameters
+    ----------
+    filename : str or pathlib.Path
+        the file to inspect
+    group : str
+        the group whose contents to list
+
+    Returns
+    -------
+    list of str
+        the contents of the specified group, one string per item. Attributes
+        are printed with their value, Datasets are surrounded by brackets [],
+        Groups are just given by name.
+    """
+    with h5py.File(str(filename), 'r') as f:
+        contents = []
+        for name in f[group]:
+            if isinstance(f[group][name], h5py.Dataset):
+                contents.append('['+name+']')
+            else:
+                contents.append(name)
+        for key, value in f[group].attrs.items():
+            contents.append(f"{key} = {str(value)}")
+
+    return contents
