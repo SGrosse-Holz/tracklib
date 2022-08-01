@@ -163,7 +163,7 @@ def read_generic_class(hdf5_container):
 
 ### Convenience functions when handling HDF5 files ###
 
-def ls(filename, group='/'):
+def ls(filename, group='/', depth=1):
     """
     List toplevel contents of file (or group within a file)
 
@@ -173,22 +173,33 @@ def ls(filename, group='/'):
         the file to inspect
     group : str
         the group whose contents to list
+    depth : int
+        how many levels of content to recurse through when encountering
+        subgroups
 
     Returns
     -------
     list of str
         the contents of the specified group, one string per item. Attributes
-        are printed with their value, Datasets are surrounded by brackets [],
-        Groups are just given by name.
+        are printed with their value and enclosed in braces {}, Datasets are
+        surrounded by brackets [], Groups are just given by name.
     """
-    with h5py.File(str(filename), 'r') as f:
+    def read_group(f, group, remaining_depth, prefix):
+        if remaining_depth == 0:
+            return []
+
         contents = []
         for name in f[group]:
             if isinstance(f[group][name], h5py.Dataset):
-                contents.append('['+name+']')
+                contents.append(prefix+'['+name+']')
             else:
-                contents.append(name)
-        for key, value in f[group].attrs.items():
-            contents.append(f"{key} = {str(value)}")
+                contents.append(prefix+name)
+                contents += read_group(f, group+'/'+name, remaining_depth-1, prefix+name+'/')
 
-    return contents
+        for key, value in f[group].attrs.items():
+            contents.append(f"{prefix}{{{key} = {str(value)}}}")
+
+        return contents
+
+    with h5py.File(str(filename), 'r') as f:
+        return read_group(f, group, depth, '')

@@ -101,12 +101,17 @@ class TestHDF5(myTestCase):
         ls = hdf5.ls(filename)
         self.assertIn('TaggedSet', ls)
         self.assertIn('[array]', ls)
-        self.assertIn('bool = True', ls)
-        self.assertIn('_HDF5_ORIG_TYPE_ = dict', ls)
+        self.assertIn('{bool = True}', ls)
+        self.assertIn('{_HDF5_ORIG_TYPE_ = dict}', ls)
 
         ls = hdf5.ls(filename, '/Trajectory')
         self.assertIn('[data]', ls)
         self.assertIn('meta', ls)
+
+        ls = hdf5.ls(filename, depth=2)
+        self.assertIn('TaggedSet/[_selected]', ls)
+        self.assertIn('Trajectory/meta', ls)
+        self.assertIn('empty_tuple/{_HDF5_ORIG_TYPE_ = tuple}', ls)
 
 if __name__ == '__main__':
     unittest.main(module=__file__[:-3])
