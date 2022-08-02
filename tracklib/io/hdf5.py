@@ -1,4 +1,5 @@
 import numpy as np
+import re
 import h5py
 
 _TYPE_KW = '_HDF5_ORIG_TYPE_'
@@ -201,5 +202,16 @@ def ls(filename, group='/', depth=1):
 
         return contents
 
+    # Check whether we're just querying a single attribute
+    # regex: should split group/{attr} into group and attr
+    #        not match group{attr}, which would be bogus
+    #        match /{attr} correctly
+    # Note: for "{attr}" (no leading slash), the first group in m will be None
+    m = re.fullmatch(r"(?:(.*)/)?{(\w+)}", group)
     with h5py.File(str(filename), 'r') as f:
-        return read_group(f, group, depth, '')
+        if m:
+            group = m[1] if m[1] and len(m[1]) > 0 else '/'
+            name = m[2]
+            return f[group].attrs[name]
+        else:
+            return read_group(f, group, depth, '')

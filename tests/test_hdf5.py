@@ -113,5 +113,9 @@ class TestHDF5(myTestCase):
         self.assertIn('Trajectory/meta', ls)
         self.assertIn('empty_tuple/{_HDF5_ORIG_TYPE_ = tuple}', ls)
 
+        self.assertTrue(hdf5.ls(filename, '{bool}'))
+        self.assertTrue(hdf5.ls(filename, '/{bool}'))
+        self.assertEqual(hdf5.ls(filename, 'empty_tuple/{_HDF5_ORIG_TYPE_}'), 'tuple')
+
 if __name__ == '__main__':
     unittest.main(module=__file__[:-3])
