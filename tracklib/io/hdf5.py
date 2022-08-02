@@ -152,6 +152,16 @@ reader_writer_registry['tuple'] = (tuple, write_iterable, read_iterable)
 reader_writer_registry['set'] = (set, write_iterable, read_iterable)
 
 @writer
+def write_None(obj, name, hdf5_base):
+    assert obj is None
+    return new_group(hdf5_base, name)
+
+def read_None(group):
+    return None
+
+reader_writer_registry['None'] = (type(None), write_None, read_None)
+
+@writer
 def write_generic_class(obj, name, hdf5_base):
     return write(vars(obj), name, hdf5_base)
 
