@@ -3,7 +3,6 @@ import re
 import h5py
 
 _TYPE_KW = '_HDF5_ORIG_TYPE_'
-_NONE_KW = '_HDF5_IS_NONE_'
 
 # The registry registers custom read/write functions
 # It is a dict, where the key is a unique string identifier for the type to be
@@ -49,9 +48,6 @@ def write(obj, name, hdf5_base):
         if np.isscalar(obj):
             hdf5_base.attrs[name] = obj
             return None
-        elif obj is None:
-            hdf5_base.attrs[_NONE_KW+name] = np.nan
-            return None
         else:
             raise
 
@@ -94,14 +90,6 @@ def read_group_as_dict(group):
         del out[_TYPE_KW]
     except KeyError:
         pass
-
-    none_keys = [key for key in out if (key.startswith(_NONE_KW)
-                                        and np.isscalar(out[key])
-                                        and np.isnan(out[key])
-                                        )]
-    for key in none_keys:
-        out[key[len(_NONE_KW):]] = None
-        del out[key]
 
     return out
 
