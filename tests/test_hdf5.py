@@ -91,6 +91,7 @@ class TestHDF5(myTestCase):
 
         # Test partial reading
         self.assertTrue(tl.io.load.hdf5(filename, '/{bool}'))
+        self.assertTrue(tl.io.load.hdf5(filename, '/bool'))
         self.assertEqual(tl.io.load.hdf5(filename, '{float}'), data['float'])
         self.assertIsNone(tl.io.load.hdf5(filename, 'None'))
         self.assertEqual(tl.io.load.hdf5(filename, 'empty_tuple/{_HDF5_ORIG_TYPE_}'), 'tuple')

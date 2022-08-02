@@ -201,4 +201,13 @@ def hdf5(filename, group='/'):
         if name:
             return f[group].attrs[name]
         else:
-            return hdf5_mod.read(f[group])
+            # Could still be an attribute and an unaware user
+            try:
+                return hdf5_mod.read(f[group])
+            except KeyError:
+                # Split by hand
+                parts = group.split('/')
+                group = '/'.join(parts[:-1])
+                group = group if len(group) > 0 else '/'
+                name = parts[-1]
+                return f[group].attrs[name]
