@@ -1,5 +1,6 @@
 from . import load
 from . import write
+from . import hdf5
 
 # Register HDF5 I/O for tracklib classes
 # Pack everything into a dummy namespace, so we don't pollute the module

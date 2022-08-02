@@ -54,11 +54,7 @@ class TestHDF5(myTestCase):
         filename = 'test.hdf5'
         tl.io.write.hdf5(data, filename)
 
-        # Test partial reading
-        self.assertTrue(tl.io.load.hdf5(filename, '/{bool}'))
-        self.assertEqual(tl.io.load.hdf5(filename, '{float}'), data['float'])
-        # self.assertEqual(tl.io.load.hdf5(filename, '
-
+        # Immediately reload
         data_read = tl.io.load.hdf5(filename)
         self.assertEqual(data.keys(), data_read.keys())
 
@@ -90,6 +86,15 @@ class TestHDF5(myTestCase):
             else:
                 self.assertEqual(data[key], data_read[key])
 
+        # Test partial writing
+        tl.io.write.hdf5(None, filename, '/None_group/test')
+
+        # Test partial reading
+        self.assertTrue(tl.io.load.hdf5(filename, '/{bool}'))
+        self.assertEqual(tl.io.load.hdf5(filename, '{float}'), data['float'])
+        self.assertIsNone(tl.io.load.hdf5(filename, 'None'))
+        self.assertEqual(tl.io.load.hdf5(filename, 'empty_tuple/{_HDF5_ORIG_TYPE_}'), 'tuple')
+
     def test_errors(self):
         filename = Path('.') / 'hdf5_dummy.hdf5'
 
@@ -98,7 +103,7 @@ class TestHDF5(myTestCase):
         with self.assertRaises(RuntimeError):
             tl.io.write.hdf5(Test(), filename)
 
-        tl.io.write.hdf5(5, filename, group='/test/{test}')
+        tl.io.write.hdf5(5, filename, group='/test/test')
         res = tl.io.load.hdf5(filename)
         self.assertEqual(res['test']['test'], 5)
 
@@ -122,6 +127,9 @@ class TestHDF5(myTestCase):
         self.assertTrue(hdf5.ls(filename, '{bool}'))
         self.assertTrue(hdf5.ls(filename, '/{bool}'))
         self.assertEqual(hdf5.ls(filename, 'empty_tuple/{_HDF5_ORIG_TYPE_}'), 'tuple')
+
+        # Just for completeness
+        self.assertTupleEqual(hdf5.check_group_or_attr(None), ('/', None))
 
 if __name__ == '__main__':
     unittest.main(module=__file__[:-3])

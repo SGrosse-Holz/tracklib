@@ -84,7 +84,7 @@ def mat(data, filename):
 
     scipy.io.savemat(filename, {'trajs' : trajs})
 
-def hdf5(data, filename, group=None):
+def hdf5(data, filename, group=None, name=None):
     """
     Write to HDF5 file
 
@@ -99,20 +99,31 @@ def hdf5(data, filename, group=None):
         truncated and content written to the root node. If you want to write to
         an attribute of an existing or to-be-created group, specify this as
         ``group/{attr}``.
+    name : str
+        the name of the new entry to create for storing the data. If ``None``
+        (default) store directly to `!group`.
     """
-    mode = 'w' if group is None else 'a'
-    group, name = hdf5_mod.check_group_or_attr(group)
-    with h5py.File(str(filename), mode) as f:
-        if name:
-            try:
-                f[group].attrs[name] = data
-            except KeyError: # if group does not exist
-                f.create_group(group)
-                f[group].attrs[name] = data
-        else:
-            try:
-                f.create_group(group)
-            except ValueError: # if group exists, specifically '/'
-                pass
+    mode = 'a' # append to existing file or create new if nonexistent
+    if group is None:
+        mode = 'w' # overwrite file if exists
+        group = '/'
+    elif name is None:
+        # group is specified as group/name
+        parts = group.split('/')
+        group = '/'.join(parts[:-1])
+        name = parts[-1]
 
-            hdf5_mod.write(data, name, f[group])
+        group = group if len(group) > 0 else '/'
+        name = name if len(name) > 0 else None
+
+    # After the above:
+    #  - `group` will be a valid string
+    #  - `name` might be None
+
+    with h5py.File(str(filename), mode) as f:
+        try:
+            f.create_group(group)
+        except ValueError: # if group exists, specifically '/'
+            pass
+
+        hdf5_mod.write(data, name, f[group])
