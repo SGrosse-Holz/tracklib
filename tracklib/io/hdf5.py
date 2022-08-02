@@ -145,7 +145,7 @@ def read_iterable(hdf5_container):
         return mytype(read_dataset_as_ndarray(hdf5_container))
     else:
         data = read_group_as_dict(hdf5_container)
-        return mytype(data[key] for key in sorted(data))
+        return mytype(data[key] for key in sorted(data, key=int))
 
 reader_writer_registry['list'] = (list, write_iterable, read_iterable)
 reader_writer_registry['tuple'] = (tuple, write_iterable, read_iterable)
