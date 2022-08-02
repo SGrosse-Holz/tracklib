@@ -84,7 +84,7 @@ def mat(data, filename):
 
     scipy.io.savemat(filename, {'trajs' : trajs})
 
-def hdf5(data, filename, group='/', name=None):
+def hdf5(data, filename, group=None):
     """
     Write to HDF5 file
 
@@ -95,17 +95,24 @@ def hdf5(data, filename, group='/', name=None):
     filename : str or pathlib.Path
         where to write to
     group : str
-        where in the file to write the data. Note: if ``group == '/'`` (the
-        default) the file will be truncated before writing
-    name : str
-        the name of the new entry to create for storing the data. If None
-        (default) store directly to `!group`
+        where in the file to write the data. If unspecified, the file will be
+        truncated and content written to the root node. If you want to write to
+        an attribute of an existing or to-be-created group, specify this as
+        ``group/{attr}``.
     """
-    mode = 'w' if group == '/' else 'a'
+    mode = 'w' if group is None else 'a'
+    group, name = hdf5_mod.check_group_or_attr(group)
     with h5py.File(str(filename), mode) as f:
-        try:
-            f.create_group(group)
-        except ValueError: # if group exists, specifically '/'
-            pass
+        if name:
+            try:
+                f[group].attrs[name] = data
+            except KeyError: # if group does not exist
+                f.create_group(group)
+                f[group].attrs[name] = data
+        else:
+            try:
+                f.create_group(group)
+            except ValueError: # if group exists, specifically '/'
+                pass
 
-        hdf5_mod.write(data, name, f[group])
+            hdf5_mod.write(data, name, f[group])

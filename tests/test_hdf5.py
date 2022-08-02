@@ -53,6 +53,12 @@ class TestHDF5(myTestCase):
 
         filename = 'test.hdf5'
         tl.io.write.hdf5(data, filename)
+
+        # Test partial reading
+        self.assertTrue(tl.io.load.hdf5(filename, '/{bool}'))
+        self.assertEqual(tl.io.load.hdf5(filename, '{float}'), data['float'])
+        # self.assertEqual(tl.io.load.hdf5(filename, '
+
         data_read = tl.io.load.hdf5(filename)
         self.assertEqual(data.keys(), data_read.keys())
 
@@ -92,9 +98,9 @@ class TestHDF5(myTestCase):
         with self.assertRaises(RuntimeError):
             tl.io.write.hdf5(Test(), filename)
 
-        tl.io.write.hdf5(5, filename, name='test')
+        tl.io.write.hdf5(5, filename, group='/test/{test}')
         res = tl.io.load.hdf5(filename)
-        self.assertEqual(res['test'], 5)
+        self.assertEqual(res['test']['test'], 5)
 
     def test_ls(self):
         filename = 'test.hdf5' # is this bad style? relying on a file written in another test...

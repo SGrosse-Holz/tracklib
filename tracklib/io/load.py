@@ -196,5 +196,9 @@ def hdf5(filename, group='/'):
     dict or object
         whatever is stored in the file
     """
+    group, name = hdf5_mod.check_group_or_attr(group)
     with h5py.File(str(filename), 'r') as f:
-        return hdf5_mod.read(f[group])
+        if name:
+            return f[group].attrs[name]
+        else:
+            return hdf5_mod.read(f[group])

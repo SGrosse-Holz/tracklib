@@ -202,16 +202,44 @@ def ls(filename, group='/', depth=1):
 
         return contents
 
-    # Check whether we're just querying a single attribute
+    group, name = check_group_or_attr(group)
+    with h5py.File(str(filename), 'r') as f:
+        if name:
+            return f[group].attrs[name]
+        else:
+            return read_group(f, group, depth, '')
+
+def check_group_or_attr(group):
+    """
+    Check whether we're querying a group or just a single attribute
+
+    The syntax for querying a specific attribute is ``group/{attr}`` (as
+    opposed to ``group/subgroup``).
+
+    Parameters
+    ----------
+    group : str or None
+        the identifier to check/dissect
+
+    Returns
+    -------
+    group, name : str
+        if the input conforms to the attribute syntax, it is dissected into
+        `!group` and `!name`. Otherwise `!group` is the same as input and
+        `!name` is ``None``. Exception: if input is ``None``, the output
+        `!group` is ``'/'``.
+    """
+    if group is None:
+        return '/', None
+
     # regex: should split group/{attr} into group and attr
     #        not match group{attr}, which would be bogus
     #        match /{attr} correctly
     # Note: for "{attr}" (no leading slash), the first group in m will be None
     m = re.fullmatch(r"(?:(.*)/)?{(\w+)}", group)
-    with h5py.File(str(filename), 'r') as f:
-        if m:
-            group = m[1] if m[1] and len(m[1]) > 0 else '/'
-            name = m[2]
-            return f[group].attrs[name]
-        else:
-            return read_group(f, group, depth, '')
+    name = None
+    if m:
+        group = m[1] if m[1] and len(m[1]) > 0 else '/'
+        name = m[2]
+
+    return group, name

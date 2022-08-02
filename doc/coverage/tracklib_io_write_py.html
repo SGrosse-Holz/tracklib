@@ -3,7 +3,7 @@
 <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=emulateIE7" />
-    <title>Coverage for tracklib/io/write.py: 38%</title>
+    <title>Coverage for tracklib/io/write.py: 48%</title>
     <link rel="stylesheet" href="style.css" type="text/css">
     <script type="text/javascript" src="jquery.min.js"></script>
     <script type="text/javascript" src="jquery.hotkeys.js"></script>
@@ -17,12 +17,12 @@
 <div id="header">
     <div class="content">
         <h1>Coverage for <b>tracklib/io/write.py</b> :
-            <span class="pc_cov">38%</span>
+            <span class="pc_cov">48%</span>
         </h1>
         <img id="keyboard_icon" src="keybd_closed.png" alt="Show keyboard shortcuts" />
         <h2 class="stats">
-            39 statements &nbsp;
-            <button type="button" class="run shortkey_r button_toggle_run" title="Toggle lines run">15 run</button>
+            46 statements &nbsp;
+            <button type="button" class="run shortkey_r button_toggle_run" title="Toggle lines run">22 run</button>
             <button type="button" class="mis show_mis shortkey_m button_toggle_mis" title="Toggle lines missing">24 missing</button>
             <button type="button" class="exc show_exc shortkey_x button_toggle_exc" title="Toggle lines excluded">0 excluded</button>
         </h2>
@@ -137,7 +137,7 @@
     <p id="t84" class="pln"><span class="n"><a href="#t84">84</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
     <p id="t85" class="mis show_mis"><span class="n"><a href="#t85">85</a></span><span class="t">    <span class="nam">scipy</span><span class="op">.</span><span class="nam">io</span><span class="op">.</span><span class="nam">savemat</span><span class="op">(</span><span class="nam">filename</span><span class="op">,</span> <span class="op">{</span><span class="str">'trajs'</span> <span class="op">:</span> <span class="nam">trajs</span><span class="op">}</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p id="t86" class="pln"><span class="n"><a href="#t86">86</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
-    <p id="t87" class="run"><span class="n"><a href="#t87">87</a></span><span class="t"><span class="key">def</span> <span class="nam">hdf5</span><span class="op">(</span><span class="nam">data</span><span class="op">,</span> <span class="nam">filename</span><span class="op">,</span> <span class="nam">group</span><span class="op">=</span><span class="str">'/'</span><span class="op">,</span> <span class="nam">name</span><span class="op">=</span><span class="key">None</span><span class="op">)</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
+    <p id="t87" class="run"><span class="n"><a href="#t87">87</a></span><span class="t"><span class="key">def</span> <span class="nam">hdf5</span><span class="op">(</span><span class="nam">data</span><span class="op">,</span> <span class="nam">filename</span><span class="op">,</span> <span class="nam">group</span><span class="op">=</span><span class="key">None</span><span class="op">)</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
     <p id="t88" class="pln"><span class="n"><a href="#t88">88</a></span><span class="t">    <span class="str">"""</span>&nbsp;</span><span class="r"></span></p>
     <p id="t89" class="pln"><span class="n"><a href="#t89">89</a></span><span class="t"><span class="str">    Write to HDF5 file</span>&nbsp;</span><span class="r"></span></p>
     <p id="t90" class="pln"><span class="n"><a href="#t90">90</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
@@ -148,26 +148,33 @@
     <p id="t95" class="pln"><span class="n"><a href="#t95">95</a></span><span class="t"><span class="str">    filename : str or pathlib.Path</span>&nbsp;</span><span class="r"></span></p>
     <p id="t96" class="pln"><span class="n"><a href="#t96">96</a></span><span class="t"><span class="str">        where to write to</span>&nbsp;</span><span class="r"></span></p>
     <p id="t97" class="pln"><span class="n"><a href="#t97">97</a></span><span class="t"><span class="str">    group : str</span>&nbsp;</span><span class="r"></span></p>
-    <p id="t98" class="pln"><span class="n"><a href="#t98">98</a></span><span class="t"><span class="str">        where in the file to write the data. Note: if ``group == '/'`` (the</span>&nbsp;</span><span class="r"></span></p>
-    <p id="t99" class="pln"><span class="n"><a href="#t99">99</a></span><span class="t"><span class="str">        default) the file will be truncated before writing</span>&nbsp;</span><span class="r"></span></p>
-    <p id="t100" class="pln"><span class="n"><a href="#t100">100</a></span><span class="t"><span class="str">    name : str</span>&nbsp;</span><span class="r"></span></p>
-    <p id="t101" class="pln"><span class="n"><a href="#t101">101</a></span><span class="t"><span class="str">        the name of the new entry to create for storing the data. If None</span>&nbsp;</span><span class="r"></span></p>
-    <p id="t102" class="pln"><span class="n"><a href="#t102">102</a></span><span class="t"><span class="str">        (default) store directly to `!group`</span>&nbsp;</span><span class="r"></span></p>
-    <p id="t103" class="pln"><span class="n"><a href="#t103">103</a></span><span class="t"><span class="str">    """</span>&nbsp;</span><span class="r"></span></p>
-    <p id="t104" class="run"><span class="n"><a href="#t104">104</a></span><span class="t">    <span class="nam">mode</span> <span class="op">=</span> <span class="str">'w'</span> <span class="key">if</span> <span class="nam">group</span> <span class="op">==</span> <span class="str">'/'</span> <span class="key">else</span> <span class="str">'a'</span>&nbsp;</span><span class="r"></span></p>
+    <p id="t98" class="pln"><span class="n"><a href="#t98">98</a></span><span class="t"><span class="str">        where in the file to write the data. If unspecified, the file will be</span>&nbsp;</span><span class="r"></span></p>
+    <p id="t99" class="pln"><span class="n"><a href="#t99">99</a></span><span class="t"><span class="str">        truncated and content written to the root node. If you want to write to</span>&nbsp;</span><span class="r"></span></p>
+    <p id="t100" class="pln"><span class="n"><a href="#t100">100</a></span><span class="t"><span class="str">        an attribute of an existing or to-be-created group, specify this as</span>&nbsp;</span><span class="r"></span></p>
+    <p id="t101" class="pln"><span class="n"><a href="#t101">101</a></span><span class="t"><span class="str">        ``group/{attr}``.</span>&nbsp;</span><span class="r"></span></p>
+    <p id="t102" class="pln"><span class="n"><a href="#t102">102</a></span><span class="t"><span class="str">    """</span>&nbsp;</span><span class="r"></span></p>
+    <p id="t103" class="run"><span class="n"><a href="#t103">103</a></span><span class="t">    <span class="nam">mode</span> <span class="op">=</span> <span class="str">'w'</span> <span class="key">if</span> <span class="nam">group</span> <span class="key">is</span> <span class="key">None</span> <span class="key">else</span> <span class="str">'a'</span>&nbsp;</span><span class="r"></span></p>
+    <p id="t104" class="run"><span class="n"><a href="#t104">104</a></span><span class="t">    <span class="nam">group</span><span class="op">,</span> <span class="nam">name</span> <span class="op">=</span> <span class="nam">hdf5_mod</span><span class="op">.</span><span class="nam">check_group_or_attr</span><span class="op">(</span><span class="nam">group</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p id="t105" class="run"><span class="n"><a href="#t105">105</a></span><span class="t">    <span class="key">with</span> <span class="nam">h5py</span><span class="op">.</span><span class="nam">File</span><span class="op">(</span><span class="nam">str</span><span class="op">(</span><span class="nam">filename</span><span class="op">)</span><span class="op">,</span> <span class="nam">mode</span><span class="op">)</span> <span class="key">as</span> <span class="nam">f</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
-    <p id="t106" class="run"><span class="n"><a href="#t106">106</a></span><span class="t">        <span class="key">try</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
-    <p id="t107" class="run"><span class="n"><a href="#t107">107</a></span><span class="t">            <span class="nam">f</span><span class="op">.</span><span class="nam">create_group</span><span class="op">(</span><span class="nam">group</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
-    <p id="t108" class="run"><span class="n"><a href="#t108">108</a></span><span class="t">        <span class="key">except</span> <span class="nam">ValueError</span><span class="op">:</span> <span class="com"># if group exists, specifically '/'</span>&nbsp;</span><span class="r"></span></p>
-    <p id="t109" class="run"><span class="n"><a href="#t109">109</a></span><span class="t">            <span class="key">pass</span>&nbsp;</span><span class="r"></span></p>
-    <p id="t110" class="pln"><span class="n"><a href="#t110">110</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
-    <p id="t111" class="run"><span class="n"><a href="#t111">111</a></span><span class="t">        <span class="nam">hdf5_mod</span><span class="op">.</span><span class="nam">write</span><span class="op">(</span><span class="nam">data</span><span class="op">,</span> <span class="nam">name</span><span class="op">,</span> <span class="nam">f</span><span class="op">[</span><span class="nam">group</span><span class="op">]</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
+    <p id="t106" class="run"><span class="n"><a href="#t106">106</a></span><span class="t">        <span class="key">if</span> <span class="nam">name</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
+    <p id="t107" class="run"><span class="n"><a href="#t107">107</a></span><span class="t">            <span class="key">try</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
+    <p id="t108" class="run"><span class="n"><a href="#t108">108</a></span><span class="t">                <span class="nam">f</span><span class="op">[</span><span class="nam">group</span><span class="op">]</span><span class="op">.</span><span class="nam">attrs</span><span class="op">[</span><span class="nam">name</span><span class="op">]</span> <span class="op">=</span> <span class="nam">data</span>&nbsp;</span><span class="r"></span></p>
+    <p id="t109" class="run"><span class="n"><a href="#t109">109</a></span><span class="t">            <span class="key">except</span> <span class="nam">KeyError</span><span class="op">:</span> <span class="com"># if group does not exist</span>&nbsp;</span><span class="r"></span></p>
+    <p id="t110" class="run"><span class="n"><a href="#t110">110</a></span><span class="t">                <span class="nam">f</span><span class="op">.</span><span class="nam">create_group</span><span class="op">(</span><span class="nam">group</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
+    <p id="t111" class="run"><span class="n"><a href="#t111">111</a></span><span class="t">                <span class="nam">f</span><span class="op">[</span><span class="nam">group</span><span class="op">]</span><span class="op">.</span><span class="nam">attrs</span><span class="op">[</span><span class="nam">name</span><span class="op">]</span> <span class="op">=</span> <span class="nam">data</span>&nbsp;</span><span class="r"></span></p>
+    <p id="t112" class="pln"><span class="n"><a href="#t112">112</a></span><span class="t">        <span class="key">else</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
+    <p id="t113" class="run"><span class="n"><a href="#t113">113</a></span><span class="t">            <span class="key">try</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
+    <p id="t114" class="run"><span class="n"><a href="#t114">114</a></span><span class="t">                <span class="nam">f</span><span class="op">.</span><span class="nam">create_group</span><span class="op">(</span><span class="nam">group</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
+    <p id="t115" class="run"><span class="n"><a href="#t115">115</a></span><span class="t">            <span class="key">except</span> <span class="nam">ValueError</span><span class="op">:</span> <span class="com"># if group exists, specifically '/'</span>&nbsp;</span><span class="r"></span></p>
+    <p id="t116" class="run"><span class="n"><a href="#t116">116</a></span><span class="t">                <span class="key">pass</span>&nbsp;</span><span class="r"></span></p>
+    <p id="t117" class="pln"><span class="n"><a href="#t117">117</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
+    <p id="t118" class="run"><span class="n"><a href="#t118">118</a></span><span class="t">            <span class="nam">hdf5_mod</span><span class="op">.</span><span class="nam">write</span><span class="op">(</span><span class="nam">data</span><span class="op">,</span> <span class="nam">name</span><span class="op">,</span> <span class="nam">f</span><span class="op">[</span><span class="nam">group</span><span class="op">]</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
 </div>
 <div id="footer">
     <div class="content">
         <p>
             <a class="nav" href="index.html">&#xab; index</a> &nbsp; &nbsp; <a class="nav" href="https://coverage.readthedocs.io">coverage.py v5.2.1</a>,
-            created at 2022-08-01 12:38 -0400
+            created at 2022-08-02 06:36 -0400
         </p>
     </div>
 </div>
