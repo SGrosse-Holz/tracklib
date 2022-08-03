@@ -127,3 +127,109 @@ def hdf5(data, filename, group=None, name=None):
             pass
 
         hdf5_mod.write(data, name, f[group])
+
+def hdf5_subTaggedSet(data, filename, group, name=None, refTaggedSet=None):
+    """
+    Write a subset of an already stored `!TaggedSet` to file
+
+    Sometimes it is handy to store subsets of data in a directly loadable way
+    (i.e. as its own `!TaggedSet` object). This would duplicate data and thus
+    increase file size, so this function takes advantage of hdf5's soft links
+    to store the properly pruned `!TaggedSet` by just linking to the
+    corresponding entries in the full data set, which should be located in the
+    same file at the `!refTaggedSet` address.
+
+    Parameters
+    ----------
+    data : TaggedSet
+        a `!TaggedSet` with some selection applied. The full data set
+        (potentially with a different selection, this does not matter) should
+        already be written to `!filename` under the path `!refTaggedSet`.
+    filename : str or pathlib.Path
+        the file to store things in
+    group : str
+        the location in the file where to store the new entry
+    name : str, optional
+        name of that new entry. Can also be specified as last element in
+        `!group`.
+    refTaggedSet : str
+        where the full data set is stored in the file.
+
+    This function is intended for storing selections (subsets) of `!TaggedSets`
+    such that they can be read from file as complete `!TaggedSets` themselves.
+    Usecases include having a big dataset, out of which you routinely need only
+    a specific part. If your subset is identified by the tag ``subset`` in the
+    big dataset, this is equivalent to
+
+    >>> from tracklib import io
+    ...
+    ... big_data = io.load.hdf5('file_with_big_data.h5', 'data')
+    ... big_data.makeSelection(tags='subset')
+    ... data = big_data.copySelection()
+    ...
+    ... # This can be reduced to a single line by saving the selection beforehand
+    ... # when saving the data:
+    ... big_data.makeSelection()
+    ... io.write.hdf5(big_data, 'file_with_big_data_and_subset.h5', 'data')
+    ... big_data.makeSelection(tags='subset')
+    ... io.write.hdf5_subTaggedSet(big_data, 'file_with_big_data_and_subset.h5',
+    ...                            'data_subset', refTaggedSet='/data')
+    ...
+    ... # so now when loading the data, we can just do
+    ... data = io.load.hdf5('file_with_big_data_and_subset.h5', 'data_subset')
+
+    Note that basically we just shifted the process of making the selection
+    from loading to writing. This however can come in very handy when the
+    selection process is more involved than a simple tag, or you distribute
+    your data to others, who will appreciate an easy way to load just the
+    relevant data.
+    """
+    # Check arguments
+    if type(refTaggedSet) != str:
+        raise ValueError("Please specify where the full dataset is saved in the file")
+
+    if name is None:
+        # group is specified as group/name
+        parts = group.split('/')
+        group = '/'.join(parts[:-1])
+        name = parts[-1]
+
+        group = group if len(group) > 0 else '/'
+
+    if len(name) == 0:
+        raise ValueError("Have to specify a name for your new entry")
+
+    # We rely on the internal structure of TaggedSet, so check that we're up to
+    # date about that
+    vars_and_types = {'_data' : list, '_tags' : list, '_selected' : list}
+    assert vars(data).keys() = vars_and_types.keys()
+    for var, typ in vars_and_types.items():
+        assert type(getattr(data, var)) == typ
+
+    # Prepare the data to be saved
+    pseudo_TaggedSet = dict()
+    pseudo_TaggedSet['_data'] = [h5py.SoftLink(refTaggedSet+f'/_data/{i}')
+                                 for i, sel in enumerate(data._selected) if sel]
+    pseudo_TaggedSet['_tags'] = [t for t, sel in zip(data._tags, data._selected) if sel]
+    pseudo_TaggedSet['_selected']= len(data)*[True]
+
+    # Write
+    # Note that we never check that the softlinks actually work / make sense.
+    # The only thing we do is copy stuff from the original, so at least it has
+    # to exist
+    with h5py.File(str(filename), 'a') as f:
+        try:
+            f.create_group(group)
+        except ValueError:
+            pass # group exists, that's okay
+
+        hdf5_base = f[group].create_group(name)
+        for key in f[refTaggedSet]:
+            if key in pseudo_TaggedSet:
+                hdf5_mod.write(pseudo_TaggedSet[key], key, hdf5_base)
+            else:
+                hdf5_base[key] = h5py.SoftLink(f[refTaggedSet][key].name)
+
+        # Specifically, this copies _HDF5_ORIG_TYPE_
+        for key, value in f[refTaggedSet].attrs.items():
+            hdf5_base.attrs[key] = value
