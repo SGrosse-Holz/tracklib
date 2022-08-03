@@ -151,6 +151,8 @@ reader_writer_registry['None'] = (type(None), write_None, read_None)
 
 @writer
 def write_generic_class(obj, name, hdf5_base):
+    # Note that the _HDF5_ORIG_TYPE_ attribute (would be 'dict' for vars())
+    # will be overwritten by the @writer decorator
     return write(vars(obj), name, hdf5_base)
 
 def read_generic_class(hdf5_container):
