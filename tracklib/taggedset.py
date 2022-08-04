@@ -240,7 +240,7 @@ class TaggedSet():
 
         for i, (datum, tags, selected) in enumerate(zip(self._data, self._tags, self._selected)):
             if selected or not kwargs['refining']:
-                self._selected[i] = selector(datum, tags)
+                self._selected[i] = bool(selector(datum, tags))
 
     def refineSelection(self, *args, **kwargs):
         """
