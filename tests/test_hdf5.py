@@ -170,5 +170,8 @@ class TestHDF5(myTestCase):
         with self.assertRaises(ValueError):
             tl.io.write.hdf5_subTaggedSet(data, filename, 'data_small', refTaggedSet='data_full')
 
+        # Check that silent overwrite works
+        tl.io.write.hdf5(data, filename, 'data_full')
+
 if __name__ == '__main__':
     unittest.main(module=__file__[:-3])

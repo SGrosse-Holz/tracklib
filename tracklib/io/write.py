@@ -97,6 +97,11 @@ def hdf5(data, filename, group=None):
     group : str
         where in the file to write the data. If unspecified, the file will be
         truncated and content written to the root node.
+
+    Notes
+    -----
+    Caution is advised, since this function will silently overwrite existing
+    data (this is most often the desired behavior).
     """
     mode = 'a' # append to existing file or create new if nonexistent
     if group is None:
@@ -104,22 +109,29 @@ def hdf5(data, filename, group=None):
         group = '/'
         name = None
     else:
+        if group.endswith('/'):
+            group = group[:-1]
+
         parts = group.split('/')
         group = '/'.join(parts[:-1])
         name = parts[-1]
 
         group = group if len(group) > 0 else '/'
-        name = name if len(name) > 0 else None
+        assert len(name) > 0
 
     # After the above:
     #  - `group` will be a valid string
-    #  - `name` might be None
+    #  - `name` might be None (only if group was None)
 
     with h5py.File(str(filename), mode) as f:
         try:
             f.create_group(group)
         except ValueError: # if group exists, specifically '/'
             pass
+
+        # Silent overwrite
+        if name is not None and name in f[group]:
+            del f[group][name]
 
         hdf5_mod.write(data, name, f[group])
 
@@ -146,6 +158,11 @@ def hdf5_subTaggedSet(data, filename, group, refTaggedSet=None):
         the location in the file where to store the new entry
     refTaggedSet : str
         where the full data set is stored in the file.
+
+    Notes
+    -----
+    Caution is advised, since this function will silently overwrite existing
+    data (this is most often the desired behavior).
 
     This function is intended for storing selections (subsets) of `!TaggedSets`
     such that they can be read from file as complete `!TaggedSets` themselves.
@@ -223,6 +240,10 @@ def hdf5_subTaggedSet(data, filename, group, refTaggedSet=None):
             f.create_group(group)
         except ValueError:
             pass # group exists, that's okay
+
+        # Silent overwrite
+        if name in f[group]:
+            del f[group][name]
 
         # Write everything to it
         hdf5_base = f[group].create_group(name)
