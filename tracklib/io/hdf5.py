@@ -48,7 +48,9 @@ def write(obj, name, hdf5_base):
         if np.isscalar(obj):
             hdf5_base.attrs[name] = obj
             return None
-        elif isinstance(obj, (h5py.SoftLink, h5py.Group, h5py.Dataset))
+        elif isinstance(obj, (h5py.SoftLink, h5py.HardLink, h5py.ExternalLink,
+                              h5py.Group, h5py.Dataset,
+                              )):
             hdf5_base[name] = obj
             return obj
         else:

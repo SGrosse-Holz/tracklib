@@ -134,7 +134,7 @@ def hdf5_subTaggedSet(data, filename, group, name=None, refTaggedSet=None):
 
     Sometimes it is handy to store subsets of data in a directly loadable way
     (i.e. as its own `!TaggedSet` object). This would duplicate data and thus
-    increase file size, so this function takes advantage of hdf5's soft links
+    increase file size, so this function takes advantage of hdf5's hard links
     to store the properly pruned `!TaggedSet` by just linking to the
     corresponding entries in the full data set, which should be located in the
     same file at the `!refTaggedSet` address.
@@ -202,14 +202,14 @@ def hdf5_subTaggedSet(data, filename, group, name=None, refTaggedSet=None):
     # We rely on the internal structure of TaggedSet, so check that we're up to
     # date about that
     vars_and_types = {'_data' : list, '_tags' : list, '_selected' : list}
-    assert vars(data).keys() = vars_and_types.keys()
+    assert vars(data).keys() == vars_and_types.keys()
     for var, typ in vars_and_types.items():
         assert type(getattr(data, var)) == typ
 
     # Prepare the data to be saved
+    # _data is just assembled as hdf5 paths here, since these will be hard links
     pseudo_TaggedSet = dict()
-    pseudo_TaggedSet['_data'] = [h5py.SoftLink(refTaggedSet+f'/_data/{i}')
-                                 for i, sel in enumerate(data._selected) if sel]
+    pseudo_TaggedSet['_data'] = [refTaggedSet+f'/_data/{i}' for i, sel in enumerate(data._selected) if sel]
     pseudo_TaggedSet['_tags'] = [t for t, sel in zip(data._tags, data._selected) if sel]
     pseudo_TaggedSet['_selected']= len(data)*[True]
 
@@ -218,17 +218,28 @@ def hdf5_subTaggedSet(data, filename, group, name=None, refTaggedSet=None):
     # The only thing we do is copy stuff from the original, so at least it has
     # to exist
     with h5py.File(str(filename), 'a') as f:
+        # First things first: make sure that the hard links work out
+        refData = f[refTaggedSet+'/_data']
+        if isinstance(refData, h5py.Dataset) or "0" not in refData:
+            raise ValueError("Cannot save subset of TaggedSet of built-in type (these are not saved as groups, i.e. we cannot link to individual entries)")
+
+        ls = pseudo_TaggedSet['_data']
+        for i, path in enumerate(ls):
+            ls[i] = f[path]
+
+        # Set up new entry
         try:
             f.create_group(group)
         except ValueError:
             pass # group exists, that's okay
 
+        # Write everything to it
         hdf5_base = f[group].create_group(name)
         for key in f[refTaggedSet]:
             if key in pseudo_TaggedSet:
                 hdf5_mod.write(pseudo_TaggedSet[key], key, hdf5_base)
-            else:
-                hdf5_base[key] = h5py.SoftLink(f[refTaggedSet][key].name)
+            else: # pragma: no cover
+                hdf5_base[key] = f[refTaggedSet][key] # hard link
 
         # Specifically, this copies _HDF5_ORIG_TYPE_
         for key, value in f[refTaggedSet].attrs.items():

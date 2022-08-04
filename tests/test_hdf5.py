@@ -13,6 +13,7 @@ from unittest.mock import patch
 
 from context import tracklib as tl
 hdf5 = tl.io.hdf5
+import h5py
 
 """
   exec "norm 0jjd}O" | let @a="\n'" | exec "g/^class Test/norm w\"Ayt(:let @a=@a.\"',\\n'\"" | norm i__all__ = ["ap}kddO]kV?__all__j>>
@@ -131,6 +132,43 @@ class TestHDF5(myTestCase):
 
         # Just for completeness
         self.assertTupleEqual(hdf5.check_group_or_attr(None), ('/', None))
+
+    def test_write_subTaggetSet(self):
+        filename = 'hdf5_dummy.hdf5'
+
+        # Have to make sure that data._data is not converted to numpy array or stored as attributes
+        # One way to ensure this is to use dicts, which will be stored as groups
+        data = tl.TaggedSet((({'i':i}, 'small' if i < 10 else 'large') for i in range(20)))
+        self.assertEqual(len(data), 20)
+
+        tl.io.write.hdf5({}, filename) # empty out the file
+        tl.io.write.hdf5(data, filename, 'data_full')
+        data.makeSelection(tags='small')
+
+        # A few failing attempts
+        with self.assertRaises(ValueError):
+            tl.io.write.hdf5_subTaggedSet(data, filename, 'data_small') # forgot refTaggedSet
+        with self.assertRaises(ValueError):
+            tl.io.write.hdf5_subTaggedSet(data, filename, group='/', refTaggedSet='data_full') # forgot name for new entry
+
+        tl.io.write.hdf5_subTaggedSet(data, filename, 'data_small', refTaggedSet='data_full') # this is how it's done
+
+        read = tl.io.load.hdf5(filename, 'data_small')
+        read.makeSelection()
+        self.assertEqual(len(read), 10)
+
+        with h5py.File(filename, 'r') as f:
+            for i in range(10):
+                self.assertEqual(f[f'data_full/_data/{i}'], f[f'data_small/_data/{i}'])
+                self.assertNotEqual(f[f'data_full/_tags/{i}'], f[f'data_small/_tags/{i}'])
+
+        # Test the error cases
+        data = tl.TaggedSet(((i, 'small' if i < 10 else 'large') for i in range(20)))
+        tl.io.write.hdf5({}, filename) # empty out the file
+        tl.io.write.hdf5(data, filename, 'data_full')
+        data.makeSelection(tags='small')
+        with self.assertRaises(ValueError):
+            tl.io.write.hdf5_subTaggedSet(data, filename, 'data_small', refTaggedSet='data_full')
 
 if __name__ == '__main__':
     unittest.main(module=__file__[:-3])
