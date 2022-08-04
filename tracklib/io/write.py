@@ -84,7 +84,7 @@ def mat(data, filename):
 
     scipy.io.savemat(filename, {'trajs' : trajs})
 
-def hdf5(data, filename, group=None, name=None):
+def hdf5(data, filename, group=None):
     """
     Write to HDF5 file
 
@@ -96,19 +96,14 @@ def hdf5(data, filename, group=None, name=None):
         where to write to
     group : str
         where in the file to write the data. If unspecified, the file will be
-        truncated and content written to the root node. If you want to write to
-        an attribute of an existing or to-be-created group, specify this as
-        ``group/{attr}``.
-    name : str
-        the name of the new entry to create for storing the data. If ``None``
-        (default) store directly to `!group`.
+        truncated and content written to the root node.
     """
     mode = 'a' # append to existing file or create new if nonexistent
     if group is None:
         mode = 'w' # overwrite file if exists
         group = '/'
-    elif name is None:
-        # group is specified as group/name
+        name = None
+    else:
         parts = group.split('/')
         group = '/'.join(parts[:-1])
         name = parts[-1]
@@ -128,7 +123,7 @@ def hdf5(data, filename, group=None, name=None):
 
         hdf5_mod.write(data, name, f[group])
 
-def hdf5_subTaggedSet(data, filename, group, name=None, refTaggedSet=None):
+def hdf5_subTaggedSet(data, filename, group, refTaggedSet=None):
     """
     Write a subset of an already stored `!TaggedSet` to file
 
@@ -149,9 +144,6 @@ def hdf5_subTaggedSet(data, filename, group, name=None, refTaggedSet=None):
         the file to store things in
     group : str
         the location in the file where to store the new entry
-    name : str, optional
-        name of that new entry. Can also be specified as last element in
-        `!group`.
     refTaggedSet : str
         where the full data set is stored in the file.
 
@@ -188,16 +180,15 @@ def hdf5_subTaggedSet(data, filename, group, name=None, refTaggedSet=None):
     if type(refTaggedSet) != str:
         raise ValueError("Please specify where the full dataset is saved in the file")
 
-    if name is None:
-        # group is specified as group/name
-        parts = group.split('/')
-        group = '/'.join(parts[:-1])
-        name = parts[-1]
+    # Dissect group as group/name
+    parts = group.split('/')
+    group = '/'.join(parts[:-1])
+    name = parts[-1]
 
-        group = group if len(group) > 0 else '/'
+    group = group if len(group) > 0 else '/'
 
     if len(name) == 0:
-        raise ValueError("Have to specify a name for your new entry")
+        raise ValueError("Please specify a name (group) for your new entry")
 
     # We rely on the internal structure of TaggedSet, so check that we're up to
     # date about that
