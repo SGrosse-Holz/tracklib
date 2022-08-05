@@ -118,6 +118,25 @@ class SplineFit(core.Fit):
             x = (4/np.pi)*np.arctan(x)
         return x
             
+    def decompactify_log(self, x):
+        """
+        Decompactify spline points (convenience function)
+
+        Parameters
+        ----------
+        x : np.array, dtype=float
+            the compactified x-coordinates
+
+        Returns
+        -------
+        log_dt : np.array
+            the corresponding ``log(dt [frames])`` values
+        """
+        if self.ss_order == 0:
+            x = np.tan(np.pi/4*x)
+        x[x == np.tan(np.pi/2)] = np.inf # patch np.pi precision (np.tan(np.arctan(np.inf)) = 1.633e16 != np.inf)
+        return x * np.log(self.T)
+
     def _params2csp(self, params):
         """
         Calculate the cspline from the current parameters

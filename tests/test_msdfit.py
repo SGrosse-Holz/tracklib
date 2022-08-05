@@ -48,6 +48,15 @@ class myTestCase(unittest.TestCase):
             print(err)
         self.assertTrue(res)
 
+    def assert_array_almost_equal(self, array1, array2, decimal=10):
+        try:
+            np.testing.assert_array_almost_equal(array1, array2, decimal=decimal)
+            res = True
+        except AssertionError as err: # pragma: no cover
+            res = False
+            print(err)
+        self.assertTrue(res)
+
 class TestDiffusive(myTestCase):
     def setUp(self):
         def traj():
@@ -67,6 +76,12 @@ class TestDiffusive(myTestCase):
         res2 = fit.run(init_from={'params' : np.array([1e-8, 0.5, 0, 0, 0, 0]), 'logL' : 0})
         # provoke "infinite" penalization
         res2 = fit.run(init_from={'params' : np.array([1e-20, 0.5, 0, 0, 0, 0]), 'logL' : 0})
+
+        # check compactify / decompactify cycle
+        dt = np.array([1, 5, 23, 100, 579, np.inf])
+        self.assert_array_almost_equal(np.log(dt), fit.decompactify_log(fit.compactify(dt)))
+        fit = msdfit.lib.SplineFit(self.data, ss_order=0, n=3)
+        self.assert_array_almost_equal(np.log(dt), fit.decompactify_log(fit.compactify(dt)))
 
     def testNPX(self):
         fit = msdfit.lib.NPXFit(self.data, ss_order=1, n=0)
