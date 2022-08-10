@@ -14,7 +14,6 @@ from tqdm.auto import tqdm
 import numpy as np
 from scipy import linalg, optimize, stats
 
-from tracklib.models import rouse
 from tracklib.util import parallel
 
 __all__ = [
