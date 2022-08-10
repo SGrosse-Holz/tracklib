@@ -296,5 +296,17 @@ class TestProfiler(myTestCase):
         with self.assertRaises(RuntimeError):
             closest = profiler.find_closest_res(res['params'][0] + 1, direction=1)
 
+class TestRandomStuff(myTestCase):
+    def test_MSD(self):
+        data = tl.TaggedSet([tl.Trajectory.fromArray([[1, 2, 3], [4, 5, 6]])], hasTags=False)
+        fit = msdfit.lib.NPXFit(data, ss_order=1, n=0)
+        params = np.array(data[0].d*[-np.inf, 0.387, 0.89])
+
+        msd = fit.MSD(params)
+        dt = np.arange(1, 10)
+
+        self.assert_array_almost_equal(msd(dt), data[0].d*np.exp(0.89*np.log(dt) + 0.387))
+        self.assert_array_almost_equal(msd(dt), fit.MSD(params, dt))
+
 if __name__ == '__main__': # pragma: no cover
     unittest.main(module=__file__[:-3])

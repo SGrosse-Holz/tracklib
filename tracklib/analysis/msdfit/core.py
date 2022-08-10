@@ -567,6 +567,37 @@ class Fit(metaclass=ABCMeta):
         return min(scores)
     
     ### General machinery, usually won't need overwriting ###
+
+    def MSD(self, params, dt=None):
+        """
+        Return the MSD evaluated at dt. Convenience function
+
+        Parameters
+        ----------
+        params : np.array
+            the parameter values for which to calculate the MSD. Typically,
+            this will come from the output of a previous fit run:
+            >>> fit = ...
+            ... res = fit.run()
+            ... msd = fit.MSD(res['params'], np.arange(100))
+
+        dt : array-like
+            the time lags (in frames) at which to evaluate the MSD. If left
+            unspecified, we return a callable MSD function
+
+        Returns
+        -------
+        callable or np.array
+            the MSD function (summed over all dimensions), evaluated at `!dt` if provided.
+        """
+        def msd_fun(dt, params=params):
+            msdm = self.params2msdm(params)
+            return np.sum([msd(dt) for msd, m in msdm], axis=0)
+
+        if dt is None:
+            return msd_fun
+        else:
+            return msd_fun(dt)
         
     def _penalty(self, params):
         """
