@@ -14,6 +14,7 @@ from tqdm.auto import tqdm
 import numpy as np
 from scipy import linalg, optimize, stats
 
+from tracklib import Trajectory, TaggedSet
 from tracklib.util import parallel
 
 __all__ = [
@@ -21,6 +22,7 @@ __all__ = [
     "ds_logL",
     "Fit",
     "Profiler",
+    "generate",
 ]
 
 # Verbosity rules: 0 = no output, 1 = warnings only, 2 = informational, 3 = debug info
@@ -567,19 +569,16 @@ class Fit(metaclass=ABCMeta):
     
     ### General machinery, usually won't need overwriting ###
 
-    def MSD(self, params, dt=None):
+    def MSD(self, fitres, dt=None):
         """
         Return the MSD evaluated at dt. Convenience function
 
         Parameters
         ----------
-        params : np.array
-            the parameter values for which to calculate the MSD. Typically,
-            this will come from the output of a previous fit run:
-            >>> fit = ...
-            ... res = fit.run()
-            ... msd = fit.MSD(res['params'], np.arange(100))
-
+        fitres : dict
+            the output of a previous fit run. Specifically, this should be a
+            dict having an entry ``'params'`` that is a 1d ``np.array``
+            containing the parameter values.
         dt : array-like
             the time lags (in frames) at which to evaluate the MSD. If left
             unspecified, we return a callable MSD function
@@ -589,7 +588,7 @@ class Fit(metaclass=ABCMeta):
         callable or np.array
             the MSD function (summed over all dimensions), evaluated at `!dt` if provided.
         """
-        def msd_fun(dt, params=params):
+        def msd_fun(dt, params=fitres['params']):
             msdm = self.params2msdm(params)
             return np.sum([msd(dt) for msd, m in msdm], axis=0)
 
@@ -1704,3 +1703,58 @@ class Profiler():
             return mcis[iparams[0]]
         else:
             return mcis
+
+################## Utility functions ###########################################
+
+def generate(msd_def, T, n=1):
+    """
+    Sample trajectories from a given MSD / fitparameters
+
+    Parameters
+    ----------
+    msd_def : 2-tuple
+        one of two options:
+         + ``(fit, res)`` where `!fit` is an instance of `Fit` (e.g. one of the
+           classes from `lib`) and ``res`` is the result of a previous run of
+           `!fit` (i.e. a dict with ``'params'`` and ``'logL'`` entries; the
+           latter is not used here)
+         + ``(msdfun, ss_order, d)`` where ``msdfun`` is a callable (ideally
+           wrapped with the `MSDfun` decorator), ``ss_order in {0, 1}`` (see
+           module doc), and `!d` is the spatial dimension of the trajectories
+    T : int
+        the length of the trajectories to be generated, in frames
+    n : int, optional
+        the number of trajectories to generate
+
+    Returns
+    -------
+    TaggedSet
+        a data set containing the drawn trajectories
+    """
+    if isinstance(msd_def[0], Fit):
+        fit, res = msd_def
+        ss_order = fit.ss_order
+
+        msdm = fit.params2msdm(res['params'])
+        ms = np.array([m for _, m in msdm])
+        Cs = [msd2C_fun(msd, np.arange(T), ss_order=ss_order) for msd, _ in msdm]
+        Ls = [linalg.cholesky(C, lower=True) for C in Cs]
+        steps = np.array([L @ np.random.normal(size=(T-1, n)) for L in Ls])
+        steps = np.swapaxes(steps, 0, 2) # (n, T, d)
+    else:
+        msdfun, ss_order, d = msd_def
+        ms = np.zeros(d) # could implement this at some point, but so far it seems useless
+
+        C = msd2C_fun(msdfun, np.arange(T), ss_order=ss_order) / d
+        steps = C @ np.random.normal(size=(n, T, d))
+        # Note that matmul acts on dimensions (-1, -2) for the two arguments,
+        # NOT (-1, 0) as one might assume. In this case this is quite handy,
+        # since we want the (n, T, d) order of dimensions.
+
+    if ss_order == 0:
+        return TaggedSet((Trajectory.fromArray(mysteps + ms[None, :]) for mysteps in steps), hasTags=False)
+    elif ss_order == 1:
+        steps = np.insert(steps, 0, -ms[None, :], axis=1) # all trajectories (via cumsum) start at zero
+        return TaggedSet((Trajectory.fromArray(np.cumsum(mysteps + ms[None, :], axis=0)) for mysteps in steps), hasTags=False)
+    else: # pragma: no cover
+        raise ValueError(f"Invalid steady state order: {ss_order}")

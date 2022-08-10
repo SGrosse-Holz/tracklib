@@ -302,11 +302,29 @@ class TestRandomStuff(myTestCase):
         fit = msdfit.lib.NPXFit(data, ss_order=1, n=0)
         params = np.array(data[0].d*[-np.inf, 0.387, 0.89])
 
-        msd = fit.MSD(params)
+        msd = fit.MSD(dict(params=params))
         dt = np.arange(1, 10)
 
-        self.assert_array_almost_equal(msd(dt), data[0].d*np.exp(0.89*np.log(dt) + 0.387))
-        self.assert_array_almost_equal(msd(dt), fit.MSD(params, dt))
+        self.assert_array_almost_equal(msd(dt), data[0].d*np.exp(params[2]*np.log(dt) + params[1]))
+        self.assert_array_almost_equal(msd(dt), fit.MSD(dict(params=params), dt))
+
+    def test_generate(self):
+        data = tl.TaggedSet([tl.Trajectory.fromArray([[1, 2, 3], [4, 5, 6]])], hasTags=False)
+        fit = msdfit.lib.NPXFit(data, ss_order=1, n=0)
+        params = np.array(data[0].d*[-np.inf, 0.387, 0.89])
+
+        data_sample = msdfit.generate((fit, dict(params=params)), 10, n=2)
+        self.assertEqual(len(data_sample), 2)
+        self.assertEqual(len(data_sample[0]), 10)
+        self.assertEqual(data_sample[0].d, 3)
+        self.assertTrue(np.all(np.array([traj[0] for traj in data_sample]) == 0))
+
+        fit = msdfit.lib.TwoLocusRouseFit(data)
+        params = np.array(data[0].d*[-np.inf, 0., 1.])
+        data_sample = msdfit.generate((fit.MSD(dict(params=params)), 0, 1), 10, n=2)
+        self.assertEqual(len(data_sample), 2)
+        self.assertEqual(len(data_sample[0]), 10)
+        self.assertEqual(data_sample[0].d, 1)
 
 if __name__ == '__main__': # pragma: no cover
     unittest.main(module=__file__[:-3])
