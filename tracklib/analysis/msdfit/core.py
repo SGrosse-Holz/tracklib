@@ -85,9 +85,9 @@ def MSDfun(fun):
 
     See also
     --------
-    msd2C_fun, Fit
+    msd2C_fun, Fit, Fit.imaging
     """
-    def wrap(dt):
+    def wrap(dt, **kwargs):
         # Preproc
         dt = np.abs(np.asarray(dt))
         was_scalar = len(dt.shape) == 0
@@ -97,7 +97,7 @@ def MSDfun(fun):
         # Calculate non-zero dts and set zeros
         msd = np.empty(dt.shape)
         ind0 = dt == 0
-        msd[~ind0] = fun(dt[~ind0])
+        msd[~ind0] = fun(dt[~ind0], **kwargs)
         msd[ind0] = 0
         
         # Postproc
@@ -568,6 +568,49 @@ class Fit(metaclass=ABCMeta):
         return min(scores)
     
     ### General machinery, usually won't need overwriting ###
+
+    def imaging(self, sigma=0, f=0, alpha0=1):
+        """
+        Add imaging artifacts (localization error & motion blur) to MSDs.
+
+        This decorator should be used when defining MSD functions, to add
+        artifacts due to the imaging process. These are a) localization error
+        and b) motion blur, caused by finite exposure times. Use this decorator
+        after `MSDfun`, like so:
+        >>> @msdfit.core.MSDfun
+        ... @self.imaging(...)
+        ... def msd(dt):
+        ...     ...
+
+        Parameters
+        ----------
+        sigma : float >= 0
+            the standard deviation of the Gaussian localization error to add
+        f : float, 0 <= f <= 1
+            the exposure time as fraction of the frame time. Should usually be
+            set to ``self.motion_blur_f``.
+        alpha0 : float, 0 <= alpha0 <= 2
+            the effective short time scaling exponent. Should usually come from
+            ``self.alpha0()``, which returns a list of exponents for each
+            dimension.
+
+        Notes
+        -----
+        ``f = 0`` is ideal stroboscopic illumination, i.e. no motion blur.
+        Accordingly, the value of ``alpha0`` is not used in this case.
+        """
+        def decorator(msdfun):
+            def wrap(dt, f=f, a=alpha0, **kwargs):
+                if f == 0:
+                    return msdfun(dt, **kwargs) + 2*sigma**2
+
+                phi = f/dt
+                b = ( (1+phi)**(a+2) + (1-phi)**(a+2) - 2 ) / ( phi**2 * (a+1) * (a+2) )
+                B = msdfun(np.array([f]), **kwargs)[0] / ( (a+1)*(a+2) )
+
+                return b*msdfun(dt, **kwargs) - 2*B + 2*sigma**2
+            return wrap
+        return decorator
 
     def MSD(self, fitres, dt=None):
         """
