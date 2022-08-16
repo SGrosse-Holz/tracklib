@@ -604,10 +604,16 @@ class Fit(metaclass=ABCMeta):
                 if f == 0:
                     return msdfun(dt, **kwargs) + 2*noise2
 
-                phi = f/dt
                 a = alpha0
-                b = ( (1+phi)**(a+2) + (1-phi)**(a+2) - 2 ) / ( phi**2 * (a+1) * (a+2) )
                 B = msdfun(np.array([f]), **kwargs)[0] / ( (a+1)*(a+2) )
+
+                # dt is in (0, inf], so we have to be careful with inf (but not 0)
+                phi = f/dt
+                b = np.empty(len(phi), dtype=float)
+                ind = phi > 0
+                phi = phi[ind]
+                b[ind] = ( (1+phi)**(a+2) + (1-phi)**(a+2) - 2 ) / ( phi**2 * (a+1) * (a+2) )
+                b[~ind] = 1
 
                 return b*msdfun(dt, **kwargs) - 2*B + 2*noise2
             return wrap

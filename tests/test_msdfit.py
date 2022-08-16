@@ -89,6 +89,9 @@ class TestDiffusive(myTestCase):
 
         fit = msdfit.lib.NPXFit(self.data, ss_order=1, n=1)
         res = fit.run()
+        
+        fit = msdfit.lib.NPXFit(self.data, ss_order=1, n=1, motion_blur_f=0.5)
+        res = fit.run()
 
 class TestRouseLoci(myTestCase):
     def setUp(self):
@@ -128,7 +131,7 @@ class TestRouseLoci(myTestCase):
 
 
     def testRouse(self):
-        fit = msdfit.lib.TwoLocusRouseFit(self.data)
+        fit = msdfit.lib.TwoLocusRouseFit(self.data, motion_blur_f=1)
         fit.fix_values += [(0, -np.inf), (3, -np.inf), (6, -np.inf)] # no localization error
         res = fit.run(full_output=True, optimization_steps=(dict(method='Nelder-Mead', options={'fatol' : 0.1, 'xatol' : 0.01}),))[-1][0]
 
