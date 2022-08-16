@@ -67,8 +67,11 @@ class SplineFit(core.Fit):
     """
     def __init__(self, data, ss_order, n,
                  previous_spline_fit_and_result=None,
+                 motion_blur_f=0,
                 ):
         super().__init__(data)
+        self.motion_blur_f = motion_blur_f
+
         if n < 2: # pragma: no cover
             raise ValueError(f"SplineFit with n = {n} < 2 does not make sense")
         self.n = n
@@ -168,7 +171,13 @@ class SplineFit(core.Fit):
         """
         csp = self._params2csp(params)
 
+        # Calculate powerlaw scaling extrapolating to short times
+        alpha0 = csp(0, nu=1) / np.log(self.T)
+        if self.ss_order == 0:
+            alpha0 *= 4/np.pi
+
         @core.MSDfun
+        @self.imaging(f=self.motion_blur_f, alpha0=alpha0)
         def msd(dt, csp=csp):
             # dt == 0 is filtered out by MSDfun
             return np.exp(csp(self.compactify(dt))) / self.d
@@ -308,8 +317,11 @@ class SplineFit(core.Fit):
 class NPXFit(core.Fit): # NPX = Noise + Powerlaw + X (i.e. spline)
     def __init__(self, data, ss_order, n=0,
                  previous_NPXFit_and_result=None,
+                 motion_blur_f=0,
                 ):
         super().__init__(data)
+        self.motion_blur_f = motion_blur_f
+
         if n == 0 and ss_order == 0:
             raise ValueError("Incompatible assumptions: pure powerlaw (n=0) and trajectory steady state (ss_order=0)")
         self.n = n
@@ -400,12 +412,14 @@ class NPXFit(core.Fit): # NPX = Noise + Powerlaw + X (i.e. spline)
 
             if self.n == 0:
                 @core.MSDfun
+                @self.imaging(noise2=noise2, f=self.motion_blur_f, alpha0=alpha)
                 def msd(dt, noise2=noise2, G=G, alpha=alpha):
                     return 2*noise2 + G*(dt**alpha)
             else:
                 t0 = np.exp(self.decompactify_log(params_1d[3]))
 
                 @core.MSDfun
+                @self.imaging(noise2=noise2, f=self.motion_blur_f, alpha0=alpha)
                 def msd(dt, noise2=noise2, G=G, alpha=alpha, csp=csp):
                     out = G*(dt**alpha)
                     ind = dt > t0
@@ -556,8 +570,11 @@ class TwoLocusRouseFit(core.Fit):
     """
     # there was a constraint J > noise2 at some point. I don't remember why we would need this
     # TODO: check this
-    def __init__(self, data, k=1):
+    def __init__(self, data, k=1,
+                 motion_blur_f=0,
+                ):
         super().__init__(data)
+        self.motion_blur_f = motion_blur_f
         
         # Parameters are log- (noise2, Γ, J)
         self.ss_order = 0
@@ -585,8 +602,9 @@ class TwoLocusRouseFit(core.Fit):
                 noise2, G, J = np.exp(params[(3*dim):(3*(dim+1))])
 
             @core.MSDfun
-            def msd(dt, noise2=noise2, G=G, J=J):
-                return 2*noise2 + rouse.twoLocusMSD(dt, G, J)
+            @self.imaging(noise2=noise2, f=self.motion_blur_f, alpha0=0.5)
+            def msd(dt, G=G, J=J):
+                return rouse.twoLocusMSD(dt, G, J)
 
             msdm.append((msd, 0))
         return msdm
@@ -623,8 +641,12 @@ class OneLocusRouseFit(core.Fit):
     data. In a standard setting this makes sense only for the localization
     error, so by default we fix Γ to be the same for all dimensions.
     """
-    def __init__(self, data, k=1):
+    # TODO: remove this; if you want to fit a powerlaw with α = 0.5, use NPXFit
+    def __init__(self, data, k=1,
+                 motion_blur_f=0,
+                ):
         super().__init__(data)
+        self.motion_blur_f = motion_blur_f
         
         # Parameters are log- (noise2, Γ)
         self.ss_order = 1
@@ -645,8 +667,9 @@ class OneLocusRouseFit(core.Fit):
                 noise2, G = np.exp(params[(2*dim):(2*(dim+1))])
 
             @core.MSDfun
-            def msd(dt, noise2=noise2, G=G):
-                return 2*noise2 + G*np.sqrt(dt)
+            @self.imaging(noise2=noise2, f=self.motion_blur_f, alpha0=0.5)
+            def msd(dt, G=G):
+                return G*np.sqrt(dt)
 
             msdm.append((msd, 0))
         return msdm

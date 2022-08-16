@@ -569,7 +569,7 @@ class Fit(metaclass=ABCMeta):
     
     ### General machinery, usually won't need overwriting ###
 
-    def imaging(self, sigma=0, f=0, alpha0=1):
+    def imaging(self, noise2=0, f=0, alpha0=1):
         """
         Add imaging artifacts (localization error & motion blur) to MSDs.
 
@@ -584,8 +584,8 @@ class Fit(metaclass=ABCMeta):
 
         Parameters
         ----------
-        sigma : float >= 0
-            the standard deviation of the Gaussian localization error to add
+        noise2 : float >= 0
+            the variance (σ²) of the Gaussian localization error to add
         f : float, 0 <= f <= 1
             the exposure time as fraction of the frame time. Should usually be
             set to ``self.motion_blur_f``.
@@ -600,15 +600,16 @@ class Fit(metaclass=ABCMeta):
         Accordingly, the value of ``alpha0`` is not used in this case.
         """
         def decorator(msdfun):
-            def wrap(dt, f=f, a=alpha0, **kwargs):
+            def wrap(dt, noise2=noise2, f=f, alpha0=alpha0, **kwargs):
                 if f == 0:
-                    return msdfun(dt, **kwargs) + 2*sigma**2
+                    return msdfun(dt, **kwargs) + 2*noise2
 
                 phi = f/dt
+                a = alpha0
                 b = ( (1+phi)**(a+2) + (1-phi)**(a+2) - 2 ) / ( phi**2 * (a+1) * (a+2) )
                 B = msdfun(np.array([f]), **kwargs)[0] / ( (a+1)*(a+2) )
 
-                return b*msdfun(dt, **kwargs) - 2*B + 2*sigma**2
+                return b*msdfun(dt, **kwargs) - 2*B + 2*noise2
             return wrap
         return decorator
 
