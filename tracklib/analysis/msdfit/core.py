@@ -632,15 +632,17 @@ class Fit(metaclass=ABCMeta):
         dt : array-like
             the time lags (in frames) at which to evaluate the MSD. If left
             unspecified, we return a callable MSD function
+        kwargs : additional keyword arguments
+            are forwarded to the MSD functions returned by `params2msdm`.
 
         Returns
         -------
         callable or np.array
             the MSD function (summed over all dimensions), evaluated at `!dt` if provided.
         """
-        def msd_fun(dt, params=fitres['params']):
+        def msd_fun(dt, params=fitres['params'], **kwargs):
             msdm = self.params2msdm(params)
-            return np.sum([msd(dt) for msd, m in msdm], axis=0)
+            return np.sum([msd(dt, **kwargs) for msd, m in msdm], axis=0)
 
         if dt is None:
             return msd_fun
