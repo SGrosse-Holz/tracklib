@@ -8,6 +8,7 @@ msdfit
 from abc import ABCMeta, abstractmethod
 from copy import deepcopy
 import itertools
+import inspect
 
 from tqdm.auto import tqdm
 
@@ -87,7 +88,7 @@ def MSDfun(fun):
     --------
     msd2C_fun, Fit, Fit.imaging
     """
-    def wrap(dt, **kwargs):
+    def msdfun(dt, **kwargs):
         # Preproc
         dt = np.abs(np.asarray(dt))
         was_scalar = len(dt.shape) == 0
@@ -104,7 +105,18 @@ def MSDfun(fun):
         if was_scalar:
             msd = msd[0]
         return msd
-    return wrap
+
+    # Assemble a useful docstring
+    try:
+        fun_kwargstring = fun._kwargstring
+    except AttributeError:
+        params = inspect.signature(fun).parameters
+        arglist = list(params)
+        fun_kwargstring = ', '.join(str(params[key]) for key in arglist[1:])
+    msdfun.__doc__ = f"\nfull signature: msdfun(dt, {fun_kwargstring})"
+    msdfun._kwargstring = fun_kwargstring
+
+    return msdfun
 
 def msd2C_ss0(msd, ti):
     """
@@ -616,6 +628,20 @@ class Fit(metaclass=ABCMeta):
                 b[~ind] = 1
 
                 return b*msdfun(dt, **kwargs) - 2*B + 2*noise2
+
+            # Assemble a useful docstring
+            try:
+                fun_kwargstring = msdfun._kwargstring
+            except AttributeError:
+                params = inspect.signature(msdfun).parameters
+                arglist = list(params)
+                fun_kwargstring = ', '.join(str(params[key]) for key in arglist[1:])
+
+            params = inspect.signature(wrap).parameters
+            arglist = list(params)
+            wrap_kwargstring = ', '.join([str(params[key]) for key in arglist if key not in ['dt', 'kwargs']])
+
+            wrap._kwargstring = ', '.join([wrap_kwargstring, fun_kwargstring])
             return wrap
         return decorator
 
@@ -640,14 +666,26 @@ class Fit(metaclass=ABCMeta):
         callable or np.array
             the MSD function (summed over all dimensions), evaluated at `!dt` if provided.
         """
-        def msd_fun(dt, params=fitres['params'], **kwargs):
+        def msdfun(dt, params=fitres['params'], **kwargs):
             msdm = self.params2msdm(params)
             return np.sum([msd(dt, **kwargs) for msd, m in msdm], axis=0)
 
         if dt is None:
-            return msd_fun
+            # Write proper signature to docstring
+            single_msdfun = self.params2msdm(fitres['params'])[0][0]
+            if hasattr(single_msdfun, '_kwargstring'):
+                msdfun.__doc__ = f"""full signature:
+
+msdfun(dt,
+       params={fitres['params']},
+       {single_msdfun._kwargstring},
+      )
+
+`params` overrides parameters that are later given as keywords.
+"""
+            return msdfun
         else:
-            return msd_fun(dt)
+            return msdfun(dt)
         
     def _penalty(self, params):
         """

@@ -306,8 +306,12 @@ class TestRandomStuff(myTestCase):
         params = np.array(data[0].d*[-np.inf, 0.387, 0.89])
 
         msd = fit.MSD(dict(params=params))
-        dt = np.arange(1, 10)
+        docstring = msd.__doc__
+        self.assertIn(f"(dt,", docstring)
+        self.assertIn(f"{params[2]}", docstring)
+        self.assertIn(f"{np.exp(params[1]):.4f}"[:-1], docstring) # prevent rounding, just truncate
 
+        dt = np.arange(1, 10)
         self.assert_array_almost_equal(msd(dt), data[0].d*np.exp(params[2]*np.log(dt) + params[1]))
         self.assert_array_almost_equal(msd(dt), fit.MSD(dict(params=params), dt))
 
