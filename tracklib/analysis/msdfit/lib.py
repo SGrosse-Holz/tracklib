@@ -177,7 +177,7 @@ class SplineFit(core.Fit):
             alpha0 *= 4/np.pi
 
         @core.MSDfun
-        @self.imaging(f=self.motion_blur_f, alpha0=alpha0)
+        @core.imaging(f=self.motion_blur_f, alpha0=alpha0)
         def msd(dt, csp=csp):
             # dt == 0 is filtered out by MSDfun
             return np.exp(csp(self.compactify(dt))) / self.d
@@ -412,14 +412,14 @@ class NPXFit(core.Fit): # NPX = Noise + Powerlaw + X (i.e. spline)
 
             if self.n == 0:
                 @core.MSDfun
-                @self.imaging(noise2=noise2, f=self.motion_blur_f, alpha0=alpha)
+                @core.imaging(noise2=noise2, f=self.motion_blur_f, alpha0=alpha)
                 def msd(dt, G=G, alpha=alpha):
                     return G*(dt**alpha)
             else:
                 t0 = np.exp(self.decompactify_log(params_1d[3]))
 
                 @core.MSDfun
-                @self.imaging(noise2=noise2, f=self.motion_blur_f, alpha0=alpha)
+                @core.imaging(noise2=noise2, f=self.motion_blur_f, alpha0=alpha)
                 def msd(dt, G=G, alpha=alpha, csp=csp):
                     out = G*(dt**alpha)
                     ind = dt > t0
@@ -602,7 +602,7 @@ class TwoLocusRouseFit(core.Fit):
                 noise2, G, J = np.exp(params[(3*dim):(3*(dim+1))])
 
             @core.MSDfun
-            @self.imaging(noise2=noise2, f=self.motion_blur_f, alpha0=0.5)
+            @core.imaging(noise2=noise2, f=self.motion_blur_f, alpha0=0.5)
             def msd(dt, G=G, J=J):
                 return rouse.twoLocusMSD(dt, G, J)
 
@@ -667,7 +667,7 @@ class OneLocusRouseFit(core.Fit):
                 noise2, G = np.exp(params[(2*dim):(2*(dim+1))])
 
             @core.MSDfun
-            @self.imaging(noise2=noise2, f=self.motion_blur_f, alpha0=0.5)
+            @core.imaging(noise2=noise2, f=self.motion_blur_f, alpha0=0.5)
             def msd(dt, G=G):
                 return G*np.sqrt(dt)
 

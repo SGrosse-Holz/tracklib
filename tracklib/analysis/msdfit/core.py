@@ -47,7 +47,7 @@ def method_verbosity_patch(meth):
 
     return wrapper
         
-################## Covariance in terms of MSD #################################
+################## MSD function decorators ####################################
 
 def MSDfun(fun):
     """
@@ -86,7 +86,7 @@ def MSDfun(fun):
 
     See also
     --------
-    msd2C_fun, Fit, Fit.imaging
+    msd2C_fun, Fit, imaging
     """
     def msdfun(dt, **kwargs):
         # Preproc
@@ -117,6 +117,76 @@ def MSDfun(fun):
     msdfun._kwargstring = fun_kwargstring
 
     return msdfun
+
+def imaging(noise2=0, f=0, alpha0=1):
+    """
+    Add imaging artifacts (localization error & motion blur) to MSDs.
+
+    This decorator should be used when defining MSD functions, to add
+    artifacts due to the imaging process. These are a) localization error
+    and b) motion blur, caused by finite exposure times. Use this decorator
+    after `MSDfun`, like so:
+    >>> @msdfit.core.MSDfun
+    ... @msdfit.core.imaging(...)
+    ... def msd(dt):
+    ...     ...
+
+    Parameters
+    ----------
+    noise2 : float >= 0
+        the variance (σ²) of the Gaussian localization error to add
+    f : float, 0 <= f <= 1
+        the exposure time as fraction of the frame time. Should usually be
+        set to ``self.motion_blur_f``.
+    alpha0 : float, 0 <= alpha0 <= 2
+        the effective short time scaling exponent. Should usually come from
+        ``self.alpha0()``, which returns a list of exponents for each
+        dimension.
+
+    Notes
+    -----
+    ``f = 0`` is ideal stroboscopic illumination, i.e. no motion blur.
+    Accordingly, the value of ``alpha0`` is not used in this case.
+
+    See also
+    --------
+    MSDfun
+    """
+    def decorator(msdfun):
+        def wrap(dt, noise2=noise2, f=f, alpha0=alpha0, **kwargs):
+            if f == 0:
+                return msdfun(dt, **kwargs) + 2*noise2
+
+            a = alpha0
+            B = msdfun(np.array([f]), **kwargs)[0] / ( (a+1)*(a+2) )
+
+            # dt is in (0, inf], so we have to be careful with inf (but not 0)
+            phi = f/dt
+            b = np.empty(len(phi), dtype=float)
+            ind = phi > 0
+            phi = phi[ind]
+            b[ind] = ( (1+phi)**(a+2) + (1-phi)**(a+2) - 2 ) / ( phi**2 * (a+1) * (a+2) )
+            b[~ind] = 1
+
+            return b*msdfun(dt, **kwargs) - 2*B + 2*noise2
+
+        # Assemble a useful docstring
+        try:
+            fun_kwargstring = msdfun._kwargstring
+        except AttributeError:
+            params = inspect.signature(msdfun).parameters
+            arglist = list(params)
+            fun_kwargstring = ', '.join(str(params[key]) for key in arglist[1:])
+
+        params = inspect.signature(wrap).parameters
+        arglist = list(params)
+        wrap_kwargstring = ', '.join([str(params[key]) for key in arglist if key not in ['dt', 'kwargs']])
+
+        wrap._kwargstring = ', '.join([wrap_kwargstring, fun_kwargstring])
+        return wrap
+    return decorator
+
+################## Covariance in terms of MSD #################################
 
 def msd2C_ss0(msd, ti):
     """
@@ -580,70 +650,6 @@ class Fit(metaclass=ABCMeta):
         return min(scores)
     
     ### General machinery, usually won't need overwriting ###
-
-    def imaging(self, noise2=0, f=0, alpha0=1):
-        """
-        Add imaging artifacts (localization error & motion blur) to MSDs.
-
-        This decorator should be used when defining MSD functions, to add
-        artifacts due to the imaging process. These are a) localization error
-        and b) motion blur, caused by finite exposure times. Use this decorator
-        after `MSDfun`, like so:
-        >>> @msdfit.core.MSDfun
-        ... @self.imaging(...)
-        ... def msd(dt):
-        ...     ...
-
-        Parameters
-        ----------
-        noise2 : float >= 0
-            the variance (σ²) of the Gaussian localization error to add
-        f : float, 0 <= f <= 1
-            the exposure time as fraction of the frame time. Should usually be
-            set to ``self.motion_blur_f``.
-        alpha0 : float, 0 <= alpha0 <= 2
-            the effective short time scaling exponent. Should usually come from
-            ``self.alpha0()``, which returns a list of exponents for each
-            dimension.
-
-        Notes
-        -----
-        ``f = 0`` is ideal stroboscopic illumination, i.e. no motion blur.
-        Accordingly, the value of ``alpha0`` is not used in this case.
-        """
-        def decorator(msdfun):
-            def wrap(dt, noise2=noise2, f=f, alpha0=alpha0, **kwargs):
-                if f == 0:
-                    return msdfun(dt, **kwargs) + 2*noise2
-
-                a = alpha0
-                B = msdfun(np.array([f]), **kwargs)[0] / ( (a+1)*(a+2) )
-
-                # dt is in (0, inf], so we have to be careful with inf (but not 0)
-                phi = f/dt
-                b = np.empty(len(phi), dtype=float)
-                ind = phi > 0
-                phi = phi[ind]
-                b[ind] = ( (1+phi)**(a+2) + (1-phi)**(a+2) - 2 ) / ( phi**2 * (a+1) * (a+2) )
-                b[~ind] = 1
-
-                return b*msdfun(dt, **kwargs) - 2*B + 2*noise2
-
-            # Assemble a useful docstring
-            try:
-                fun_kwargstring = msdfun._kwargstring
-            except AttributeError:
-                params = inspect.signature(msdfun).parameters
-                arglist = list(params)
-                fun_kwargstring = ', '.join(str(params[key]) for key in arglist[1:])
-
-            params = inspect.signature(wrap).parameters
-            arglist = list(params)
-            wrap_kwargstring = ', '.join([str(params[key]) for key in arglist if key not in ['dt', 'kwargs']])
-
-            wrap._kwargstring = ', '.join([wrap_kwargstring, fun_kwargstring])
-            return wrap
-        return decorator
 
     def MSD(self, fitres, dt=None):
         """
