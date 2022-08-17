@@ -1835,14 +1835,15 @@ def generate(msd_def, T, n=1):
         ms = np.array([m for _, m in msdm])
         Cs = [msd2C_fun(msd, np.arange(T), ss_order=ss_order) for msd, _ in msdm]
         Ls = [linalg.cholesky(C, lower=True) for C in Cs]
-        steps = np.array([L @ np.random.normal(size=(T-1, n)) for L in Ls])
+        steps = np.array([L @ np.random.normal(size=(T-ss_order, n)) for L in Ls])
         steps = np.swapaxes(steps, 0, 2) # (n, T, d)
     else:
         msdfun, ss_order, d = msd_def
         ms = np.zeros(d) # could implement this at some point, but so far it seems useless
 
         C = msd2C_fun(msdfun, np.arange(T), ss_order=ss_order) / d
-        steps = C @ np.random.normal(size=(n, T, d))
+        L = linalg.cholesky(C, lower=True)
+        steps = L @ np.random.normal(size=(n, T-ss_order, d))
         # Note that matmul acts on dimensions (-1, -2) for the two arguments,
         # NOT (-1, 0) as one might assume. In this case this is quite handy,
         # since we want the (n, T, d) order of dimensions.

@@ -326,12 +326,18 @@ class TestRandomStuff(myTestCase):
         self.assertEqual(data_sample[0].d, 3)
         self.assertTrue(np.all(np.array([traj[0] for traj in data_sample]) == 0))
 
+        fit = msdfit.lib.NPXFit(data, ss_order=0, n=1)
+        params = np.array(data[0].d*[-np.inf, 0.387, 0.89, 0.5, 1])
+        data_sample = msdfit.generate((fit, dict(params=params)), 10, n=2)
+
         fit = msdfit.lib.TwoLocusRouseFit(data)
         params = np.array(data[0].d*[-np.inf, 0., 1.])
         data_sample = msdfit.generate((fit.MSD(dict(params=params)), 0, 1), 10, n=2)
         self.assertEqual(len(data_sample), 2)
         self.assertEqual(len(data_sample[0]), 10)
         self.assertEqual(data_sample[0].d, 1)
+
+        data_sample = msdfit.generate((fit.MSD(dict(params=params)), 1, 1), 10, n=2)
 
 if __name__ == '__main__': # pragma: no cover
     unittest.main(module=__file__[:-3])
