@@ -413,14 +413,14 @@ class NPXFit(core.Fit): # NPX = Noise + Powerlaw + X (i.e. spline)
             if self.n == 0:
                 @core.MSDfun
                 @self.imaging(noise2=noise2, f=self.motion_blur_f, alpha0=alpha)
-                def msd(dt, noise2=noise2, G=G, alpha=alpha):
-                    return 2*noise2 + G*(dt**alpha)
+                def msd(dt, G=G, alpha=alpha):
+                    return G*(dt**alpha)
             else:
                 t0 = np.exp(self.decompactify_log(params_1d[3]))
 
                 @core.MSDfun
                 @self.imaging(noise2=noise2, f=self.motion_blur_f, alpha0=alpha)
-                def msd(dt, noise2=noise2, G=G, alpha=alpha, csp=csp):
+                def msd(dt, G=G, alpha=alpha, csp=csp):
                     out = G*(dt**alpha)
                     ind = dt > t0
                     if np.any(ind):
