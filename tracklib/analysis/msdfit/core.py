@@ -1184,7 +1184,11 @@ class Profiler():
         self.conf_tol = conf_tol
 
         self.iparam = None
-        self.profiling = profiling # also sets self.LR_interval and self.LR_target
+        if fit.number_of_fit_parameters() > 1:
+            self.profiling = profiling # also sets self.LR_interval and self.LR_target
+        else:
+            self.vprint(2, "Cannot profile with a single fit parameter; setting profiling = False")
+            self.profiling = False
 
         self._bracket_strategy_input = bracket_strategy # see expand_bracket_strategy()
         self.bracket_step = bracket_step
