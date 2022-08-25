@@ -43,14 +43,14 @@ class TestHDF5(myTestCase):
             'float' : 5.3,
             'complex' : 1+3j,
             'str' : "Hello World",
-            'Trajectory' : tl.Trajectory.fromArray([1, 2, 4, 5], meta_test='moo'),
+            'Trajectory' : tl.Trajectory([1, 2, 4, 5], meta_test='moo'),
             'TaggedSet' : tl.TaggedSet(),
             'empty_tuple' : tuple(),
             'None' : None,
         }
         data['TaggedSet'].add(5, ['moo', 'foo', 'bar'])
         data['TaggedSet'].add(8.7)
-        data['TaggedSet'].add(tl.Trajectory.fromArray([1.5, 3.8]), 'traj')
+        data['TaggedSet'].add(tl.Trajectory([1.5, 3.8]), 'traj')
 
         filename = 'test.hdf5'
         tl.io.write.hdf5(data, filename)

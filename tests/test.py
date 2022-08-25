@@ -14,7 +14,7 @@ from unittest.mock import patch
 from context import tracklib as tl
 
 """
-exec "norm jjd}O" | let @a="\n'" | exec "g/^class Test/norm w\"Ayt(:let @a=@a.\"',\\n'\"" | norm i__all__ = ["ap}kddO]kV?__all__j>>
+exec "norm jjd}O" | let @a="\n'" | exec "g/^class Test/norm w\"Ayt(:let @a=@a.\"',\\n'\"" | norm i__all__ = ["ap}k<<kV?__all__j>>
 """
 __all__ = [
     'Test0Trajectory',
@@ -51,52 +51,37 @@ class myTestCase(unittest.TestCase):
         self.assertTrue(res)
 
 class Test0Trajectory(myTestCase):
-    def test_fromArray(self):
-        traj = tl.Trajectory.fromArray(np.zeros((10,)))
-        self.assertIsInstance(traj, tl.trajectory.Trajectory_1N1d)
-
-        traj = tl.Trajectory.fromArray(np.zeros((10, 2)))
-        self.assertIsInstance(traj, tl.trajectory.Trajectory_1N2d)
-
-        traj = tl.Trajectory.fromArray(np.zeros((1, 10, 3)))
-        self.assertIsInstance(traj, tl.trajectory.Trajectory_1N3d)
-
-        traj = tl.Trajectory.fromArray(np.zeros((2, 10, 1)))
-        self.assertIsInstance(traj, tl.trajectory.Trajectory_2N1d)
-
-        traj = tl.Trajectory.fromArray(np.zeros((2, 10, 2)))
-        self.assertIsInstance(traj, tl.trajectory.Trajectory_2N2d)
-
-        traj = tl.Trajectory.fromArray(np.zeros((2, 10, 3)))
-        self.assertIsInstance(traj, tl.trajectory.Trajectory_2N3d)
-
-        traj = tl.Trajectory.fromArray(np.zeros((2, 5, 2)), t=[1, 2, 4, 5, 7])
+    def test_init(self):
+        traj = tl.Trajectory(np.zeros((2, 5, 2)), t=[1, 2, 4, 5, 7])
         self.assertEqual(traj.T, 7)
         self.assertTrue(np.all(np.isnan(traj[[2, 5]])))
 
         with self.assertRaises(ValueError):
-            traj = tl.Trajectory.fromArray(np.zeros((1, 1, 1, 1)))
-        with self.assertRaises(ValueError):
-            traj = tl.Trajectory.fromArray(np.zeros((5, 1, 1)))
+            traj = tl.Trajectory(np.zeros((1, 1, 1, 1)))
+
+        traj = tl.Trajectory(np.zeros((2, 3, 1)), localization_error=849, parity='even', moo=5)
+        self.assertEqual(traj.localization_error, 849)
+        self.assertEqual(traj.parity, 'even')
+        self.assertEqual(traj.meta['moo'], 5)
 
 class Test1Trajectory(myTestCase):
     def setUp(self):
         self.T = 10
         self.Ns = [1, 1, 1, 2, 2, 2]
         self.ds = [1, 2, 3, 1, 2, 3]
-        self.trajs = [tl.Trajectory.fromArray(np.zeros((N, self.T, d)), localization_error=np.ones((d,)), parity='even') \
+        self.trajs = [tl.Trajectory(np.zeros((N, self.T, d)), localization_error=np.ones((d,)), parity='even') \
                       for N, d in zip(self.Ns, self.ds)]
-        self.trajs[5].meta['localization_error'] = np.ones((2, 3)) # To check that shape
+        self.trajs[5].localization_error = np.ones((2, 3)) # To check that shape
 
-    def test_valid_frames(self):
-        traj = tl.Trajectory.fromArray(np.zeros((2, 5, 2)), t=[1, 2, 4, 5, 7])
-        self.assertEqual(traj.valid_frames(), 5)
+    def test_count_valid_frames(self):
+        traj = tl.Trajectory(np.zeros((2, 5, 2)), t=[1, 2, 4, 5, 7])
+        self.assertEqual(traj.count_valid_frames(), 5)
 
         traj.data[0, 2, :] = 0
-        self.assertEqual(traj.valid_frames(), 5)
+        self.assertEqual(traj.count_valid_frames(), 5)
 
         traj.data[1, 2, :] = 0
-        self.assertEqual(traj.valid_frames(), 6)
+        self.assertEqual(traj.count_valid_frames(), 6)
 
     def test_interface(self):
         """
@@ -117,23 +102,23 @@ class Test1Trajectory(myTestCase):
                 self.assertTupleEqual(traj[3:5].shape, (N, 2, d))
                 self.assert_array_equal(traj[2], np.zeros((N, d)))
 
-            # Plotting
-            lines = traj.plot_vstime()
-            self.assertEqual(len(lines), d)
-
-            if d > 1:
-                lines = traj.plot_spatial(label='test plot')
-                self.assertEqual(len(lines), N)
-
-                lines = traj.plot_spatial(linestyle='-')
-                if N == 2:
-                    lines = traj.plot_spatial(linestyle=['-', '--'])
-                else:
-                    with self.assertRaises(ValueError):
-                        lines = traj.plot_spatial(linestyle=['-', '--'])
-            else:
-                with self.assertRaises(NotImplementedError):
-                    lines = traj.plot_spatial(label='test plot')
+#             # Plotting
+#             lines = traj.plot_vstime()
+#             self.assertEqual(len(lines), d)
+# 
+#             if d > 1:
+#                 lines = traj.plot_spatial(label='test plot')
+#                 self.assertEqual(len(lines), N)
+# 
+#                 lines = traj.plot_spatial(linestyle='-')
+#                 if N == 2:
+#                     lines = traj.plot_spatial(linestyle=['-', '--'])
+#                 else:
+#                     with self.assertRaises(ValueError):
+#                         lines = traj.plot_spatial(linestyle=['-', '--'])
+#             else:
+#                 with self.assertRaises(NotImplementedError):
+#                     lines = traj.plot_spatial(label='test plot')
 
             # Modifiers
             _ = traj.rescale(2)
@@ -141,7 +126,7 @@ class Test1Trajectory(myTestCase):
             traj.meta['MSD'] = {'data' : np.array([5])}
             times2 = traj.rescale(2)
             self.assert_array_equal(traj.data*2, times2.data)
-            self.assert_array_equal(traj.meta['MSD']['data']*4, times2.meta['MSD']['data'])
+            self.assertNotIn('MSD', times2.meta)
             plus1 = traj.offset(1)
             self.assert_array_equal(traj.data+1, plus1.data)
             plus1 = traj.offset([1])
@@ -161,7 +146,7 @@ class Test1Trajectory(myTestCase):
             elif N == 1:
                 mag = traj.abs()
                 self.assertTupleEqual(mag.data.shape, (1, self.T, 1))
-                with self.assertRaises(NotImplementedError):
+                with self.assertRaises(ValueError):
                     rel = traj.relative()
                 dif = traj.diff(dt=3)
                 self.assertTupleEqual(dif.data.shape, (1, self.T-3, d))
@@ -306,12 +291,12 @@ class Test1TaggedSet(unittest.TestCase):
 class TestUtilClean(myTestCase):
     def setUp(self):
         # Split with threshold = 2 => trajectories of lengths [2, 3, 3]
-        self.traj = tl.Trajectory.fromArray([1., 2, 4.1, 4.5, 3, -0.5, -1, -0.7])
+        self.traj = tl.Trajectory([1., 2, 4.1, 4.5, 3, -0.5, -1, -0.7])
 
         # Split with threshold = 3 => 3 trajectories with lengths [4, 5, 6]
         self.ds = tl.TaggedSet()
-        self.ds.add(tl.Trajectory.fromArray([0, 0.75, 0.5, 0.3, 5.4, 5.5, 5.3, -2.0, 5.4]))
-        self.ds.add(tl.Trajectory.fromArray([1.2, 1.4, np.nan, np.nan, 10.0, 10.2]))
+        self.ds.add(tl.Trajectory([0, 0.75, 0.5, 0.3, 5.4, 5.5, 5.3, -2.0, 5.4]))
+        self.ds.add(tl.Trajectory([1.2, 1.4, np.nan, np.nan, 10.0, 10.2]))
 
     def test_split_trajectory(self):
         split_trajs = tl.util.clean.split_trajectory_at_big_steps(self.traj, 2)
@@ -389,8 +374,8 @@ class TestIOLoad(myTestCase):
 class TestIOWrite(myTestCase):
     def setUp(self):
         self.ds = tl.TaggedSet()
-        self.ds.add(tl.Trajectory.fromArray([0, 0.75, 0.5, 0.3, 5.4, 5.5, 5.3, -2.0, 5.4]))
-        self.ds.add(tl.Trajectory.fromArray([1.2, 1.4, np.nan, np.nan, 10.0, 10.2]))
+        self.ds.add(tl.Trajectory([0, 0.75, 0.5, 0.3, 5.4, 5.5, 5.3, -2.0, 5.4]))
+        self.ds.add(tl.Trajectory([1.2, 1.4, np.nan, np.nan, 10.0, 10.2]))
 
     def test_csv(self):
         filename = "testdata/test_write.csv"
@@ -400,7 +385,7 @@ class TestIOWrite(myTestCase):
             self.assertTrue(f.read() == 'id\tframe\tx\n0\t0\t0.0\n0\t1\t0.75\n0\t2\t0.5\n0\t3\t0.3\n0\t4\t5.4\n0\t5\t5.5\n0\t6\t5.3\n0\t7\t-2.0\n0\t8\t5.4\n1\t0\t1.2\n1\t1\t1.4\n1\t4\t10.0\n1\t5\t10.2\n')
 
         ds = tl.TaggedSet()
-        ds.add(tl.Trajectory.fromArray(np.arange(20).reshape((2, 5, 2))))
+        ds.add(tl.Trajectory(np.arange(20).reshape((2, 5, 2))))
         tl.io.write.csv(ds, filename)
 
         with open(filename, 'r') as f:
@@ -586,7 +571,7 @@ class TestAnalysisChi2(myTestCase):
 
 class TestAnalysisP2(myTestCase):
     def setUp(self):
-        self.traj = tl.Trajectory.fromArray([1, 2, 3, 4, np.nan, 6])
+        self.traj = tl.Trajectory([1, 2, 3, 4, np.nan, 6])
         self.ds = tl.models.statgauss.dataset(msd=np.linspace(0, 5, 10), Ts=10*[None])
 
     def test_MSDtraj(self):
@@ -600,7 +585,7 @@ class TestAnalysisP2(myTestCase):
         self.assert_array_equal(msd, np.array([0, 1, 4, 9, np.nan, 25]))
         self.assert_array_equal(self.traj.meta['MSD']['N'], np.array([1, 1, 1, 1, 0, 1]))
 
-        traj3d = tl.Trajectory.fromArray(np.arange(30).reshape(-1, 3))
+        traj3d = tl.Trajectory(np.arange(30).reshape(-1, 3))
         tl.analysis.MSD(traj3d)
         msd = traj3d.meta['MSD']['data']
         self.assert_array_equal(msd, 27*np.arange(len(traj3d))**2)
@@ -650,14 +635,14 @@ class TestAnalysisKLD(myTestCase):
     def setUp(self):
         self.ds = tl.models.statgauss.dataset(msd=np.linspace(0, 5, 10), Ts=10*[None])
         for traj in self.ds:
-            traj.meta['parity'] = 'even'
+            traj.parity = 'even'
 
     def test_perezcruz(self):
         Dest = tl.analysis.kld.perezcruz(self.ds, n=2, k=5, dt=1)
         self.assertIsInstance(Dest, float)
 
         for traj in self.ds:
-            traj.meta['parity'] = 'odd'
+            traj.parity = 'odd'
         Dest = tl.analysis.kld.perezcruz(self.ds, n=2, k=5, dt=1)
         self.assertIsInstance(Dest, float)
 
@@ -675,16 +660,16 @@ class TestAnalysisPlots(myTestCase):
         lines = tl.analysis.plots.msd_overview(self.ds, dt=5)
         self.assertEqual(len(lines), len(self.ds)+1)
 
-    def test_spatial(self):
-        lines = tl.analysis.plots.trajectories_spatial(self.ds, fallback_color='#abcdef', color='red')
-        self.assertEqual(len(lines), len(self.ds))
-
-        lines = tl.analysis.plots.trajectories_spatial(self.ds2, color=['red', 'blue']) # just testing kwarg
-        lines = tl.analysis.plots.trajectories_spatial(self.ds2)
-        self.assertEqual(len(lines), 2*len(self.ds2))
-
-        self.ds2.addTags("tag")
-        lines = tl.analysis.plots.trajectories_spatial(self.ds2, colordict={'tag' : 'k'}, linestyle=['--', ':'])
+#     def test_spatial(self):
+#         lines = tl.analysis.plots.trajectories_spatial(self.ds, fallback_color='#abcdef', color='red')
+#         self.assertEqual(len(lines), len(self.ds))
+# 
+#         lines = tl.analysis.plots.trajectories_spatial(self.ds2, color=['red', 'blue']) # just testing kwarg
+#         lines = tl.analysis.plots.trajectories_spatial(self.ds2)
+#         self.assertEqual(len(lines), 2*len(self.ds2))
+# 
+#         self.ds2.addTags("tag")
+#         lines = tl.analysis.plots.trajectories_spatial(self.ds2, colordict={'tag' : 'k'}, linestyle=['--', ':'])
 
     def test_distance_dist(self):
         _ = tl.analysis.plots.distance_distribution(self.ds)
@@ -837,8 +822,8 @@ class TestUtilSweep(myTestCase):
 
     def setUp(self):
         ds = tl.TaggedSet()
-        ds.add(tl.Trajectory.fromArray([0, 0.75, 0.5, 0.3, 5.4, 5.5, 5.3, -2.0, 5.4]))
-        ds.add(tl.Trajectory.fromArray([1.2, 1.4, np.nan, np.nan, 10.0, 10.2]))
+        ds.add(tl.Trajectory([0, 0.75, 0.5, 0.3, 5.4, 5.5, 5.3, -2.0, 5.4]))
+        ds.add(tl.Trajectory([1.2, 1.4, np.nan, np.nan, 10.0, 10.2]))
 
         self.sweep = tl.util.Sweeper(ds, self.countfun)
         _ = tl.util.Sweeper(ds, self.countfun, copy=False)

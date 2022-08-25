@@ -1853,9 +1853,9 @@ def generate(msd_def, T, n=1):
         # since we want the (n, T, d) order of dimensions.
 
     if ss_order == 0:
-        return TaggedSet((Trajectory.fromArray(mysteps + ms[None, :]) for mysteps in steps), hasTags=False)
+        return TaggedSet((Trajectory(mysteps + ms[None, :]) for mysteps in steps), hasTags=False)
     elif ss_order == 1:
         steps = np.insert(steps, 0, -ms[None, :], axis=1) # all trajectories (via cumsum) start at zero
-        return TaggedSet((Trajectory.fromArray(np.cumsum(mysteps + ms[None, :], axis=0)) for mysteps in steps), hasTags=False)
+        return TaggedSet((Trajectory(np.cumsum(mysteps + ms[None, :], axis=0)) for mysteps in steps), hasTags=False)
     else: # pragma: no cover
         raise ValueError(f"Invalid steady state order: {ss_order}")

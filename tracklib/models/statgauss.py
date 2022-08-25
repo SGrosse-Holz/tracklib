@@ -139,7 +139,7 @@ def dataset(msd, N=1, Ts=None, d=3, **kwargs):
     def gen():
         for iT, T in enumerate(Ts):
             mytraces = [traces[:T, ((iT*N + n)*d):((iT*N + n+1)*d)] for n in range(N)]
-            yield Trajectory.fromArray(mytraces)
+            yield Trajectory(mytraces)
 
     return TaggedSet(gen(), hasTags=False)
 
@@ -209,6 +209,6 @@ def control(dataset, msd=None):
                 except KeyError:
                     pass
 
-            yield (Trajectory.fromArray(newdata, **newmeta), deepcopy(mytags))
+            yield (Trajectory(newdata, **newmeta), deepcopy(mytags))
 
     return TaggedSet(gen())

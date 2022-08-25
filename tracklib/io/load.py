@@ -163,7 +163,7 @@ def csv(filename, columns=['x', 'y', 't', 'id'], tags=None, meta_post={}, **kwar
                 meta[key][:] = np.nan
                 meta[key][myt] = mymeta
 
-        out.add(Trajectory.fromArray(trajdata, **meta), tags)
+        out.add(Trajectory(trajdata, **meta), tags)
 
     return out
 

@@ -182,7 +182,7 @@ class MultiStateRouse(MultiStateModel):
     localization_error : float, (d,) np.array, or None, optional
         localization error assumed by the model, e.g. in calculating the
         likelihood or generating trajectories. If ``None``, try to use
-        ``traj.meta['localization_error']`` where possible. If scalar, will be
+        ``traj.localization_error`` where possible. If scalar, will be
         broadcast to all spatial dimensions.
 
     Attributes
@@ -192,7 +192,7 @@ class MultiStateRouse(MultiStateModel):
     measurement : (N,) np.ndarray
         the measurement vector
     localization_error : array or None
-        if ``None``, use ``traj.meta['localization_error']`` where possible
+        if ``None``, use ``traj.localization_error`` where possible
 
     Notes
     -----
@@ -244,8 +244,10 @@ class MultiStateRouse(MultiStateModel):
         # given trajectory
         if self.localization_error is not None:
             return np.asarray(self.localization_error)
+        elif traj.localization_error is not None:
+            return np.asarray(traj.localization_error)
         else:
-            return np.asarray(traj.meta['localization_error'])
+            raise ValueError("No localization error specified (use MultiStateModel.localization_error or Trajectory.localization_error)")
 
     def initial_loopingprofile(self, traj):
         """
@@ -390,10 +392,10 @@ class MultiStateRouse(MultiStateModel):
         data += localization_error[None, :] * np.random.normal(size=data.shape)
 
         # Return as Trajectory
-        return Trajectory.fromArray(data,
-                                    localization_error=localization_error,
-                                    loopingprofile=profile,
-                                    )
+        return Trajectory(data,
+                          localization_error=localization_error,
+                          loopingprofile=profile,
+                         )
 
     def toFactorized(self):
         """
@@ -442,7 +444,7 @@ class FactorizedModel(MultiStateModel):
     This being a heuristical model, we assume that the localization error is
     already incorporated in the `!distributions`, as would be the case if they
     came from experimental data. Therefore, this class ignores the
-    ``meta['localization_error']`` field of `Trajectory`.
+    ``localization_error`` attribute of `Trajectory`.
 
     The ``d`` attribute mandated by the `MultiStateRouse` interface is used
     only for generation of trajectories.
@@ -546,8 +548,7 @@ class FactorizedModel(MultiStateModel):
             see `MultiStateModel.trajectory_from_loopingprofile`; note that
             since the localization error should already be accounted for in the
             `distributions` of the model, it is *not* added to the trajectory
-            here. Instead, it is just written to
-            ``traj.meta['localization_error']``.
+            here. Instead, it is just written to ``traj.localization_error``.
         missing_frames : None, float in [0, 1), int, or np.ndarray
             see `MultiStateModel.trajectory_from_loopingprofile`
 
@@ -577,7 +578,7 @@ class FactorizedModel(MultiStateModel):
         data *= np.expand_dims(magnitudes / np.linalg.norm(data, axis=1), 1)
         data[missing_frames, :] = np.nan
 
-        return Trajectory.fromArray(data,
-                                    localization_error=localization_error,
-                                    loopingprofile=profile,
-                                    )
+        return Trajectory(data,
+                          localization_error=localization_error,
+                          loopingprofile=profile,
+                         )

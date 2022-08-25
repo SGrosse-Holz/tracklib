@@ -112,7 +112,7 @@ class TestUtilStateProbabilities(myTestCase):
 
 class TestModels(myTestCase):
     def setUp(self):
-        self.traj = tl.Trajectory.fromArray(np.array([1, 2, np.nan, 4]), localization_error=[0.5])
+        self.traj = tl.Trajectory(np.array([1, 2, np.nan, 4]), localization_error=[0.5])
         self.profile = bild.Loopingprofile([1, 1, 0, 0])
 
     def test_base(self):
@@ -143,12 +143,12 @@ class TestModels(myTestCase):
                                                     localization_error=0.1,
                                                     missing_frames = 0.9,
                                                     )
-        self.assertLess(traj.valid_frames(), 18)
+        self.assertLess(traj.count_valid_frames(), 18)
 
         traj = model.trajectory_from_loopingprofile(bild.Loopingprofile(np.ones(20)),
                                                     missing_frames = 12,
                                                     )
-        self.assertEqual(traj.valid_frames(), 8)
+        self.assertEqual(traj.count_valid_frames(), 8)
 
     def test_Factorized(self):
         model = bild.models.FactorizedModel([
@@ -174,7 +174,7 @@ class TestModels(myTestCase):
 
 class TestAMIS(myTestCase):
     def setUp(self):
-        self.traj = tl.Trajectory.fromArray([0.1, 1, 2, 3, 4, 5])
+        self.traj = tl.Trajectory([0.1, 1, 2, 3, 4, 5])
         self.model = bild.models.FactorizedModel([scipy.stats.maxwell(scale=0.1),
                                                   scipy.stats.maxwell(scale=1.0)])
 
@@ -246,7 +246,7 @@ class TestAMIS(myTestCase):
 
 class TestCore(myTestCase):
     def setUp(self):
-        self.traj = tl.Trajectory.fromArray([0.1, 0.05, 6, 3, 4, 0.01, 5, 7])
+        self.traj = tl.Trajectory([0.1, 0.05, 6, 3, 4, 0.01, 5, 7])
         self.model = bild.models.FactorizedModel([scipy.stats.maxwell(scale=0.1),
                                                   scipy.stats.maxwell(scale=1)])
 
@@ -270,7 +270,7 @@ class TestCore(myTestCase):
         # the point of equal likelihood for two Maxwell's with scales a and b
         # is x = ab * sqrt(6*log(b/a) / (b^2 - a^2))
         x = 0.1*np.sqrt(6*np.log(0.1) / -0.99)
-        traj = tl.Trajectory.fromArray(x*np.ones(5))
+        traj = tl.Trajectory(x*np.ones(5))
         res = bild.sample(traj, model,
                           init_runs=5,
                           sampler_kw={'max_fev' : 1000}, # runtime
@@ -282,7 +282,7 @@ class TestCore(myTestCase):
 
 class TestPostproc(myTestCase):
     def setUp(self):
-        self.traj = tl.Trajectory.fromArray([0.1, 0.05, 6, 3, 4, 0.01, 5, 7])
+        self.traj = tl.Trajectory([0.1, 0.05, 6, 3, 4, 0.01, 5, 7])
         self.model = bild.models.FactorizedModel([scipy.stats.maxwell(scale=0.1),
                                                   scipy.stats.maxwell(scale=1)])
 

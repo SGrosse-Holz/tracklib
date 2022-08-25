@@ -18,7 +18,7 @@ def perezcruz(dataset, n=10, k=20, dt=1):
     ----------
     dataset : `TaggedSet` of `Trajectory`
         the data to run the KLD estimation on. Note that the trajectories
-        should have the ``meta['parity']`` field set (to either ``'even'`` or
+        should have the ``parity`` attribute set (to either ``'even'`` or
         ``'odd'``)
     n : int, optional
         snippet length ( = window size)
@@ -45,7 +45,7 @@ def perezcruz(dataset, n=10, k=20, dt=1):
     Since this might not be the desired behavior, the user might have to do
     some pre-processing.
     """
-    parity = dataset.map_unique(lambda traj : traj.meta['parity'])
+    parity = dataset.map_unique(lambda traj : traj.parity)
     assert parity in {'even', 'odd'}
 
     # Generate snippets

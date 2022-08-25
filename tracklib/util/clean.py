@@ -68,9 +68,9 @@ def split_trajectory_at_big_steps(traj, threshold):
     new_trajs = set()
     old_ind = 0
     for ind in inds_bigsteps:
-        new_trajs.add(Trajectory.fromArray(traj.data[:, old_ind:ind, :]))
+        new_trajs.add(Trajectory(traj.data[:, old_ind:ind, :]))
         old_ind = ind
-    new_trajs.add(Trajectory.fromArray(traj.data[:, old_ind:, :]))
+    new_trajs.add(Trajectory(traj.data[:, old_ind:, :]))
     del traj
     
     return {traj for traj in new_trajs if len(traj) > 1}

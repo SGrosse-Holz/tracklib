@@ -21,8 +21,8 @@
         </h1>
         <img id="keyboard_icon" src="keybd_closed.png" alt="Show keyboard shortcuts" />
         <h2 class="stats">
-            10 statements &nbsp;
-            <button type="button" class="run shortkey_r button_toggle_run" title="Toggle lines run">10 run</button>
+            12 statements &nbsp;
+            <button type="button" class="run shortkey_r button_toggle_run" title="Toggle lines run">12 run</button>
             <button type="button" class="mis show_mis shortkey_m button_toggle_mis" title="Toggle lines missing">0 missing</button>
             <button type="button" class="exc show_exc shortkey_x button_toggle_exc" title="Toggle lines excluded">0 excluded</button>
         </h2>
@@ -58,26 +58,33 @@
     <p id="t5" class="pln"><span class="n"><a href="#t5">5</a></span><span class="t"><span class="com"># Register HDF5 I/O for tracklib classes</span>&nbsp;</span><span class="r"></span></p>
     <p id="t6" class="pln"><span class="n"><a href="#t6">6</a></span><span class="t"><span class="com"># Pack everything into a dummy namespace, so we don't pollute the module</span>&nbsp;</span><span class="r"></span></p>
     <p id="t7" class="pln"><span class="n"><a href="#t7">7</a></span><span class="t"><span class="com"># namespace</span>&nbsp;</span><span class="r"></span></p>
-    <p id="t8" class="run"><span class="n"><a href="#t8">8</a></span><span class="t"><span class="key">class</span> <span class="nam">stupid_namespace</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
-    <p id="t9" class="run"><span class="n"><a href="#t9">9</a></span><span class="t">    <span class="key">from</span> <span class="op">.</span> <span class="key">import</span> <span class="nam">hdf5</span>&nbsp;</span><span class="r"></span></p>
-    <p id="t10" class="run"><span class="n"><a href="#t10">10</a></span><span class="t">    <span class="key">from</span> <span class="nam">tracklib</span> <span class="key">import</span> <span class="nam">TaggedSet</span>&nbsp;</span><span class="r"></span></p>
-    <p id="t11" class="run"><span class="n"><a href="#t11">11</a></span><span class="t">    <span class="key">from</span> <span class="nam">tracklib</span><span class="op">.</span><span class="nam">trajectory</span> <span class="key">import</span> <span class="op">(</span><span class="nam">Trajectory_1N1d</span><span class="op">,</span> <span class="nam">Trajectory_1N2d</span><span class="op">,</span> <span class="nam">Trajectory_1N3d</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
-    <p id="t12" class="pln"><span class="n"><a href="#t12">12</a></span><span class="t">                                     <span class="nam">Trajectory_2N1d</span><span class="op">,</span> <span class="nam">Trajectory_2N2d</span><span class="op">,</span> <span class="nam">Trajectory_2N3d</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
-    <p id="t13" class="pln"><span class="n"><a href="#t13">13</a></span><span class="t">                                     <span class="op">)</span>&nbsp;</span><span class="r"></span></p>
-    <p id="t14" class="pln"><span class="n"><a href="#t14">14</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
-    <p id="t15" class="run"><span class="n"><a href="#t15">15</a></span><span class="t">    <span class="key">for</span> <span class="nam">cls</span> <span class="key">in</span> <span class="op">[</span><span class="nam">Trajectory_1N1d</span><span class="op">,</span> <span class="nam">Trajectory_1N2d</span><span class="op">,</span> <span class="nam">Trajectory_1N3d</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
-    <p id="t16" class="pln"><span class="n"><a href="#t16">16</a></span><span class="t">                <span class="nam">Trajectory_2N1d</span><span class="op">,</span> <span class="nam">Trajectory_2N2d</span><span class="op">,</span> <span class="nam">Trajectory_2N3d</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
-    <p id="t17" class="pln"><span class="n"><a href="#t17">17</a></span><span class="t">                <span class="nam">TaggedSet</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
-    <p id="t18" class="pln"><span class="n"><a href="#t18">18</a></span><span class="t">                <span class="op">]</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
-    <p id="t19" class="run"><span class="n"><a href="#t19">19</a></span><span class="t">        <span class="nam">hdf5</span><span class="op">.</span><span class="nam">reader_writer_registry</span><span class="op">[</span><span class="str">"602354027_tracklib."</span><span class="op">+</span><span class="nam">cls</span><span class="op">.</span><span class="nam">__name__</span><span class="op">]</span> <span class="op">=</span> <span class="op">(</span><span class="nam">cls</span><span class="op">,</span> <span class="nam">hdf5</span><span class="op">.</span><span class="nam">write_generic_class</span><span class="op">,</span> <span class="nam">hdf5</span><span class="op">.</span><span class="nam">read_generic_class</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
-    <p id="t20" class="pln"><span class="n"><a href="#t20">20</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
-    <p id="t21" class="run"><span class="n"><a href="#t21">21</a></span><span class="t"><span class="key">del</span> <span class="nam">stupid_namespace</span>&nbsp;</span><span class="r"></span></p>
+    <p id="t8" class="pln"><span class="n"><a href="#t8">8</a></span><span class="t"><span class="com"># This snippet has to be here because it would result in circular imports if</span>&nbsp;</span><span class="r"></span></p>
+    <p id="t9" class="pln"><span class="n"><a href="#t9">9</a></span><span class="t"><span class="com"># placed in either trajectory.py/taggedset.py or io/hdf5.py</span>&nbsp;</span><span class="r"></span></p>
+    <p id="t10" class="run"><span class="n"><a href="#t10">10</a></span><span class="t"><span class="key">class</span> <span class="nam">stupid_namespace</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
+    <p id="t11" class="run"><span class="n"><a href="#t11">11</a></span><span class="t">    <span class="key">from</span> <span class="op">.</span> <span class="key">import</span> <span class="nam">hdf5</span>&nbsp;</span><span class="r"></span></p>
+    <p id="t12" class="run"><span class="n"><a href="#t12">12</a></span><span class="t">    <span class="key">from</span> <span class="nam">tracklib</span> <span class="key">import</span> <span class="nam">TaggedSet</span><span class="op">,</span> <span class="nam">Trajectory</span>&nbsp;</span><span class="r"></span></p>
+    <p id="t13" class="pln"><span class="n"><a href="#t13">13</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
+    <p id="t14" class="run"><span class="n"><a href="#t14">14</a></span><span class="t">    <span class="key">for</span> <span class="nam">cls</span> <span class="key">in</span> <span class="op">[</span><span class="nam">TaggedSet</span><span class="op">,</span> <span class="nam">Trajectory</span><span class="op">]</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
+    <p id="t15" class="run"><span class="n"><a href="#t15">15</a></span><span class="t">        <span class="nam">hdf5</span><span class="op">.</span><span class="nam">reader_writer_registry</span><span class="op">[</span><span class="str">"602354027_tracklib."</span><span class="op">+</span><span class="nam">cls</span><span class="op">.</span><span class="nam">__name__</span><span class="op">]</span> <span class="op">=</span> <span class="op">(</span><span class="nam">cls</span><span class="op">,</span> <span class="nam">hdf5</span><span class="op">.</span><span class="nam">write_generic_class</span><span class="op">,</span> <span class="nam">hdf5</span><span class="op">.</span><span class="nam">read_generic_class</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
+    <p id="t16" class="pln"><span class="n"><a href="#t16">16</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
+    <p id="t17" class="pln"><span class="n"><a href="#t17">17</a></span><span class="t">    <span class="com"># Historically used identifiers (should continue to support these):</span>&nbsp;</span><span class="r"></span></p>
+    <p id="t18" class="pln"><span class="n"><a href="#t18">18</a></span><span class="t">    <span class="com"># 602354027_tracklib.Trajectory_1N1d</span>&nbsp;</span><span class="r"></span></p>
+    <p id="t19" class="pln"><span class="n"><a href="#t19">19</a></span><span class="t">    <span class="com"># 602354027_tracklib.Trajectory_1N2d</span>&nbsp;</span><span class="r"></span></p>
+    <p id="t20" class="pln"><span class="n"><a href="#t20">20</a></span><span class="t">    <span class="com"># 602354027_tracklib.Trajectory_1N3d</span>&nbsp;</span><span class="r"></span></p>
+    <p id="t21" class="pln"><span class="n"><a href="#t21">21</a></span><span class="t">    <span class="com"># 602354027_tracklib.Trajectory_2N1d</span>&nbsp;</span><span class="r"></span></p>
+    <p id="t22" class="pln"><span class="n"><a href="#t22">22</a></span><span class="t">    <span class="com"># 602354027_tracklib.Trajectory_2N2d</span>&nbsp;</span><span class="r"></span></p>
+    <p id="t23" class="pln"><span class="n"><a href="#t23">23</a></span><span class="t">    <span class="com"># 602354027_tracklib.Trajectory_2N3d</span>&nbsp;</span><span class="r"></span></p>
+    <p id="t24" class="run"><span class="n"><a href="#t24">24</a></span><span class="t">    <span class="key">for</span> <span class="nam">N</span> <span class="key">in</span> <span class="op">[</span><span class="num">1</span><span class="op">,</span> <span class="num">2</span><span class="op">]</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
+    <p id="t25" class="run"><span class="n"><a href="#t25">25</a></span><span class="t">        <span class="key">for</span> <span class="nam">d</span> <span class="key">in</span> <span class="op">[</span><span class="num">1</span><span class="op">,</span> <span class="num">2</span><span class="op">,</span> <span class="num">3</span><span class="op">]</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
+    <p id="t26" class="run"><span class="n"><a href="#t26">26</a></span><span class="t">            <span class="nam">hdf5</span><span class="op">.</span><span class="nam">reader_writer_registry</span><span class="op">[</span><span class="str">f"602354027_tracklib.Trajectory_{N}N{d}d"</span><span class="op">]</span> <span class="op">=</span> <span class="op">(</span><span class="nam">Trajectory</span><span class="op">,</span> <span class="nam">hdf5</span><span class="op">.</span><span class="nam">write_generic_class</span><span class="op">,</span> <span class="nam">hdf5</span><span class="op">.</span><span class="nam">read_generic_class</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
+    <p id="t27" class="pln"><span class="n"><a href="#t27">27</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
+    <p id="t28" class="run"><span class="n"><a href="#t28">28</a></span><span class="t"><span class="key">del</span> <span class="nam">stupid_namespace</span>&nbsp;</span><span class="r"></span></p>
 </div>
 <div id="footer">
     <div class="content">
         <p>
             <a class="nav" href="index.html">&#xab; index</a> &nbsp; &nbsp; <a class="nav" href="https://coverage.readthedocs.io">coverage.py v5.2.1</a>,
-            created at 2022-08-04 08:32 -0400
+            created at 2022-08-25 13:43 -0400
         </p>
     </div>
 </div>

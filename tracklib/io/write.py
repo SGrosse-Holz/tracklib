@@ -80,6 +80,12 @@ def mat(data, filename):
     trajs = np.empty(len(data), dtype=object)
     for i, (traj, tags) in enumerate(data(giveTags=True)):
         traj.tracklib_tags = list(tags)
+
+        if traj.localization_error is None:
+            traj.localization_error = np.nan
+        if traj.parity is None:
+            traj.parity = np.nan
+
         trajs[i] = traj
 
     scipy.io.savemat(filename, {'trajs' : trajs})

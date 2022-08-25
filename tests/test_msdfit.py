@@ -26,6 +26,7 @@ __all__ = [
     'TestRouseLoci',
     'TestRouseSingleLocus',
     'TestProfiler',
+    'TestRandomStuff',
 ]
 
 # We test mostly the library implementations, since the base class `Fit` is
@@ -60,7 +61,7 @@ class myTestCase(unittest.TestCase):
 class TestDiffusive(myTestCase):
     def setUp(self):
         def traj():
-            return tl.Trajectory.fromArray(np.cumsum(np.random.normal(size=(10, 3)), axis=0))
+            return tl.Trajectory(np.cumsum(np.random.normal(size=(10, 3)), axis=0))
 
         self.data = tl.TaggedSet((traj() for _ in range(10)), hasTags=False)
 
@@ -104,7 +105,7 @@ class TestRouseLoci(myTestCase):
                 conf = model.evolve(conf)
                 traj.append(conf[tracked[0] - tracked[1]])
 
-            return tl.Trajectory.fromArray(traj)
+            return tl.Trajectory(traj)
 
         self.data = tl.TaggedSet((traj() for _ in range(10)), hasTags=False)
 
@@ -175,7 +176,7 @@ class TestRouseLoci(myTestCase):
             fit = msdfit.lib.NPXFit(self.data, ss_order=0, n=0)
 
         with self.assertRaises(ValueError):
-            data = self.data.process(lambda traj: tl.Trajectory.fromArray(traj[:][:, 0]))
+            data = self.data.process(lambda traj: tl.Trajectory(traj[:][:, 0]))
             fit = msdfit.lib.NPXFit(data, ss_order=0, n=5,
                                     previous_NPXFit_and_result = (new2_fit, new2_res),
                                     )
@@ -191,7 +192,7 @@ class TestRouseSingleLocus(myTestCase):
                 conf = model.evolve(conf)
                 traj.append(conf[tracked])
 
-            return tl.Trajectory.fromArray(traj)
+            return tl.Trajectory(traj)
 
         self.data = tl.TaggedSet((traj() for _ in range(10)), hasTags=False)
 
@@ -207,7 +208,7 @@ class TestProfiler(myTestCase):
     # set up diffusive data set
     def setUp(self):
         def traj():
-            return tl.Trajectory.fromArray(np.cumsum(np.random.normal(size=(10, 3)), axis=0))
+            return tl.Trajectory(np.cumsum(np.random.normal(size=(10, 3)), axis=0))
 
         self.data = tl.TaggedSet((traj() for _ in range(10)), hasTags=False)
         self.fit = msdfit.lib.SplineFit(self.data, ss_order=1, n=2)
@@ -301,7 +302,7 @@ class TestProfiler(myTestCase):
 
 class TestRandomStuff(myTestCase):
     def test_MSD(self):
-        data = tl.TaggedSet([tl.Trajectory.fromArray([[1, 2, 3], [4, 5, 6]])], hasTags=False)
+        data = tl.TaggedSet([tl.Trajectory([[1, 2, 3], [4, 5, 6]])], hasTags=False)
         fit = msdfit.lib.NPXFit(data, ss_order=1, n=0)
         params = np.array(data[0].d*[-np.inf, 0.387, 0.89])
 
@@ -316,7 +317,7 @@ class TestRandomStuff(myTestCase):
         self.assert_array_almost_equal(msd(dt), fit.MSD(dict(params=params), dt))
 
     def test_generate(self):
-        data = tl.TaggedSet([tl.Trajectory.fromArray([[1, 2, 3], [4, 5, 6]])], hasTags=False)
+        data = tl.TaggedSet([tl.Trajectory([[1, 2, 3], [4, 5, 6]])], hasTags=False)
         fit = msdfit.lib.NPXFit(data, ss_order=1, n=0)
         params = np.array(data[0].d*[-np.inf, 0.387, 0.89])
 
